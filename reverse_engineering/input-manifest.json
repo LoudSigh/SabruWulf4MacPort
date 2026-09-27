@@ -73,6 +73,33 @@
         "visibleScreen": "blank"
       },
       "playableStateVerified": false
+    },
+    {
+      "id": "sabre-wulf-optional-ay",
+      "relativePath": "AY Music/ProjectAY/Spectrum/Games/SabreWulf.ay",
+      "location": "existing external emulator backup; configure local path",
+      "format": "ZXAYEMUL AY",
+      "byteLength": 913,
+      "sha256": "7643bfae575c172413fafe2877c04eab0f618af73483dc82fc6b4fe17eba2cfb",
+      "origin": "User-provided ProjectAY-format tune; authorship, game-edition connection and rights not yet verified",
+      "redistributionPermission": "unknown",
+      "mayEnterSourceControl": false,
+      "signatureVerified": true,
+      "decodingVerified": false,
+      "playbackVerified": false,
+      "original48KSoundEvidence": false
+    },
+    {
+      "id": "sabre-wulf-loading-note",
+      "relativePath": "ZX Spectrum Service Manuals/ZX Spectrum References - Converted Files/Ultimate Sabre Wulf.md",
+      "location": "existing external emulator backup; read as unverified secondary commentary",
+      "format": "Markdown",
+      "byteLength": 8735,
+      "sha256": "c978c0fed0043cfb345a6e481738ec78115b8833146351788c0e3119d0d48d3e",
+      "origin": "User-provided converted text; author explicitly states no external citations for loader claims",
+      "redistributionPermission": "unknown",
+      "mayEnterSourceControl": false,
+      "verifiedAgainstThisTape": false
     }
   ]
 }
