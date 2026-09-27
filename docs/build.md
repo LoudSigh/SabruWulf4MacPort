@@ -2,6 +2,8 @@
 
 This is an independently authored **placeholder** maze/adventure, not a reconstruction of the historical game. The room layout, collision, patrol, items, health, and timing are illustrative and **unverified** against original mechanics. No original sprites, maps, audio, or game code are included. The historical name appears only as the app title.
 
+For the easiest macOS experience, use [Run Sabre Wulf Preview.command](../Run%20Sabre%20Wulf%20Preview.command) instead of the manual commands below. It opens this prototype alongside your two original **static** snapshot screens, without bundling them in the app.
+
 Requirements: Xcode 27 with macOS, iOS, and visionOS SDKs; XcodeGen 2.46 or later. From the repository root:
 
 ```sh

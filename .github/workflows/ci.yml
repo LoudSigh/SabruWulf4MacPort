@@ -17,6 +17,8 @@ jobs:
             echo "Tracked game media or disassembly is forbidden"
             exit 1
           fi
+      - name: Check local preview launcher syntax
+        run: bash -n 'Run Sabre Wulf Preview.command'
       - name: Test shared Swift package
         run: swift test
       - name: Test TZX inventory with synthetic data
