@@ -5,6 +5,7 @@ DerivedData/
 *.xcuserstate
 .env
 .env.*
+.specstory/
 local-inputs/
 reverse_engineering/generated/
 *.tap

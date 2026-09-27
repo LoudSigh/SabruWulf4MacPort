@@ -1,5 +1,6 @@
 {
   "recommendations": [
+    "github.copilot",
     "github.copilot-chat",
     "swiftlang.swift",
     "vadimcn.vscode-lldb"
