@@ -1,6 +1,6 @@
 # Sabre Wulf: ZX Spectrum 48K analysis and native Apple port
 
-Status: implementation specification; **the user has identified a local game TZX, but its boot behavior, authenticity, and redistribution rights remain unverified**. Do not claim the port is complete until the phase gates below are satisfied. The associated [Autopilot prompt](./COPILOT_PROMPT.md) tells the coding agent how to execute this spec.
+Status: implementation specification; a rights-safe three-platform app prototype exists, but **the supplied TZX has not produced a playable reference state and neither located snapshot is playable**. Original rules/assets, edition equivalence and redistribution rights remain unverified. Do not claim the port is complete until the phase gates below are satisfied. The associated [Autopilot prompt](./COPILOT_PROMPT.md) tells the coding agent how to execute this spec.
 
 ## 1. Outcome and boundaries
 
@@ -22,7 +22,7 @@ Inspect first, without moving or changing anything:
 | --- | --- | --- |
 | Working spec | `Spec.md` in this workspace | Plan and acceptance contract |
 | Supplied game tape | `/Volumes/July2025inclOct2022/Visual Studio Code Backups/Carbon Neural/2025-09-13_22-10-25/CarbonNeural_portable_2025-09-13_22-10-25/ROMS/Sabre Wulf (1984)(Ultimate Play The Game).tzx` | Read-only user-identified input; do not copy into the repository |
-| Other game files | Further snapshots, dumps, assembler files and/or recordings if user provides them | Inventory and hash separately; do not assume they exist |
+| Candidate snapshots | `ROMS/z80 files/Sabre Wulf (1984)(Ultimate Play The Game).z80` and `Test Files/Sabre Wulf (1984)(Ultimate Play The Game).sna` under the emulator backup | 48K .z80 metadata and 48K-sized .sna; validate their game state and relationship to the TZX before using as reference |
 | Reference emulator backup | `/Volumes/July2025inclOct2022/Visual Studio Code Backups/Carbon Neural/2025-09-13_22-10-25/CarbonNeural_portable_2025-09-13_22-10-25` | Read-only upstream reference; no wholesale copy |
 | Associated emulator archive/bundle | Parent backup directory | Preserve as backup, not an input to overwrite |
 | Target remote | `https://github.com/LoudSigh/SabruWulf4MacPort` | `main` bootstrapped with documentation; check access before future pushes |
@@ -122,7 +122,7 @@ Execute in dependency order. Maintain a small task list showing evidence, owner,
 
 ## 5. Immediate next actions
 
-1. Use the identified TZX by its recorded hash and local path; its block IDs and BASIC header are inventoried, but loaded bytes, machine variant and reproducible reference boot remain to be determined. Record source provenance/rights and (if permitted) the ROM hash used for that run; do not assume the filename authenticates the edition.
+1. Use the identified TZX by its recorded hash and local path; its block IDs and BASIC header are inventoried, but loaded bytes and a reproducible reference boot remain to be determined. The two filename-matching snapshots were inspected and neither booted into play. Fix or replace the demonstrably failing first-header reference-loading path, or obtain a user-authorized playable snapshot of this exact revision, **before** deriving a game RAM map. Record source provenance/rights and the ROM hash used for reference runs; do not assume matching filenames authenticate editions.
 2. Continue on the bootstrapped `main` branch; inspect Git status, rights and ignore rules before every future `git add`, commit and push.
 3. Verify simulator launch, VS Code Copilot/Swift extension setup and emulator test baseline. The SDKs and simulator devices are listed, but an app launch has not been tested. Do not install optional disassembly tooling until a real format/parser need is confirmed.
 4. Start Phase A with the [Autopilot prompt](./COPILOT_PROMPT.md), preserve gate evidence, and proceed phase by phase; only claim completeness after Gate E.

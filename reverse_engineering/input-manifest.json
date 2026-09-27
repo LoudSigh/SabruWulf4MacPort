@@ -35,6 +35,44 @@
         "codeHeadersFound": 0
       },
       "bootVerified": false
+    },
+    {
+      "id": "sabre-wulf-candidate-z80",
+      "relativePath": "ROMS/z80 files/Sabre Wulf (1984)(Ultimate Play The Game).z80",
+      "location": "existing external emulator backup; configure local path",
+      "format": "Z80 snapshot",
+      "byteLength": 39457,
+      "sha256": "623148e6d60145e5ca0e82a7b317923cf98335b7dea9733278998694bed65222",
+      "origin": "Filename-matching candidate found in the user-identified emulator backup; edition equivalence unverified",
+      "redistributionPermission": "unknown",
+      "mayEnterSourceControl": false,
+      "snapshotInspection": {
+        "model": "48K",
+        "pc": "0x1F3E",
+        "interruptMode": 1,
+        "screenRamSha256": "bd27e8cc748eea72a266d186d1214372aab150629a5348ebf409dd09bc3c6b4e",
+        "screenBytesMatchingTapeScreenBlock": 6895,
+        "screenBytesCompared": 6912
+      },
+      "playableStateVerified": false
+    },
+    {
+      "id": "sabre-wulf-candidate-sna",
+      "relativePath": "Test Files/Sabre Wulf (1984)(Ultimate Play The Game).sna",
+      "location": "existing external emulator backup; configure local path",
+      "format": "SNA snapshot",
+      "byteLength": 49179,
+      "sha256": "dcc35fc21803f25cf097d05b7bde7d9d5d8453e53c6fd1c04d89382417dc8897",
+      "origin": "Filename-matching candidate found in the user-identified emulator backup; edition equivalence unverified",
+      "redistributionPermission": "unknown",
+      "mayEnterSourceControl": false,
+      "snapshotInspection": {
+        "model": "48K",
+        "pc": "0x0000",
+        "screenRamSha256": "71c642b31e5890a15ef92f3cbeba34edfb6e2e9f63079ecbda13a89d426f7d8b",
+        "visibleScreen": "blank"
+      },
+      "playableStateVerified": false
     }
   ]
 }
