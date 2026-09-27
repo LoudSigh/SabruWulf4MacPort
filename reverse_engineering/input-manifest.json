@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "inputs": [
+    {
+      "id": "sabre-wulf-supplied-tzx",
+      "relativePath": "ROMS/Sabre Wulf (1984)(Ultimate Play The Game).tzx",
+      "location": "user-provided external emulator backup; configure SABRE_WULF_TZX locally",
+      "format": "TZX",
+      "formatVersion": "1.10",
+      "byteLength": 45805,
+      "sha256": "97502ed2bc6fd202b1dbf638ded7c2f38944137a995932e6b95532b1d585e134",
+      "origin": "User-identified local game tape",
+      "claimedEdition": "Sabre Wulf (1984), Ultimate Play The Game (from filename; unverified)",
+      "redistributionPermission": "unknown",
+      "mayEnterSourceControl": false,
+      "formatVerification": {
+        "tool": "reference emulator speccy --tzx <path> --verify",
+        "result": "OK",
+        "parsedDataBlocks": 5,
+        "headerNames": ["SABRE"]
+      },
+      "bootVerified": false
+    }
+  ]
+}

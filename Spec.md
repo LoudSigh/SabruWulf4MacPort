@@ -1,6 +1,6 @@
 # Sabre Wulf: ZX Spectrum 48K analysis and native Apple port
 
-Status: implementation specification; **no game tape, snapshot, original source, or rights documentation has yet been identified in this workspace**. Do not claim the port is started or complete until those inputs are inventoried. The associated [Autopilot prompt](./COPILOT_PROMPT.md) tells the coding agent how to execute this spec.
+Status: implementation specification; **the user has identified a local game TZX, but its boot behavior, authenticity, and redistribution rights remain unverified**. Do not claim the port is complete until the phase gates below are satisfied. The associated [Autopilot prompt](./COPILOT_PROMPT.md) tells the coding agent how to execute this spec.
 
 ## 1. Outcome and boundaries
 
@@ -21,14 +21,17 @@ Inspect first, without moving or changing anything:
 | Input | Location | Treatment |
 | --- | --- | --- |
 | Working spec | `Spec.md` in this workspace | Plan and acceptance contract |
-| Original game files | User to provide: TAP/TZX, snapshots, dumps, assembler files and/or recordings | Local read-only originals; hash and inventory individually |
+| Supplied game tape | `/Volumes/July2025inclOct2022/Visual Studio Code Backups/Carbon Neural/2025-09-13_22-10-25/CarbonNeural_portable_2025-09-13_22-10-25/ROMS/Sabre Wulf (1984)(Ultimate Play The Game).tzx` | Read-only user-identified input; do not copy into the repository |
+| Other game files | Further snapshots, dumps, assembler files and/or recordings if user provides them | Inventory and hash separately; do not assume they exist |
 | Reference emulator backup | `/Volumes/July2025inclOct2022/Visual Studio Code Backups/Carbon Neural/2025-09-13_22-10-25/CarbonNeural_portable_2025-09-13_22-10-25` | Read-only upstream reference; no wholesale copy |
 | Associated emulator archive/bundle | Parent backup directory | Preserve as backup, not an input to overwrite |
 | Target remote | `https://github.com/LoudSigh/SabruWulf4MacPort` | `main` bootstrapped with documentation; check access before future pushes |
 
-The inspected emulator has `Package.swift` with macOS 12+, Swift tools 5.9, a `SpeccyCore` library, `speccy` CLI, macOS `CarbonNeural` executable, and tests. It contains `TAP.swift`, `TZX.swift`, `SNASnapshot.swift`, `Z80Snapshot.swift`, `Memory.swift`, `ULA.swift`, and `SpeccyDebug.swift`; these filenames show possible entry points, **not** proof that instruction tracing or Sabre Wulf-specific extraction already exists. Verify actual APIs before choosing reuse. The backup's `.vscode/extensions.json` recommends `swiftlang.swift`, `vadimcn.vscode-lldb`, `github.copilot-chat`, and optional `maziac.dezog`.
+The supplied file is 45,805 bytes, identified as TZX version 1.10, with SHA-256 `97502ed2bc6fd202b1dbf638ded7c2f38944137a995932e6b95532b1d585e134`. The emulator's existing `speccy --tzx <path> --verify` exited successfully and reported five parsed data blocks and header name `SABRE`. This is **format verification**, not proof of authentic game edition, tape-control execution, successful loading, playable behavior, or redistribution permission. The rights-safe [input manifest](./reverse_engineering/input-manifest.json) records the baseline.
 
-Create a local input manifest (`reverse_engineering/input-manifest.json`) with, per item: path relative to the local input root, file format, byte length, SHA-256, origin, edition/revision, permission/redistribution status, and whether it may enter source control. Store raw media under `local-inputs/` (gitignored); do not edit originals. Validate hashes after every transformation. Keep generated extracts in `reverse_engineering/generated/` with provenance back to input hashes, tape block and memory address or time/frame. Do not commit a generated binary merely because it was generated.
+The inspected emulator has `Package.swift` with macOS 12+, Swift tools 5.9, a `SpeccyCore` library, `speccy` CLI, macOS `CarbonNeural` executable, and tests. It contains `TAP.swift`, `TZX.swift`, `SNASnapshot.swift`, `Z80Snapshot.swift`, `Memory.swift`, `ULA.swift`, and `SpeccyDebug.swift`; these filenames show possible entry points, **not** proof that instruction tracing or Sabre Wulf-specific extraction already exists. Its current TZX parser skips some flow-control blocks rather than executing them; confirm this particular tape's full block sequence before using its flattened output as a loading oracle. Verify actual APIs before choosing reuse. The backup's `.vscode/extensions.json` recommends `swiftlang.swift`, `vadimcn.vscode-lldb`, `github.copilot-chat`, and optional `maziac.dezog`.
+
+Maintain the input manifest (`reverse_engineering/input-manifest.json`) with, per item: path relative to a local input root, file format, byte length, SHA-256, origin, edition/revision, permission/redistribution status, and whether it may enter source control. The supplied tape remains outside the repository; configure its absolute path locally (for example as `SABRE_WULF_TZX`), without copying it or putting machine-specific paths in the public manifest. If additional raw inputs are copied into the workspace, store them under `local-inputs/` (gitignored); do not edit originals. Validate hashes after every transformation. Keep generated extracts in `reverse_engineering/generated/` with provenance back to input hashes, tape block and memory address or time/frame. Do not commit a generated binary merely because it was generated.
 
 If multiple game editions are supplied, choose one baseline by hash and machine model (48K); keep other editions separate, and do not merge assets or trace addresses between them without evidence. Record the ROM identity/hash used for reference runs, but do not commit or redistribute a ROM without permission.
 
@@ -119,7 +122,7 @@ Execute in dependency order. Maintain a small task list showing evidence, owner,
 
 ## 5. Immediate next actions
 
-1. Obtain user-supplied original game media/source, license/provenance information and (if permitted) the ROM needed to produce the reference run. Inventory and hash rather than assuming the emulator backup contains this game.
+1. Use the identified TZX by its recorded hash and local path; determine its actual tape-block control flow, loader, loaded bytes, machine variant and reproducible reference boot. Record source provenance/rights and (if permitted) the ROM hash used for that run; do not assume the filename authenticates the edition.
 2. Continue on the bootstrapped `main` branch; inspect Git status, rights and ignore rules before every future `git add`, commit and push.
 3. Verify simulator launch, VS Code Copilot/Swift extension setup and emulator test baseline. The SDKs and simulator devices are listed, but an app launch has not been tested. Do not install optional disassembly tooling until a real format/parser need is confirmed.
 4. Start Phase A with the [Autopilot prompt](./COPILOT_PROMPT.md), preserve gate evidence, and proceed phase by phase; only claim completeness after Gate E.
