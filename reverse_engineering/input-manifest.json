@@ -157,6 +157,28 @@
       },
       "menuStateVerified": true,
       "playableStateVerified": false
+    },
+    {
+      "id": "sabre-wulf-user-gameplay-z80",
+      "relativePath": "SNAPSHOTS/Snapshot_GamePlay.z80",
+      "location": "local workspace, ignored by Git",
+      "format": "Z80 snapshot",
+      "byteLength": 43308,
+      "sha256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+      "origin": "User-created capture during 1-player game with keyboard controls selected",
+      "redistributionPermission": "unknown",
+      "mayEnterSourceControl": false,
+      "snapshotInspection": {
+        "model": "48K",
+        "pc": "0xB8A1",
+        "screenRamSha256": "ee0388a01f898f47ed540f15ba9c9bf723e61967765e04bba6eb69e3b7e50c37",
+        "ram48Sha256": "6de170c1b2518c82c5bfefc0f7dbfc8b8766097e020950d51b01baf045064864",
+        "bitmapNonzeroBytes": 3753,
+        "gameplayFrameObserved": true,
+        "tapeRevisionEquivalenceVerified": false,
+        "gameplayInputReplayVerified": false
+      },
+      "playableStateVerified": true
     }
   ]
 }

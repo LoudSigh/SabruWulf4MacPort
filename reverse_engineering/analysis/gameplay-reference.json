@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "sabre-wulf-user-gameplay-z80",
+  "snapshotSha256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "romSha256": "d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42",
+  "machine": "ZX Spectrum 48K",
+  "observedMode": "one player; keyboard selected (user-provided capture context)",
+  "initialPc": "0xB8A1",
+  "initialSp": "0x5FF6",
+  "screenRamSha256": "ee0388a01f898f47ed540f15ba9c9bf723e61967765e04bba6eb69e3b7e50c37",
+  "ram48Sha256": "6de170c1b2518c82c5bfefc0f7dbfc8b8766097e020950d51b01baf045064864",
+  "frameSize": [256, 192],
+  "bitmapNonzeroBytes": 3753,
+  "attributesDistinctValues": 22,
+  "observedVisuals": [
+    "Jungle playfield with player figure and overlaid score/status area",
+    "Distinct game screen rather than the previously captured menu"
+  ],
+  "menuComparison": {
+    "menuSourceId": "sabre-wulf-playable-menu-z80",
+    "changedRamBytes": 4558,
+    "changedBitmapBytes": 3159,
+    "changedAttributeBytes": 445,
+    "changedSystemAreaBytes": 44,
+    "changedOtherRamBytes": 910,
+    "pageChangeCounts": [
+      {"start": "0x4000", "count": 1240},
+      {"start": "0x5000", "count": 2408},
+      {"start": "0x6000", "count": 0},
+      {"start": "0x7000", "count": 0},
+      {"start": "0x8000", "count": 0},
+      {"start": "0x9000", "count": 225},
+      {"start": "0xA000", "count": 0},
+      {"start": "0xB000", "count": 2},
+      {"start": "0xC000", "count": 0},
+      {"start": "0xD000", "count": 357},
+      {"start": "0xE000", "count": 326},
+      {"start": "0xF000", "count": 0}
+    ]
+  },
+  "limitations": [
+    "Snapshots verify two 48K visual states and their RAM difference, not the path taken between them.",
+    "The tested reference emulator resumed into ROM by frame 1 and did not preserve gameplay after 50 frames; this is not a verified dynamic gameplay replay.",
+    "No equivalence to original TZX loaded bytes, instruction/data coverage or publication rights established."
+  ]
+}

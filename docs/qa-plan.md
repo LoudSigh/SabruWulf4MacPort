@@ -1,6 +1,6 @@
 # Release test plan
 
-Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; macOS, iOS and visionOS apps were launched, with visible layouts inspected on iOS and visionOS simulators. A newly supplied 48K `.z80` provides a verified **menu and RAM image**, but **gameplay input replay, original-game parity and control-interaction UI tests remain unverified**. XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
+Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; macOS, iOS and visionOS apps were launched, with visible layouts inspected on iOS and visionOS simulators. User-captured 48K `.z80` snapshots provide verified **menu and in-game screen/RAM images**, but **continuous gameplay input replay, original-game parity and control-interaction UI tests remain unverified**. XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
 
 ## Functional and integration cases
 
@@ -32,6 +32,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. Save a new snapshot during visible gameplay and compare RAM/frame hashes on repeated replay.
 - **Expected Result**: Gameplay screen and code state transition are reproducible. If the emulator ignores inputs, diagnose its input/resume path rather than treating menu RAM as a gameplay trace.
 - **Edge Cases / Variants**: Different ROM, pause/joystick selection, short and held 0-key presses.
+
+### TC-002B: Compare menu and in-game captures
+- **Priority**: P0
+- **Preconditions**: Two hash-verified 48K `.z80` inputs from the input manifest.
+- **Steps**:
+  1. Restore each independently with the same reference ROM and compare screen/48K RAM hashes.
+  2. Count changed bytes in the bitmap, attributes, system area and remaining RAM without publishing the bytes.
+  3. Test replay only if the emulator continues in game-owned code and input changes game-state markers.
+- **Expected Result**: The first two steps yield the baseline counts in `gameplay-reference.json`; otherwise the source revision has changed. The third step remains unresolved until gameplay actually advances under controlled inputs.
+- **Edge Cases / Variants**: Snapshot taken during interrupt, display FLASH and RAM self-modification.
 
 ### TC-003: Native gameplay regression
 - **Priority**: P0

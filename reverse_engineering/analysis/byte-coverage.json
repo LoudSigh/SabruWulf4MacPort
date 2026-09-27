@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "scope": "captured 48K RAM (0x4000-0xFFFF), not tape source or ROM",
+  "inputSnapshots": [
+    "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+    "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea"
+  ],
+  "totalBytes": 49152,
+  "classificationCounts": {
+    "code": 0,
+    "data": 6912,
+    "padding": 0,
+    "unknown": 42240
+  },
+  "knownDataIntervals": [
+    {"start": "0x4000", "endExclusive": "0x5800", "kind": "ULA bitmap"},
+    {"start": "0x5800", "endExclusive": "0x5B00", "kind": "ULA color attributes"}
+  ],
+  "observedProgramCounterAddresses": [
+    {"address": "0xBDAF", "evidence": "menu snapshot PC; instruction extent unclassified"},
+    {"address": "0xB8A1", "evidence": "gameplay snapshot PC; instruction extent unclassified"}
+  ],
+  "note": "Only the standard display layout is classified. PCs mark execution points, not routine boundaries. More dynamic trace evidence is required before labeling instruction bytes or other data."
+}

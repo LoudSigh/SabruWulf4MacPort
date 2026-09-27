@@ -32,3 +32,24 @@ Nonzero counts describe density only; they do **not** distinguish instructions f
 | `F000` | 3331 | `bc4f3b160d9b4a53b2a66ebb3e40c9e6ce74f3e75642b1af816b7945b866b9f1` |
 
 Next: acquire a snapshot during gameplay and compare per-address changes with the menu image. Use controlled emulator tracing to identify actual read/write/execute regions before naming routines or extracting assets for a distributed app. Maintain the `[code, data, padding, unknown]` accounting required by [Spec.md](../../Spec.md); this page is a starting inventory, **not** completed byte coverage.
+
+## Menu-to-gameplay comparison
+
+The user later supplied a distinct, same-machine in-game snapshot, SHA-256 `803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c`, captured with one player and keyboard selected. It renders a 256×192 jungle playfield with a player figure and status display. Its PC is `B8A1`, SP `5FF6`, full 48K RAM SHA-256 `6de170c1b2518c82c5bfefc0f7dbfc8b8766097e020950d51b01baf045064864`. Menu vs. gameplay differs at **4,558/49,152** RAM byte positions: 3,159 bitmap bytes, 445 attribute bytes, 44 bytes in `5B00-5FFF`, and 910 bytes in `6000-FFFF`.
+
+| Page start | Changed bytes from menu |
+| --- | ---: |
+| `4000` | 1240 |
+| `5000` | 2408 |
+| `6000` | 0 |
+| `7000` | 0 |
+| `8000` | 0 |
+| `9000` | 225 |
+| `A000` | 0 |
+| `B000` | 2 |
+| `C000` | 0 |
+| `D000` | 357 |
+| `E000` | 326 |
+| `F000` | 0 |
+
+**Interpretation limit:** identical pages are candidate static game code/data, not proven code. Differences outside the screen mark potential state/tables/stack/animation; two captures alone cannot separate these. `B8A1` is an observed PC, not a function name. The RAM classifications in [byte-coverage.json](./byte-coverage.json) cover only the known 6,912 display bytes; all other bytes are deliberately `unknown`.
