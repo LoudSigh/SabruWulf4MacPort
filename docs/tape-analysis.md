@@ -56,6 +56,8 @@ In the backup emulator, execution resumed in ROM by frame 1; the in-game display
 
 A diagnostic replay with maskable interrupts initially disabled still entered ROM, so simply masking interrupts does not recover the gameplay loop. Do not derive combat or movement timing from either replay.
 
+To isolate the divergence, a separate read-only CPU trace started from the gameplay snapshot, executing 20,000 instructions without *injecting* frame interrupts. It stayed in game RAM (PC `B87C` after 165,045 CPU cycles) and reported no unimplemented instruction. The emulator's `stepFrame`, by contrast, had entered ROM shortly after its first scheduled interrupt. This narrows the **tested emulator's snapshot-resume problem to its frame/interrupt integration**, not a lack of loaded game code; the standalone trace does not establish original timing or input behavior. Avoid modifying the read-only backup as a workaround; inspect the interrupt return path in an isolated copy and compare a user's working reference before accepting gameplay replays.
+
 ### Repeat the private, metadata-only RAM comparison
 
 The repository's `reverse_engineering/tools/SnapshotCompare.swift` compiles **against the read-only emulator backup's SpeccyCore sources**, without copying them into this repository. It accepts a 16 KiB ROM and two 48K `.z80` images, fails explicitly for unsupported images, and prints SHA-256 hashes, screen statistics and changed-byte counts—never snapshot bytes:
