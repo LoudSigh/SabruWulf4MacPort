@@ -1,0 +1,14 @@
+.DS_Store
+.build/
+.swiftpm/
+DerivedData/
+*.xcuserstate
+.env
+.env.*
+local-inputs/
+reverse_engineering/generated/
+*.tap
+*.tzx
+*.sna
+*.z80
+*.rom
