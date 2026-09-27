@@ -1,6 +1,6 @@
 # Release test plan
 
-Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; macOS, iOS and visionOS apps were launched, with visible layouts inspected on iOS and visionOS simulators. **Original-game parity, control-interaction UI tests, and a playable reference boot remain unverified.** XCTest is the selected automated framework. The source-specific cases require an authorized local tape and a verified reference boot; public CI uses synthetic fixtures.
+Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; macOS, iOS and visionOS apps were launched, with visible layouts inspected on iOS and visionOS simulators. A newly supplied 48K `.z80` provides a verified **menu and RAM image**, but **gameplay input replay, original-game parity and control-interaction UI tests remain unverified**. XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
 
 ## Functional and integration cases
 
@@ -22,6 +22,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. Repeat with the same ROM, emulator version and inputs.
 - **Expected Result**: Repeated reference captures match; the dump identifies program intervals and loader state. If loading fails, document the blocking cause rather than invent a baseline.
 - **Edge Cases / Variants**: Pure-data pulses, BASIC autostart, loader timing and slow/fast emulation.
+
+### TC-002A: Resume captured menu into gameplay
+- **Priority**: P0
+- **Preconditions**: Verify the SHA-256 and 48K model of `SNAPSHOTS/Snapshot.z80`; load it with a known-hash ROM in the emulator that produced it.
+- **Steps**:
+  1. Confirm the 256×192 menu renders with `0` as the start option.
+  2. Record frame-indexed keyboard/joystick actions and FE input reads while selecting controls and starting the game.
+  3. Save a new snapshot during visible gameplay and compare RAM/frame hashes on repeated replay.
+- **Expected Result**: Gameplay screen and code state transition are reproducible. If the emulator ignores inputs, diagnose its input/resume path rather than treating menu RAM as a gameplay trace.
+- **Edge Cases / Variants**: Different ROM, pause/joystick selection, short and held 0-key presses.
 
 ### TC-003: Native gameplay regression
 - **Priority**: P0

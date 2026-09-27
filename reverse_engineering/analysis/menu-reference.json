@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "sabre-wulf-playable-menu-z80",
+  "snapshotSha256": "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+  "romSha256": "d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42",
+  "machine": "ZX Spectrum 48K",
+  "initialPc": "0xBDAF",
+  "initialSp": "0x5FF8",
+  "screenRamSha256": "d57aedc1196ff31cb9068e593940b8bea35664d5d37759d0e54de7b808fc070c",
+  "ram48Sha256": "05277ed154c9ae7e33fae10dfeb7524a65cedcb212869a9ebc536d1d0d172e1b",
+  "frameSize": [256, 192],
+  "bitmapNonzeroBytes": 3135,
+  "menuObservations": {
+    "playerOptions": [1, 2],
+    "controlOptions": ["keyboard", "Kempston joystick", "cursor joystick", "Interface II"],
+    "startControl": "0"
+  },
+  "limitations": [
+    "Visual menu and 48K RAM restoration verified; user asserts game works in their emulator.",
+    "The test emulator did not change screen RAM after 150 frames with a short 0 keypress; FE polling was absent during that press.",
+    "No successful gameplay input replay, source-to-TZX byte equivalence, code/data classification or publication rights verified."
+  ]
+}
