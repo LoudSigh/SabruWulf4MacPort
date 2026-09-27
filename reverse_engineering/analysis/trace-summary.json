@@ -57,6 +57,35 @@
       "addressBelow0x6000": "0x5CB0"
     }
   ],
+  "heldKeyDiagnostic": {
+    "sourceRole": "gameplay",
+    "stepsPerRun": 200000,
+    "noInputFinalPC": "0xB88B",
+    "qHeldFinalPC": "0xAC3A",
+    "qHeldDistinctInstructionStarts": 722,
+    "otherKeysTested": ["a", "o", "p", "space"],
+    "otherKeysMatchedNoInputTrace": true,
+    "interpretation": "A held q changes an isolated CPU path and RAM hash but leaves the display at its initial hash; no gameplay movement or original key binding is inferred without frame-accurate replay."
+  },
+  "extendedNoInputDiagnostic": {
+    "sourceRole": "gameplay",
+    "steps": 1000000,
+    "cycles": 7944087,
+    "stopReason": "budget_exhausted",
+    "finalPC": "0xB886",
+    "uniqueInstructionStartsInRAM": 1422,
+    "uniqueCallEdges": 100,
+    "returns": 16015,
+    "uniqueRAMWriteAddresses": 1265,
+    "screenWriteEvents": 28221,
+    "otherRAMWriteEvents": 65569,
+    "candidateInstructionStartsBy4KiBPage": {
+      "0x5000": 1,
+      "0x9000": 229,
+      "0xA000": 554,
+      "0xB000": 638
+    }
+  },
   "interpretation": [
     "Counts cover instruction entry addresses, not byte lengths or complete code ranges.",
     "Candidate renderer source reads include data, table and workspace reads; page counts do not by themselves identify sprite tables.",

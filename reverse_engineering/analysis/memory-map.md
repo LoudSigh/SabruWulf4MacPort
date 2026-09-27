@@ -60,4 +60,6 @@ The private [`SnapshotTrace.swift`](../tools/SnapshotTrace.swift) runs the exist
 
 An instruction-PC-to-write-address correlation placed all 1,141 diagnostic display writes at twelve PC addresses in `BA59-BB4C`, with repeated CALL targets `BA0D` and `BA8C`. This gives a **candidate rendering cluster** (see [functions.json](./functions.json)); it does not establish sprite layout, frame timing, or all other code boundaries. Only address/count metadata is public.
 
+A longer *separate* 1,000,000-step no-input diagnostic reached 1,422 distinct instruction starts and 100 CALL edges; the extra addresses remain within `9000-BFFF` plus `5CB0`. These are **observed instruction-start candidates in an incomplete, untimed execution mode**. They do not establish that the other 48K RAM bytes are data or that the complete game state space has been reached.
+
 While this cluster was running, diagnostic reads outside display/code regions touched 174 distinct addresses in `D000-DFFF` and 191 in `F000-FFFF`, alongside smaller groups in `5xxx`, `9xxx` and `Cxxx`. These pages are **candidates to investigate for graphics and lookup data**, not proven sprite tables: reads may also be control flags, pointers or other mutable state. Original content stays only in the ignored local RAM image.

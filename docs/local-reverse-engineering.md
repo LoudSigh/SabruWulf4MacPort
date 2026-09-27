@@ -14,9 +14,10 @@ swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift reverse_engineering/tools
 "$OUT/SnapshotTrace" --self-test
 "$OUT/SnapshotTrace" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 200000 > reverse_engineering/private/gameplay-trace-200k.json
 "$OUT/SnapshotTrace" "$ROM" SNAPSHOTS/Snapshot.z80 200000 > reverse_engineering/private/menu-trace-200k.json
+"$OUT/SnapshotTrace" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 200000 --key q > reverse_engineering/private/gameplay-trace-q-200k.json
 ```
 
-[`SnapshotTrace.swift`](../reverse_engineering/tools/SnapshotTrace.swift) deliberately stops after a bounded number of CPU steps; its JSON contains numeric PC/call/write addresses, counts and hashes, **not** assembly or instruction bytes. It uses an isolated CPU copy with no frame interrupts and no precise port timing; it is an exploratory code-location map, not an authentic gameplay trace. The verified aggregate counts appear in [trace-summary.json](../reverse_engineering/analysis/trace-summary.json).
+[`SnapshotTrace.swift`](../reverse_engineering/tools/SnapshotTrace.swift) deliberately stops after a bounded number of CPU steps; its JSON contains numeric PC/call/write addresses, counts and hashes, **not** assembly or instruction bytes. An optional held key (`q`, `a`, `o`, `p`, `space`) can be compared with the no-input run, but the CPU copy still has no frame interrupts or precise port timing; this is an exploratory code-location map, **not** an authentic gameplay trace or proof of control mapping. The verified aggregate counts appear in [trace-summary.json](../reverse_engineering/analysis/trace-summary.json).
 
 Only if you need a **private** disassembler input, export the RAM explicitly into the ignored local directory:
 

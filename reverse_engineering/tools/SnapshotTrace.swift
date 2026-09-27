@@ -29,8 +29,11 @@ private struct TraceReport: Encodable {
     let mode: String
     let snapshotSha256: String
     let romSha256: String
+    let inputHeld: String?
     let initialPC: String
     let finalPC: String
+    let finalRamSha256: String
+    let finalScreenSha256: String
     let steps: Int
     let cycles: Int
     let stopReason: String
@@ -59,7 +62,7 @@ private enum TraceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotTrace <48k.rom> <snapshot.z80> [steps: 1...1000000] | --self-test"
+            return "Usage: SnapshotTrace <48k.rom> <snapshot.z80> [steps: 1...1000000] [--key q|a|o|p|space] | --self-test"
         case .invalidROM:
             return "Reference ROM must contain exactly 16384 bytes"
         case .unsupportedSnapshot:
@@ -209,11 +212,13 @@ private struct SnapshotTrace {
                 selfTest()
                 return
             }
-            guard (3...4).contains(CommandLine.arguments.count) else {
+            guard CommandLine.arguments.count == 3 || CommandLine.arguments.count == 4
+                  || (CommandLine.arguments.count == 6 && CommandLine.arguments[4] == "--key")
+            else {
                 throw TraceError.usage
             }
             let budget: Int
-            if CommandLine.arguments.count == 4 {
+            if CommandLine.arguments.count >= 4 {
                 guard let value = Int(CommandLine.arguments[3]), (1...1_000_000).contains(value)
                 else {
                     throw TraceError.invalidStepBudget
@@ -221,6 +226,18 @@ private struct SnapshotTrace {
                 budget = value
             } else {
                 budget = 20_000
+            }
+            let inputHeld: String? = CommandLine.arguments.count == 6
+                ? CommandLine.arguments[5] : nil
+            let key: KeyboardMatrix.Key?
+            switch inputHeld {
+            case nil: key = nil
+            case "q": key = .q
+            case "a": key = .a
+            case "o": key = .o
+            case "p": key = .p
+            case "space": key = .space
+            default: throw TraceError.usage
             }
 
             let rom = try [UInt8](Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
@@ -249,6 +266,7 @@ private struct SnapshotTrace {
             close(savedOutput)
             emulator.tapeLoadTrapEnabled = false
             emulator.apply(snapshot: snapshot)
+            if let key { emulator.keyboard.press(key) }
             var cpu = emulator.cpu
             var memory = emulator.mem
             var metrics = Metrics()
@@ -295,8 +313,11 @@ private struct SnapshotTrace {
                 mode: "isolated_cpu_without_frame_interrupts_or_precise_io_timing",
                 snapshotSha256: sha256(input),
                 romSha256: sha256(rom),
+                inputHeld: inputHeld,
                 initialPC: hex(snapshot.cpu.pc),
                 finalPC: hex(cpu.pc),
+                finalRamSha256: sha256(memory.exportRam48K()),
+                finalScreenSha256: sha256(Array(memory.exportRam48K().prefix(6912))),
                 steps: stepCount,
                 cycles: cycleCount,
                 stopReason: stopReason,
