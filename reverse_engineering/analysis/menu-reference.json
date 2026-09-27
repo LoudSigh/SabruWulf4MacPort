@@ -17,7 +17,7 @@
   },
   "limitations": [
     "Visual menu and 48K RAM restoration verified; user asserts game works in their emulator.",
-    "The test emulator did not change screen RAM after 150 frames with a short 0 keypress; FE polling was absent during that press.",
+    "A short 0 keypress occurred while the tested CPU was in a long ULA output/delay segment; absence of keyboard polling then does not prove inputs are broken.",
     "No successful gameplay input replay, source-to-TZX byte equivalence, code/data classification or publication rights verified."
   ]
 }

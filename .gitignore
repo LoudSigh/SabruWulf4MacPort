@@ -11,6 +11,8 @@ SNAPSHOTS/
 reverse_engineering/generated/
 reverse_engineering/private/
 *.asm
+*.s
+*.inc
 *.dis
 *.lst
 *.skool

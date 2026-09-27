@@ -12,7 +12,7 @@ jobs:
       - name: Reject tracked game media and disassembly
         shell: bash
         run: |
-          tracked="$(git ls-files -- 'SNAPSHOTS/**' 'reverse_engineering/private/**' 'reverse_engineering/generated/**' '*.asm' '*.dis' '*.lst' '*.skool' '*.ram' '*.bin' '*.sna' '*.z80' '*.tap' '*.tzx' '*.rom')"
+          tracked="$(git ls-files -- 'SNAPSHOTS/**' 'reverse_engineering/private/**' 'reverse_engineering/generated/**' '*.asm' '*.s' '*.inc' '*.dis' '*.lst' '*.skool' '*.ram' '*.bin' '*.sna' '*.z80' '*.tap' '*.tzx' '*.rom')"
           if [[ -n "$tracked" ]]; then
             echo "Tracked game media or disassembly is forbidden"
             exit 1

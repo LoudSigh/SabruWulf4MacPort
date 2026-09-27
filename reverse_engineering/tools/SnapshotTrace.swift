@@ -19,6 +19,11 @@ private struct PageSummary: Encodable {
     let uniqueWriteAddresses: Int
 }
 
+private struct SourceReadPage: Encodable {
+    let start: String
+    let uniqueAddresses: Int
+}
+
 private struct TraceReport: Encodable {
     let schemaVersion: Int
     let mode: String
@@ -40,6 +45,8 @@ private struct TraceReport: Encodable {
     let mostFrequentInstructionStarts: [AddressHit]
     let mostFrequentCallEdges: [CallHit]
     let mostFrequentRAMWrites: [AddressHit]
+    let mostFrequentScreenWriterPCs: [AddressHit]
+    let candidateRendererSourceReadPages: [SourceReadPage]
 }
 
 private enum TraceError: Error, CustomStringConvertible {
@@ -81,6 +88,8 @@ private struct CallEdge: Hashable {
 private struct Metrics {
     var instructionStarts: [UInt16: Int] = [:]
     var ramWrites: [UInt16: Int] = [:]
+    var screenWriterPCs: [UInt16: Int] = [:]
+    var candidateRendererSourceReads: [UInt16: Int] = [:]
     var calls: [CallEdge: Int] = [:]
     var returns = 0
     var screenWrites = 0
@@ -90,11 +99,12 @@ private struct Metrics {
         if pc >= 0x4000 { instructionStarts[pc, default: 0] += 1 }
     }
 
-    mutating func recordWrite(_ address: UInt16) {
+    mutating func recordWrite(_ address: UInt16, from pc: UInt16) {
         guard address >= 0x4000 else { return }
         ramWrites[address, default: 0] += 1
         if address < 0x5B00 {
             screenWrites += 1
+            screenWriterPCs[pc, default: 0] += 1
         } else {
             otherRAMWrites += 1
         }
@@ -102,6 +112,16 @@ private struct Metrics {
 
     mutating func recordCall(from source: UInt16, to target: UInt16) {
         calls[CallEdge(source: source, target: target), default: 0] += 1
+    }
+
+    mutating func recordRead(_ address: UInt16, from pc: UInt16) {
+        guard (0xBA00..<0xBC00).contains(Int(pc)),
+              address >= 0x5B00,
+              !(0xBA00..<0xBC00).contains(Int(address))
+        else {
+            return
+        }
+        candidateRendererSourceReads[address, default: 0] += 1
     }
 
     func topInstructions(_ limit: Int = 40) -> [AddressHit] {
@@ -126,6 +146,12 @@ private struct Metrics {
         }.prefix(limit).map { AddressHit(address: hex($0.key), count: $0.value) }
     }
 
+    func topScreenWriterPCs(_ limit: Int = 40) -> [AddressHit] {
+        screenWriterPCs.sorted {
+            $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value
+        }.prefix(limit).map { AddressHit(address: hex($0.key), count: $0.value) }
+    }
+
     func pages() -> [PageSummary] {
         stride(from: 0x4000, to: 0x10000, by: 0x1000).map { start in
             let end = start + 0x1000
@@ -140,6 +166,17 @@ private struct Metrics {
             )
         }
     }
+
+    func rendererSourcePages() -> [SourceReadPage] {
+        stride(from: 0x4000, to: 0x10000, by: 0x1000).compactMap { start in
+            let end = start + 0x1000
+            let count = candidateRendererSourceReads.keys.reduce(0) {
+                $0 + (Int($1) >= start && Int($1) < end ? 1 : 0)
+            }
+            if count == 0 { return nil }
+            return SourceReadPage(start: hex(UInt16(start)), uniqueAddresses: count)
+        }
+    }
 }
 
 private func selfTest() {
@@ -147,15 +184,19 @@ private func selfTest() {
     metrics.recordPC(0x0038)
     metrics.recordPC(0xB8A1)
     metrics.recordPC(0xB8A1)
-    metrics.recordWrite(0x4000)
-    metrics.recordWrite(0x6000)
-    metrics.recordWrite(0x2000)
+    metrics.recordWrite(0x4000, from: 0xBA18)
+    metrics.recordWrite(0x6000, from: 0xB000)
+    metrics.recordWrite(0x2000, from: 0xB000)
     metrics.recordCall(from: 0xB8A1, to: 0x9000)
+    metrics.recordRead(0x7000, from: 0xBA18)
+    metrics.recordRead(0xBA19, from: 0xBA18)
     precondition(metrics.instructionStarts.count == 1)
     precondition(metrics.topInstructions()[0].count == 2)
     precondition(metrics.screenWrites == 1 && metrics.otherRAMWrites == 1)
     precondition(metrics.ramWrites.count == 2)
+    precondition(metrics.topScreenWriterPCs()[0].address == "0xBA18")
     precondition(metrics.calls.count == 1)
+    precondition(metrics.candidateRendererSourceReads.count == 1)
     precondition(metrics.pages().reduce(0) { $0 + $1.uniqueInstructionStarts } == 1)
     print("SnapshotTrace self-test passed")
 }
@@ -227,10 +268,13 @@ private struct SnapshotTrace {
                 let pc = cpu.pc
                 metrics.recordPC(pc)
                 let result = cpu.step(
-                    read: { memory.read($0) },
+                    read: { address in
+                        metrics.recordRead(address, from: pc)
+                        return memory.read(address)
+                    },
                     write: { address, value in
                         memory.write(address, value)
-                        metrics.recordWrite(address)
+                        metrics.recordWrite(address, from: pc)
                     },
                     ioRead: { emulator.ioRead($0) },
                     ioWrite: { emulator.ioWrite($0, $1) },
@@ -267,7 +311,9 @@ private struct SnapshotTrace {
                 pages: metrics.pages(),
                 mostFrequentInstructionStarts: metrics.topInstructions(),
                 mostFrequentCallEdges: metrics.topCalls(),
-                mostFrequentRAMWrites: metrics.topWrites()
+                mostFrequentRAMWrites: metrics.topWrites(),
+                mostFrequentScreenWriterPCs: metrics.topScreenWriterPCs(),
+                candidateRendererSourceReadPages: metrics.rendererSourcePages()
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "scope": "Observed routine candidates; not a complete function inventory or disassembly",
+  "sourceSnapshotSha256": "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+  "candidates": [
+    {
+      "rangeStart": "0xBDA0",
+      "rangeEndInclusive": "0xBDBB",
+      "entryAddressVerified": false,
+      "observedProgramCounter": "0xBDAF",
+      "hypothesis": "ULA output pulse/delay segment, likely used for the Spectrum beeper",
+      "confidence": "medium",
+      "evidence": [
+        "Menu snapshot PC and bounded execution trace visit the range repeatedly.",
+        "Private local static inspection shows repeated ULA port output changes separated by countdown loops; no instruction listing is stored here.",
+        "During short menu keypress trials the tested CPU was in this segment rather than a keyboard read."
+      ],
+      "unknowns": [
+        "Actual enclosing function entry and callers",
+        "Whether this invocation represents music, an effect, or another timed signal",
+        "Cycle accuracy and later menu input timing"
+      ]
+    },
+    {
+      "rangeStart": "0xBA0D",
+      "rangeEndInclusive": "0xBB4C",
+      "entryAddressVerified": false,
+      "observedCallTargets": ["0xBA0D", "0xBA8C"],
+      "hypothesis": "Cluster of screen drawing routines, potentially masked or XOR-composited game objects",
+      "confidence": "medium",
+      "evidence": [
+        "An isolated 200000-step gameplay CPU trace recorded all 1141 screen writes at twelve instruction-start addresses between 0xBA59 and 0xBB4C.",
+        "Repeated calls to 0xBA0D and 0xBA8C were observed in the same trace.",
+        "The cluster read 174 distinct addresses in page 0xD000 and 191 in page 0xF000 during this diagnostic run; their data layout is not yet known.",
+        "Private local static inspection of those reachable paths supports read/modify/write operations into display memory; no assembly is stored here."
+      ],
+      "unknowns": [
+        "Exact routine boundaries and whether the calls draw sprites, background, or both",
+        "Per-object mask and attribute data layouts",
+        "Behavior with original frame interrupts and input timing"
+      ]
+    }
+  ]
+}

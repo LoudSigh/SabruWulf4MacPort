@@ -28,9 +28,9 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Preconditions**: Verify the SHA-256 and 48K model of `SNAPSHOTS/Snapshot.z80`; load it with a known-hash ROM in the emulator that produced it.
 - **Steps**:
   1. Confirm the 256×192 menu renders with `0` as the start option.
-  2. Record frame-indexed keyboard/joystick actions and FE input reads while selecting controls and starting the game.
+  2. Wait for the captured ULA pulse/delay segment to finish, then record frame-indexed keyboard/joystick actions and FE input reads while selecting controls and starting the game.
   3. Save a new snapshot during visible gameplay and compare RAM/frame hashes on repeated replay.
-- **Expected Result**: Gameplay screen and code state transition are reproducible. If the emulator ignores inputs, diagnose its input/resume path rather than treating menu RAM as a gameplay trace.
+- **Expected Result**: Gameplay screen and code state transition are reproducible. If the emulator does not reach keyboard polling or ignores inputs after reaching it, diagnose its input/resume path rather than treating menu RAM as a gameplay trace.
 - **Edge Cases / Variants**: Different ROM, pause/joystick selection, short and held 0-key presses.
 
 ### TC-002B: Compare menu and in-game captures

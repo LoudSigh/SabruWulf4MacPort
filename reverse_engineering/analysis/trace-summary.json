@@ -35,6 +35,19 @@
       "uniqueRAMWriteAddresses": 317,
       "screenWriteEvents": 1141,
       "otherRAMWriteEvents": 12429,
+      "screenWritePCCluster": {
+        "start": "0xBA59",
+        "endInclusive": "0xBB4C",
+        "events": 1141,
+        "distinctWriterPCs": 12
+      },
+      "candidateRendererNonScreenReadPages": {
+        "0x5000": 8,
+        "0x9000": 53,
+        "0xC000": 44,
+        "0xD000": 174,
+        "0xF000": 191
+      },
       "candidateInstructionStartsBy4KiBPage": {
         "0x5000": 1,
         "0x9000": 220,
@@ -46,8 +59,10 @@
   ],
   "interpretation": [
     "Counts cover instruction entry addresses, not byte lengths or complete code ranges.",
+    "Candidate renderer source reads include data, table and workspace reads; page counts do not by themselves identify sprite tables.",
     "The 0x5CB0 execution address is outside the ULA bitmap and attribute regions.",
     "This exploratory trace omits frame interrupts and accurate timing; write events are not confirmed original gameplay events.",
+    "A separate bounded 1000000-step menu-only diagnostic remained in the same small delay/pulse segment (58 unique starts, final PC 0xBDA4); this does not demonstrate the full menu control loop.",
     "No instruction bytes, assembly listings, screenshot pixels or original media are stored in this metadata."
   ]
 }

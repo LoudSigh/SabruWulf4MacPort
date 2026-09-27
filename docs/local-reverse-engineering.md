@@ -24,9 +24,11 @@ Only if you need a **private** disassembler input, export the RAM explicitly int
 swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift reverse_engineering/tools/SnapshotExport.swift -o "$OUT/SnapshotExport"
 "$OUT/SnapshotExport" SNAPSHOTS/Snapshot_GamePlay.z80
 git check-ignore reverse_engineering/private/snapshot-803e4197989c-48k.bin
+"$OUT/SnapshotExport" SNAPSHOTS/Snapshot_GamePlay.z80 --screen "$ROM"
+git check-ignore reverse_engineering/private/snapshot-803e4197989c-screen.png
 ```
 
-The export must be exactly 49,152 bytes and have SHA-256 `6de170c1b2518c82c5bfefc0f7dbfc8b8766097e020950d51b01baf045064864`. `SnapshotExport` refuses to run outside a repository root containing the private-directory ignore rule. It never writes into tracked paths. On this Mac `z80dasm` 1.2.0 is available as a *separate command-line tool*; for example, a local-only exploratory pass over `9000-BFFF` can be made with:
+The RAM export must be exactly 49,152 bytes and have SHA-256 `6de170c1b2518c82c5bfefc0f7dbfc8b8766097e020950d51b01baf045064864`. The optional `--screen` output is a 256×192 PNG for **private visual inspection only**, not a public app resource; both menu and gameplay screens were tested. `SnapshotExport` refuses to run outside a repository root containing the private-directory ignore rule. It never writes into tracked paths. On this Mac `z80dasm` 1.2.0 is available as a *separate command-line tool*; for example, a local-only exploratory pass over `9000-BFFF` can be made with:
 
 ```sh
 umask 077
@@ -36,3 +38,5 @@ git check-ignore reverse_engineering/private/gameplay-9000-bfff-unverified.dis
 ```
 
 This **blind pass also interprets data as instructions**. Its labels and any self-modifying-code warnings are not proof of actual code or behavior. Confirm routines against the executed-PC trace, RAM writes and future controlled input captures before naming them. Neither private listing nor raw exported RAM belongs in a commit or pull request; public analysis should contain only derived hashes, numeric metadata and independently worded findings.
+
+The current local analysis exported the complete 49,152-byte RAM image into `reverse_engineering/private/` and produced two **private, unverified** passes: a `6000-FFFF` listing (33,343 lines) and a focused `9000-BFFF` listing (8,654 lines). Both remain ignored, and neither is being treated as proof that every byte is an instruction. A candidate ULA pulse/delay segment observed around the menu snapshot PC is described only at a high level in [functions.json](../reverse_engineering/analysis/functions.json), not reproduced as assembly.
