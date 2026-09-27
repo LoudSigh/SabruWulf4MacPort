@@ -100,6 +100,40 @@
       "redistributionPermission": "unknown",
       "mayEnterSourceControl": false,
       "verifiedAgainstThisTape": false
+    },
+    {
+      "id": "sabre-wulf-workspace-sna",
+      "relativePath": "SNAPSHOTS/Sabre Wulf (1984)(Ultimate Play The Game).sna",
+      "location": "local workspace, ignored by Git",
+      "format": "SNA snapshot",
+      "byteLength": 49179,
+      "sha256": "dcc35fc21803f25cf097d05b7bde7d9d5d8453e53c6fd1c04d89382417dc8897",
+      "origin": "User-identified workspace snapshot, byte-identical to sabre-wulf-candidate-sna",
+      "redistributionPermission": "unknown",
+      "mayEnterSourceControl": false,
+      "snapshotInspection": {
+        "model": "48K",
+        "pc": "0x0000",
+        "screenRamSha256": "71c642b31e5890a15ef92f3cbeba34edfb6e2e9f63079ecbda13a89d426f7d8b",
+        "bitmapNonzeroBytes": 0,
+        "framesTested": 50,
+        "playableFrameObserved": false
+      },
+      "playableStateVerified": false
+    },
+    {
+      "id": "sabre-wulf-europe-visual-reference",
+      "relativePath": "SNAPSHOTS/Sabre Wulf (Europe).mp4",
+      "location": "local workspace, ignored by Git",
+      "format": "MP4 video",
+      "byteLength": 3756811,
+      "sha256": "0eefbd0ee6b33b03268609fbc7ac2f84e0cb53f6cd7e868ef6fee1d1caee38c9",
+      "origin": "Existing workspace gameplay clip showing a Spectrum-style game scene; relationship to the exact TZX revision unverified",
+      "redistributionPermission": "unknown",
+      "mayEnterSourceControl": false,
+      "observedDurationSeconds": 30.281833,
+      "observedFrameSize": [980, 720],
+      "referenceType": "visual observation only; not a RAM image or source disassembly"
     }
   ]
 }
