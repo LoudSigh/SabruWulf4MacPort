@@ -1,0 +1,541 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1BE9CA69777F16CCAE51D00B /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = 81380A0D818A9B8D249614F5 /* GameCore */; };
+		3FCF5D507D1DA0B93EFE4E2C /* MacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88AE83957BF798D49B1BFBE2 /* MacApp.swift */; };
+		54EA0B735764C8D48FDDA54F /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70BF60AB3A9E766EA48ED1EA /* GameView.swift */; };
+		6B5E5928F8326E7A516F0F4C /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70BF60AB3A9E766EA48ED1EA /* GameView.swift */; };
+		B20F01FB71FB9EEDBD736E37 /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6A3DDD96D3388186B2364D84 /* GameCore */; };
+		C706D221DCE449B15F834F40 /* SpatialApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD38D058C99BC5B4B247C4E /* SpatialApp.swift */; };
+		CC45A25CFA19977D480F6099 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70BF60AB3A9E766EA48ED1EA /* GameView.swift */; };
+		E0DA7F293ED75C9DFF5F3088 /* MobileApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81641358D14DCDD94CD819F7 /* MobileApp.swift */; };
+		F13A9BBA24D871F866FD3BDE /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = 56B9AC07F77D6360CBA0807E /* GameCore */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0115DCC47178D1EC4F762157 /* SabreWulfVision.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SabreWulfVision.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		223C65FD8DBB5F2A73C45BF4 /* SabreWulfiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SabreWulfiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5CD38D058C99BC5B4B247C4E /* SpatialApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialApp.swift; sourceTree = "<group>"; };
+		70BF60AB3A9E766EA48ED1EA /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
+		81641358D14DCDD94CD819F7 /* MobileApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileApp.swift; sourceTree = "<group>"; };
+		88AE83957BF798D49B1BFBE2 /* MacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacApp.swift; sourceTree = "<group>"; };
+		B5813599A5C81266D5E75C3E /* SabreWulfMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SabreWulfMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C212AF6319AC7ED62531E859 /* SabreWulf4MacPort */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SabreWulf4MacPort; path = .; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		79AB9ED6C60A252FA4FA08E7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B20F01FB71FB9EEDBD736E37 /* GameCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CE6F4ACBF1EAF2EC714450D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F13A9BBA24D871F866FD3BDE /* GameCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B7B55EC6E2CAAD66F746EB9A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BE9CA69777F16CCAE51D00B /* GameCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		27888269F417D2F812F3C9EA /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				C212AF6319AC7ED62531E859 /* SabreWulf4MacPort */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		58E4E3AFD51B05CD8E65F070 = {
+			isa = PBXGroup;
+			children = (
+				80945C12F5B9B22DFAAD4593 /* iOS */,
+				88491606378A3B7E2566CB57 /* macOS */,
+				27888269F417D2F812F3C9EA /* Packages */,
+				843F9BD2F3A39BFDA907E6B0 /* Shared */,
+				EEBBA2136D705AC1318B43EA /* visionOS */,
+				92062CF0E35313C15E417C11 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		80945C12F5B9B22DFAAD4593 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				81641358D14DCDD94CD819F7 /* MobileApp.swift */,
+			);
+			name = iOS;
+			path = Apps/iOS;
+			sourceTree = "<group>";
+		};
+		843F9BD2F3A39BFDA907E6B0 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				70BF60AB3A9E766EA48ED1EA /* GameView.swift */,
+			);
+			name = Shared;
+			path = Apps/Shared;
+			sourceTree = "<group>";
+		};
+		88491606378A3B7E2566CB57 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				88AE83957BF798D49B1BFBE2 /* MacApp.swift */,
+			);
+			name = macOS;
+			path = Apps/macOS;
+			sourceTree = "<group>";
+		};
+		92062CF0E35313C15E417C11 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				223C65FD8DBB5F2A73C45BF4 /* SabreWulfiOS.app */,
+				B5813599A5C81266D5E75C3E /* SabreWulfMac.app */,
+				0115DCC47178D1EC4F762157 /* SabreWulfVision.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EEBBA2136D705AC1318B43EA /* visionOS */ = {
+			isa = PBXGroup;
+			children = (
+				5CD38D058C99BC5B4B247C4E /* SpatialApp.swift */,
+			);
+			name = visionOS;
+			path = Apps/visionOS;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1CACCCBF0DE80BD6435F0F55 /* SabreWulfMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0D8F81F59C67647314F5B0DA /* Build configuration list for PBXNativeTarget "SabreWulfMac" */;
+			buildPhases = (
+				A52ED1FD64051D7527FAA57A /* Sources */,
+				B7B55EC6E2CAAD66F746EB9A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SabreWulfMac;
+			packageProductDependencies = (
+				81380A0D818A9B8D249614F5 /* GameCore */,
+			);
+			productName = SabreWulfMac;
+			productReference = B5813599A5C81266D5E75C3E /* SabreWulfMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		54AAC06963F9EFE490E9D7DF /* SabreWulfiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F06FB675E5957F59F275AD5D /* Build configuration list for PBXNativeTarget "SabreWulfiOS" */;
+			buildPhases = (
+				6693FCE7F2F77EDF1D9A7014 /* Sources */,
+				9CE6F4ACBF1EAF2EC714450D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SabreWulfiOS;
+			packageProductDependencies = (
+				56B9AC07F77D6360CBA0807E /* GameCore */,
+			);
+			productName = SabreWulfiOS;
+			productReference = 223C65FD8DBB5F2A73C45BF4 /* SabreWulfiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		DEEF9CF2326C9D10813A47CE /* SabreWulfVision */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 711FAF63DF3FF4CE6A953F1A /* Build configuration list for PBXNativeTarget "SabreWulfVision" */;
+			buildPhases = (
+				05E37CC1BFAE202F46781542 /* Sources */,
+				79AB9ED6C60A252FA4FA08E7 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SabreWulfVision;
+			packageProductDependencies = (
+				6A3DDD96D3388186B2364D84 /* GameCore */,
+			);
+			productName = SabreWulfVision;
+			productReference = 0115DCC47178D1EC4F762157 /* SabreWulfVision.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		39A2E466B4C709CADAFA6D40 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = C4EF8E0EB09F46283BA4F7ED /* Build configuration list for PBXProject "SabreWulf" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 58E4E3AFD51B05CD8E65F070;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7AFAA22F1CEAACE0AB240250 /* XCLocalSwiftPackageReference "." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 92062CF0E35313C15E417C11 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1CACCCBF0DE80BD6435F0F55 /* SabreWulfMac */,
+				54AAC06963F9EFE490E9D7DF /* SabreWulfiOS */,
+				DEEF9CF2326C9D10813A47CE /* SabreWulfVision */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		05E37CC1BFAE202F46781542 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6B5E5928F8326E7A516F0F4C /* GameView.swift in Sources */,
+				C706D221DCE449B15F834F40 /* SpatialApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6693FCE7F2F77EDF1D9A7014 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CC45A25CFA19977D480F6099 /* GameView.swift in Sources */,
+				E0DA7F293ED75C9DFF5F3088 /* MobileApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A52ED1FD64051D7527FAA57A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				54EA0B735764C8D48FDDA54F /* GameView.swift in Sources */,
+				3FCF5D507D1DA0B93EFE4E2C /* MacApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2D447B0164986A375FFA56B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		51FA96A29D71119B0CC4C3C2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Sabre Wulf";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.example.SabreWulfMac;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		54A4C07A21520899F0E220B3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Sabre Wulf";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.example.SabreWulfiOS;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		759177E40BC173E64DC4F958 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Sabre Wulf";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.example.SabreWulfiOS;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		9798ABC8BA2461B5E2098D6A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Sabre Wulf";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.example.SabreWulfVision;
+				SDKROOT = xros;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		CD8FE3291E57C8043787715E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Sabre Wulf";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				PRODUCT_BUNDLE_IDENTIFIER = org.example.SabreWulfMac;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D23EE8B719AB02A4D2CB1195 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		D3041B6060DDB3D82777A525 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Sabre Wulf";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.example.SabreWulfVision;
+				SDKROOT = xros;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0D8F81F59C67647314F5B0DA /* Build configuration list for PBXNativeTarget "SabreWulfMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CD8FE3291E57C8043787715E /* Debug */,
+				51FA96A29D71119B0CC4C3C2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		711FAF63DF3FF4CE6A953F1A /* Build configuration list for PBXNativeTarget "SabreWulfVision" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D3041B6060DDB3D82777A525 /* Debug */,
+				9798ABC8BA2461B5E2098D6A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C4EF8E0EB09F46283BA4F7ED /* Build configuration list for PBXProject "SabreWulf" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D23EE8B719AB02A4D2CB1195 /* Debug */,
+				2D447B0164986A375FFA56B9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F06FB675E5957F59F275AD5D /* Build configuration list for PBXNativeTarget "SabreWulfiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				759177E40BC173E64DC4F958 /* Debug */,
+				54A4C07A21520899F0E220B3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		7AFAA22F1CEAACE0AB240250 /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		56B9AC07F77D6360CBA0807E /* GameCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GameCore;
+		};
+		6A3DDD96D3388186B2364D84 /* GameCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GameCore;
+		};
+		81380A0D818A9B8D249614F5 /* GameCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GameCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 39A2E466B4C709CADAFA6D40 /* Project object */;
+}

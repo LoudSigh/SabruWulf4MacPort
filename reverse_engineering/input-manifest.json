@@ -19,6 +19,21 @@
         "parsedDataBlocks": 5,
         "headerNames": ["SABRE"]
       },
+      "structureVerification": {
+        "tool": "Tools/TapeInventory.swift",
+        "structuralBlocks": 204,
+        "blockIds": ["0x10", "0x12", "0x13", "0x14", "0x21", "0x22", "0x32"],
+        "standardBlockChecksumsValid": 2,
+        "pureDataBlocksWithZeroXor": 3,
+        "requiresPulseTiming": true,
+        "programHeader": {
+          "name": "SABRE",
+          "declaredDataLength": 1562,
+          "autostartLine": 0,
+          "variableAreaOffset": 1182
+        },
+        "codeHeadersFound": 0
+      },
       "bootVerified": false
     }
   ]

@@ -1,0 +1,56 @@
+name: SabreWulf
+options:
+  minimumXcodeGenVersion: 2.46.0
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    CODE_SIGNING_ALLOWED: NO
+packages:
+  GameCore:
+    path: .
+targets:
+  SabreWulfMac:
+    type: application
+    platform: macOS
+    deploymentTarget: "15.0"
+    sources:
+      - Apps/Shared
+      - Apps/macOS
+    dependencies:
+      - package: GameCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.SabreWulfMac
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Sabre Wulf
+        ENABLE_HARDENED_RUNTIME: YES
+  SabreWulfiOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - Apps/Shared
+      - Apps/iOS
+    dependencies:
+      - package: GameCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.SabreWulfiOS
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Sabre Wulf
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1,2"
+  SabreWulfVision:
+    type: application
+    platform: visionOS
+    deploymentTarget: "2.0"
+    sources:
+      - Apps/Shared
+      - Apps/visionOS
+    dependencies:
+      - package: GameCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.example.SabreWulfVision
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Sabre Wulf

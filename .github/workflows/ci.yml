@@ -1,0 +1,32 @@
+name: Rights-safe tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  package-and-inventory:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test shared Swift package
+        run: swift test
+      - name: Test TZX inventory with synthetic data
+        run: |
+          swiftc -parse-as-library Tools/TapeInventory.swift -o "$RUNNER_TEMP/TapeInventory"
+          "$RUNNER_TEMP/TapeInventory" --self-test
+
+  native-app-builds:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install project generator
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        run: xcodegen generate
+      - name: Build macOS app
+        run: xcodebuild -quiet -project SabreWulf.xcodeproj -scheme SabreWulfMac -configuration Debug -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO build
+      - name: Build iOS simulator app
+        run: xcodebuild -quiet -project SabreWulf.xcodeproj -scheme SabreWulfiOS -configuration Debug -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+      - name: Build visionOS simulator app
+        run: xcodebuild -quiet -project SabreWulf.xcodeproj -scheme SabreWulfVision -configuration Debug -destination 'generic/platform=visionOS Simulator' CODE_SIGNING_ALLOWED=NO build
