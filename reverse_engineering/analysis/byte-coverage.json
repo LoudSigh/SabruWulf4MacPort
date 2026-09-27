@@ -20,5 +20,7 @@
     {"address": "0xBDAF", "evidence": "menu snapshot PC; instruction extent unclassified"},
     {"address": "0xB8A1", "evidence": "gameplay snapshot PC; instruction extent unclassified"}
   ],
+  "candidateInstructionStartsInIsolatedGameplayTrace": 1083,
+  "candidateInstructionStartsClassifiedAsCode": false,
   "note": "Only the standard display layout is classified. PCs mark execution points, not routine boundaries. More dynamic trace evidence is required before labeling instruction bytes or other data."
 }

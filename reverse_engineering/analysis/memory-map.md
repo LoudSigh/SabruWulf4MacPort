@@ -53,3 +53,7 @@ The user later supplied a distinct, same-machine in-game snapshot, SHA-256 `803e
 | `F000` | 0 |
 
 **Interpretation limit:** identical pages are candidate static game code/data, not proven code. Differences outside the screen mark potential state/tables/stack/animation; two captures alone cannot separate these. `B8A1` is an observed PC, not a function name. The RAM classifications in [byte-coverage.json](./byte-coverage.json) cover only the known 6,912 display bytes; all other bytes are deliberately `unknown`.
+
+## Bounded diagnostic trace
+
+The private [`SnapshotTrace.swift`](../tools/SnapshotTrace.swift) runs the existing backup's Z80 CPU on a copy of the restored memory **without frame interrupts or accurate I/O timing**. A 200,000-step exploratory run from the in-game capture saw 1,083 distinct instruction starts, 74 distinct CALL edges and writes to 317 RAM addresses. Execution was concentrated in `9000-BFFF` plus one start at `5CB0` (outside display RAM). The corresponding menu trace reached only 58 distinct starts and four RAM write addresses. Aggregate counts and provenance are in [trace-summary.json](./trace-summary.json); complete numeric traces, raw RAM and preliminary assembly listings remain in the ignored `reverse_engineering/private/` directory only. These are **not** verified whole-game control flow or complete classification.

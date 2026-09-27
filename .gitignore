@@ -9,6 +9,13 @@ DerivedData/
 local-inputs/
 SNAPSHOTS/
 reverse_engineering/generated/
+reverse_engineering/private/
+*.asm
+*.dis
+*.lst
+*.skool
+*.ram
+*.bin
 *.tap
 *.tzx
 *.sna

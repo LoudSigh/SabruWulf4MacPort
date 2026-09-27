@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "mode": "isolated Z80 CPU diagnostic; no frame interrupts or accurate I/O timing",
+  "romSha256": "d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42",
+  "inputSnapshots": [
+    {
+      "role": "menu",
+      "sha256": "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+      "initialPC": "0xBDAF",
+      "finalPC": "0xBDA4",
+      "steps": 200000,
+      "cycles": 2569318,
+      "stopReason": "budget_exhausted",
+      "uniqueInstructionStartsInRAM": 58,
+      "uniqueCallEdges": 1,
+      "returns": 5,
+      "uniqueRAMWriteAddresses": 4,
+      "screenWriteEvents": 0,
+      "otherRAMWriteEvents": 966,
+      "candidateInstructionStartsBy4KiBPage": {
+        "0xB000": 58
+      }
+    },
+    {
+      "role": "gameplay",
+      "sha256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+      "initialPC": "0xB8A1",
+      "finalPC": "0xB88B",
+      "steps": 200000,
+      "cycles": 1696706,
+      "stopReason": "budget_exhausted",
+      "uniqueInstructionStartsInRAM": 1083,
+      "uniqueCallEdges": 74,
+      "returns": 3018,
+      "uniqueRAMWriteAddresses": 317,
+      "screenWriteEvents": 1141,
+      "otherRAMWriteEvents": 12429,
+      "candidateInstructionStartsBy4KiBPage": {
+        "0x5000": 1,
+        "0x9000": 220,
+        "0xA000": 329,
+        "0xB000": 533
+      },
+      "addressBelow0x6000": "0x5CB0"
+    }
+  ],
+  "interpretation": [
+    "Counts cover instruction entry addresses, not byte lengths or complete code ranges.",
+    "The 0x5CB0 execution address is outside the ULA bitmap and attribute regions.",
+    "This exploratory trace omits frame interrupts and accurate timing; write events are not confirmed original gameplay events.",
+    "No instruction bytes, assembly listings, screenshot pixels or original media are stored in this metadata."
+  ]
+}
