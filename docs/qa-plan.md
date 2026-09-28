@@ -185,6 +185,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Native actor matches the manual reference for 279 frames. At frame 280 a moving entity near X=85/Y=130 triggers source player damage; native enemy logic is still absent. The route is **not independently certified** because its earlier westward portion has a different RNG/enemy path in the full emulator.
 - **Edge Cases / Variants**: East edge threshold, seven-frame redraw pause, missing room geometry, early action changes and damage-state timing.
 
+### TC-016: Private sprite silhouette preview
+- **Priority**: P2
+- **Preconditions**: An authorized local `SNAPSHOTS/graphics/downloaded/` folder with previously checked `10.png` and `15.png`; private world imported.
+- **Steps**:
+  1. Import the folder with “Preview private sprite silhouettes (optional)”.
+  2. Inspect both labeled thumbnails while stepping the measured movement preview and resizing the scene.
+  3. Repeat with an empty folder and with samples of incorrect dimensions.
+- **Expected Result**: Only correctly sized local samples appear, with no pixel files in the app bundle or Git. Empty/entirely invalid input reports an error, while a single correctly sized sample may be previewed alone. The importer does not authenticate artwork content. Sprite inspection does not affect native actor state; room geometry retains its 4:3 aspect.
+- **Edge Cases / Variants**: iOS/visionOS Files provider permissions, VoiceOver thumbnail labels and import after replacing the world data.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

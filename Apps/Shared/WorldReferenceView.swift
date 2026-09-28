@@ -11,6 +11,14 @@ import UIKit
 private typealias WorldRaster = UIImage
 #endif
 
+private enum SpriteImportError: Error, LocalizedError {
+    case noUsableSamples
+
+    var errorDescription: String? {
+        "No correctly sized silhouette samples (10.png or 15.png) were found in the selected folder."
+    }
+}
+
 struct WorldReferenceView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var world: WorldReference?
@@ -20,6 +28,8 @@ struct WorldReferenceView: View {
     @State private var importError: String?
     @State private var art: [Int: WorldRaster] = [:]
     @State private var artStatus: String?
+    @State private var importingSprites = false
+    @State private var spriteSamples: [Int: WorldRaster] = [:]
     @State private var importingReplay = false
     @State private var replay: ReferenceReplay?
     @State private var replayFrameValue = 0.0
@@ -138,6 +148,29 @@ struct WorldReferenceView: View {
                     artStatus ?? "Markers and measured outlines (if available) show placements; no original art is bundled."
                 )
                 .font(.caption)
+                Button("Preview private sprite silhouettes (optional)") {
+                    importingSprites = true
+                }
+                .buttonStyle(.bordered)
+                if !spriteSamples.isEmpty {
+                    HStack(alignment: .bottom) {
+                        ForEach([16, 21], id: \.self) { index in
+                            if let sample = spriteSamples[index] {
+                                VStack {
+                                    image(for: sample)
+                                        .resizable()
+                                        .interpolation(.none)
+                                        .frame(width: 64, height: sample.size.height)
+                                        .accessibilityLabel("Private sprite sample \(index)")
+                                    Text("Sample \(index)")
+                                        .font(.caption)
+                                }
+                            }
+                        }
+                    }
+                    Text("Local shape samples only; palette, animation and room placement are not validated.")
+                        .font(.caption)
+                }
             }
             if let importError {
                 Text(importError)
@@ -264,7 +297,8 @@ struct WorldReferenceView: View {
                         )
                     }
                 }
-                .frame(height: 180)
+                .aspectRatio(256.0 / 192.0, contentMode: .fit)
+                .frame(maxWidth: 470)
                 .accessibilityLabel(
                     roomSummary(
                         template: world.roomType(at: selected) ?? 0,
@@ -293,6 +327,7 @@ struct WorldReferenceView: View {
                 selected = WorldReference.capturedGameplayRoom
                 art = [:]
                 artStatus = nil
+                spriteSamples = [:]
                 replay = nil
                 entityTrace = nil
                 replayFrameValue = 0
@@ -337,6 +372,41 @@ struct WorldReferenceView: View {
                 artStatus =
                     "Loaded \(imported.count) of \(addresses.count) locally supplied images. "
                     + "Overlaps are approximated; original composition is not yet verified."
+                importError = nil
+            } catch {
+                importError = error.localizedDescription
+            }
+        }
+        .fileImporter(
+            isPresented: $importingSprites,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first, world != nil else {
+                    throw CocoaError(.fileNoSuchFile)
+                }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                var samples: [Int: WorldRaster] = [:]
+                for (index, filename, width, height) in [
+                    (16, "10.png", 64, 84), (21, "15.png", 64, 88)
+                ] {
+                    let file = url.appendingPathComponent(filename)
+                    guard let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                          size <= 200_000,
+                          let data = try? Data(contentsOf: file),
+                          let image = WorldRaster(data: data),
+                          image.size.width == CGFloat(width),
+                          image.size.height == CGFloat(height) else {
+                        continue
+                    }
+                    samples[index] = image
+                }
+                guard !samples.isEmpty else {
+                    throw SpriteImportError.noUsableSamples
+                }
+                spriteSamples = samples
                 importError = nil
             } catch {
                 importError = error.localizedDescription
