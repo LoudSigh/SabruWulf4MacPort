@@ -554,8 +554,23 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   12. Continue down/right from frame 983; require two 1,300/1,300 RAM-parity runs with no injury and no room transition. Check the 260-position static component has no east/south edge rather than interpreting nonzero velocity as movement.
   13. Check the north edge is also absent from that component; confirm a T-assisted west return at frame 1008 (1008/1008 RAM frames), no hazard and distance 4→5. Do not generalize this local dead end to the entire maze.
   14. From the exact frame-1008 return, verify one further T-assisted west transition at frame 1075 (1075/1075 RAM frames), no hazard and distance 5→6; do not mistake static edge length for a timing rule.
+  15. Check a pose-aware static graph against five independently reached transitions/settled poses before searching for the record; do not classify it unreachable while west arrival has not settled or south rebase remains unverified.
+  16. Continue T-only after the frame-1075 west crossing; locate the rebase at frame 1082 and require three consecutive stable room/position/velocity frames before rerunning the static graph. At frame 1090 only one was observed.
+  17. Extend the same source path to first three-frame settlement at 1148 with 1148/1148 RAM parity; rerun the bounded graph from that exact pose, then keep a negative result provisional until south-entry semantics are validated.
+  18. Add only the independently measured, pose-specific south entry from a 200/200 RAM-parity round trip. Validate 6/6 known transitions; even if 48 states/256,320 sampled positions find no item route, do not claim gameplay unreachability across different life phases or collision semantics.
 - **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown. A two-pixel east step stalls at one-pixel clearance; correcting an initial offset permits a source-verified north exit, not a collectible contact.
 - **Edge Cases / Variants**: Different key timing, player count, repeated restart, item disappearance and renderer overlap.
+
+### TC-049: Packed-BCD score arithmetic without assuming awards
+- **Priority**: P1
+- **Preconditions**: Verified gameplay snapshot/ROM and four private T/no-T/A/W-Q source schedules.
+- **Steps**:
+  1. Supply active-player and two packed-BCD operand bytes at each executed score call; compare all three resulting source score bytes to `CapturedScoreStep`.
+  2. Require 25/25 matching calls and 2,430/2,430 full RAM frames; keep all score buffers/point samples private.
+  3. Test decimal carry, six-digit overflow, invalid BCD rejection and synthetic 2UP selection without claiming 2UP source parity.
+  4. Treat pickup point values, award triggers and visual rendering as separate source tests.
+- **Expected Result**: Pure source-backed arithmetic matches; no claim that the score calls during injury paths represent item pickups.
+- **Edge Cases / Variants**: Active player switch, leading zeros, low/middle carry, maximum score, non-BCD input and score update after zero lives.
 
 ## Regression cadence and coverage
 

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "observedRoutinePC": 46505,
+  "activePlayerByteAddress": "0x969E",
+  "packedScoreByteRanges": {
+    "firstPlayer": "0x9698-0x969A",
+    "secondPlayer": "0x969B-0x969D"
+  },
+  "rule": "Add two supplied packed-BCD point bytes to the selected player's three packed-BCD score bytes, decimal-adjusting each byte and discarding overflow beyond six decimal digits.",
+  "paths": [
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 190, "matchingCalls": 2},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 190, "matchingCalls": 2},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 250, "matchingCalls": 3},
+    {"schedule": "restart-ready-w-q-schedule.json", "frames": 1800, "matchingCalls": 18}
+  ],
+  "totals": {
+    "matchingScoreWrites": 25,
+    "observedScoreWrites": 25,
+    "firstPlayerCalls": 25,
+    "secondPlayerCalls": 0,
+    "matchingFullRAMFrames": 2430
+  },
+  "limits": "These are supplied-operand BCD arithmetic checks on 25 executing source calls; they do not establish why points were awarded, which items score, scoring cadence, 2-player source parity, displayed numeral rendering or victory bonuses. Invalid BCD inputs fail explicitly. No source instruction bytes, recorded point values or private RAM arrays are published."
+}

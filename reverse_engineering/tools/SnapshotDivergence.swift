@@ -20,11 +20,12 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case enemyStateMismatch(frame: Int, expected: [Int], actual: [Int])
     case enemyExpiryMismatch(frame: Int)
     case rngStepMismatch(frame: Int)
+    case scoreMismatch(frame: Int)
 
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--watch-score-entries] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -57,6 +58,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "The measured slot-12 timer-expiry result differs at source frame \(frame)"
         case .rngStepMismatch(let frame):
             "A supplied-operand RNG update differs at source frame \(frame)"
+        case .scoreMismatch(let frame):
+            "The measured packed-BCD score write differs at source frame \(frame)"
         }
     }
 }
@@ -125,6 +128,30 @@ private struct EntityStateWrite: Encodable {
     let address: Int
     let previous: Int
     let value: Int
+}
+
+private struct ScoreEntry: Encodable {
+    let frame: Int
+    let activePlayer: Int
+    let pointsUpper: Int
+    let pointsLower: Int
+    let firstScore: [Int]
+    let secondScore: [Int]
+}
+
+private struct PendingScore {
+    let frame: Int
+    let activePlayer: UInt8
+    let expected: CapturedScoreState
+    var writes = 0
+}
+
+private struct ScoreComparison: Encodable {
+    let calls: Int
+    let matchingCalls: Int
+    let firstPlayerCalls: Int
+    let secondPlayerCalls: Int
+    let frames: [Int]
 }
 
 private struct RNGWrite: Encodable {
@@ -264,6 +291,8 @@ private struct Report: Encodable {
     let actorStateWrites: [ActorStateWrite]?
     let entityStateWrites: [EntityStateWrite]?
     let playerStateWrites: [EntityStateWrite]?
+    let scoreEntries: [ScoreEntry]?
+    let scoreComparison: ScoreComparison?
     let rngFrames: [Int]?
     let rngWrites: [RNGWrite]?
     let contactComparison: ContactComparison?
@@ -360,16 +389,18 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...20).contains(arguments.count),
+            guard (5...22).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--watch-entity-state",
                        "--watch-player-state", "--watch-menu-routines",
+                       "--watch-score-entries",
                        "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
                        "--coverage", "--require-entity-phase-parity",
                        "--require-enemy-expiry-parity",
                        "--require-rng-step-parity",
+                       "--require-score-parity",
                        "--require-enemy-direction-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
@@ -398,6 +429,9 @@ private struct SnapshotDivergence {
                         && options.contains("--require-ram-parity")),
                   !options.contains("--require-rng-step-parity")
                     || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--require-score-parity")
+                    || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
@@ -405,6 +439,7 @@ private struct SnapshotDivergence {
             let watchActorState = options.contains("--watch-actor-state")
             let watchEntityState = options.contains("--watch-entity-state")
             let watchPlayerState = options.contains("--watch-player-state")
+            let watchScoreEntries = options.contains("--watch-score-entries")
             let requireContactParity = options.contains("--require-contact-parity")
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
@@ -414,6 +449,7 @@ private struct SnapshotDivergence {
             let requireEntityPhaseParity = options.contains("--require-entity-phase-parity")
             let requireEnemyExpiryParity = options.contains("--require-enemy-expiry-parity")
             let requireRNGStepParity = options.contains("--require-rng-step-parity")
+            let requireScoreParity = options.contains("--require-score-parity")
             let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
@@ -468,6 +504,12 @@ private struct SnapshotDivergence {
             var actorStateWrites: [ActorStateWrite] = []
             var entityStateWrites: [EntityStateWrite] = []
             var playerStateWrites: [EntityStateWrite] = []
+            var scoreEntries: [ScoreEntry] = []
+            var pendingScore: PendingScore?
+            var matchingScoreCalls = 0
+            var firstPlayerScoreCalls = 0
+            var secondPlayerScoreCalls = 0
+            var scoreFrames: [Int] = []
             var rngFrames: [Int] = []
             var rngWrites: [RNGWrite] = []
             var matchingRAMFrames = 0
@@ -519,6 +561,39 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    if requireScoreParity, cpu.pc == 0xB5A9 {
+                        guard pendingScore == nil else {
+                            throw DivergenceError.scoreMismatch(frame: frame + 1)
+                        }
+                        var expected = CapturedScoreState(
+                            first: try CapturedPackedScore(bytes:
+                                (0x9698...0x969A).map { memory.read(UInt16($0)) }
+                            ),
+                            second: try CapturedPackedScore(bytes:
+                                (0x969B...0x969D).map { memory.read(UInt16($0)) }
+                            )
+                        )
+                        let active = memory.read(0x969E)
+                        try expected.add(
+                            activePlayer: active, pointsUpper: cpu.b, pointsLower: cpu.c
+                        )
+                        pendingScore = PendingScore(
+                            frame: frame + 1, activePlayer: active, expected: expected
+                        )
+                    }
+                    if watchScoreEntries, cpu.pc == 0xB5A9 {
+                        scoreEntries.append(ScoreEntry(
+                            frame: frame + 1,
+                            activePlayer: Int(memory.read(0x969E)),
+                            pointsUpper: Int(cpu.b), pointsLower: Int(cpu.c),
+                            firstScore: (0x9698...0x969A).map {
+                                Int(memory.read(UInt16($0)))
+                            },
+                            secondScore: (0x969B...0x969D).map {
+                                Int(memory.read(UInt16($0)))
+                            }
+                        ))
+                    }
                     if requireRNGStepParity {
                         if cpu.pc == 0x99D6 {
                             pendingRNGStep = PendingRNGStep(
@@ -752,6 +827,10 @@ private struct SnapshotDivergence {
                                     ))
                                 }
                             }
+                            if requireScoreParity, pendingScore != nil,
+                               (0x9698...0x969D).contains(address) {
+                                pendingScore?.writes += 1
+                            }
                             memory.write(address, value)
                         },
                         ioRead: { port in
@@ -766,6 +845,32 @@ private struct SnapshotDivergence {
                     switch result {
                     case .ok(let cost): cycles += cost
                     case .unimplemented: throw DivergenceError.unimplemented
+                    }
+                    if requireScoreParity, let pending = pendingScore,
+                       pending.writes == 3 {
+                        let actual = CapturedScoreState(
+                            first: try CapturedPackedScore(bytes:
+                                (0x9698...0x969A).map { memory.read(UInt16($0)) }
+                            ),
+                            second: try CapturedPackedScore(bytes:
+                                (0x969B...0x969D).map { memory.read(UInt16($0)) }
+                            )
+                        )
+                        guard actual == pending.expected else {
+                            throw DivergenceError.scoreMismatch(frame: pending.frame)
+                        }
+                        matchingScoreCalls += 1
+                        if pending.activePlayer == 0 {
+                            firstPlayerScoreCalls += 1
+                        } else {
+                            secondPlayerScoreCalls += 1
+                        }
+                        scoreFrames.append(pending.frame)
+                        pendingScore = nil
+                    }
+                    if requireScoreParity, let pendingScore,
+                       pendingScore.writes > 3 {
+                        throw DivergenceError.scoreMismatch(frame: pendingScore.frame)
                     }
                     if requireRNGStepParity,
                        instructionAddress == 0x99D7 || instructionAddress == 0x9A2D {
@@ -897,6 +1002,11 @@ private struct SnapshotDivergence {
                     guard pendingRNGStep == nil, refreshCalls > 0, clockCalls > 0 else {
                         throw DivergenceError.rngStepMismatch(frame: count)
                     }
+                    if requireScoreParity {
+                        guard pendingScore == nil, matchingScoreCalls > 0 else {
+                            throw DivergenceError.scoreMismatch(frame: count)
+                        }
+                    }
                 }
                 guard enemyExpiryCalls > 0 else {
                     throw DivergenceError.noEnemyExpiryEvents
@@ -948,6 +1058,14 @@ private struct SnapshotDivergence {
                 actorStateWrites: watchActorState ? actorStateWrites : nil,
                 entityStateWrites: watchEntityState ? entityStateWrites : nil,
                 playerStateWrites: watchPlayerState ? playerStateWrites : nil,
+                scoreEntries: watchScoreEntries ? scoreEntries : nil,
+                scoreComparison: requireScoreParity
+                    ? ScoreComparison(
+                        calls: matchingScoreCalls, matchingCalls: matchingScoreCalls,
+                        firstPlayerCalls: firstPlayerScoreCalls,
+                        secondPlayerCalls: secondPlayerScoreCalls,
+                        frames: scoreFrames
+                    ) : nil,
                 rngFrames: watchActorState ? rngFrames : nil,
                 rngWrites: watchActorState ? rngWrites : nil,
                 contactComparison: requireContactParity

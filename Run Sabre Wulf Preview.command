@@ -375,6 +375,18 @@ for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
         else
             mv "$TEMP_CONTACT" "$PLAYER_ONSET_REPORT"
         fi
+        SCORE_REPORT="$ROOT/$PRIVATE/score-parity-$scenario-190.json"
+        "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
+            --reference-timing --require-ram-parity --require-score-parity \
+            > "$TEMP_CONTACT"
+        if [[ -e "$SCORE_REPORT" ]]; then
+            if ! cmp -s "$SCORE_REPORT" "$TEMP_CONTACT"; then
+                printf 'Existing private score comparison differs: %s\n' "$SCORE_REPORT" >&2
+                exit 1
+            fi
+        else
+            mv "$TEMP_CONTACT" "$SCORE_REPORT"
+        fi
     fi
     RNG_REPORT="$ROOT/$PRIVATE/rng-step-$scenario-190.json"
     "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
@@ -441,6 +453,19 @@ if [[ -e "$FIRE_ONSET_REPORT" ]]; then
     fi
 else
     mv "$TEMP_COMBAT_ENTITY" "$FIRE_ONSET_REPORT"
+fi
+FIRE_SCORE_REPORT="$ROOT/$PRIVATE/score-parity-fire-before-contact-250.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
+    --reference-timing --require-ram-parity --require-score-parity \
+    > "$TEMP_COMBAT_ENTITY"
+if [[ -e "$FIRE_SCORE_REPORT" ]]; then
+    if ! cmp -s "$FIRE_SCORE_REPORT" "$TEMP_COMBAT_ENTITY"; then
+        printf 'Existing extended private score comparison differs: %s\n' "$FIRE_SCORE_REPORT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_COMBAT_ENTITY" "$FIRE_SCORE_REPORT"
 fi
 EXPIRY_REPORT="$ROOT/$PRIVATE/enemy-expiry-fire-before-contact-250.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
@@ -879,6 +904,18 @@ if [[ -e "$REVERSE_LONG_CONTACT" ]]; then
 else
     mv "$TEMP_MENU_CONTACT" "$REVERSE_LONG_CONTACT"
 fi
+REVERSE_SCORE_REPORT="$ROOT/$PRIVATE/score-parity-w-q-1800.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 1800 \
+    --reference-timing --require-ram-parity --require-score-parity \
+    > "$TEMP_MENU_CONTACT"
+if [[ -e "$REVERSE_SCORE_REPORT" ]]; then
+    if ! cmp -s "$REVERSE_SCORE_REPORT" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private W/Q score comparison differs: %s\n' "$REVERSE_SCORE_REPORT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$REVERSE_SCORE_REPORT"
+fi
 printf 'Checking the native post-setup room, position and sprite ID against all four paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
@@ -923,6 +960,12 @@ if ! SABRE_PRIVATE_NEW_GAME_MENU_REPORT="$REVERSE_MENU_ROUTINES" \
     swift test --filter 'CapturedNewGameMenuReturnTests|ReferenceReplayTests/testPrivateLongMenuReplayWhenProvided' \
     > "$ROOT/$PRIVATE/new-game-menu-return-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-menu-return-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_SCORE_REPORT_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedScoreStepTests \
+    > "$ROOT/$PRIVATE/score-step-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/score-step-test.log" >&2
     exit 1
 fi
 printf 'Preparing four private 150-frame held-direction references...\n'

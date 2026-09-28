@@ -163,9 +163,54 @@
       "lifeByteAtExit": 4,
       "staticTwoPixelProposalDidNotPredictTransitionFrames": true
     },
+    "boundedGlobalStaticPreflight": {
+      "originSourceFrame": 1075,
+      "representedCheckedSourceTransitions": [5, 5],
+      "representedCheckedSettledPoses": [5, 5],
+      "exploredRoomEntryPoseStates": 8,
+      "sampledStaticPositions": 43720,
+      "routeToSelectedRecordFound": false,
+      "westEntryPoseFullySettledAtOrigin": false,
+      "southEntryRebaseVerified": false
+    },
+    "westEntrySettlementProbe": {
+      "matchingFullRAMFrames": 1090,
+      "rebaseFrame": 1082,
+      "verifiedTOnlyKeyboardReads": 15,
+      "consecutiveStableRoomPositionVelocityFramesAtStop": 1,
+      "requiredStableFramesForGraph": 3,
+      "injuryOrRecordChangeBeforeStop": false,
+      "graphRerunFromSettledPose": false
+    },
+    "settledWestEntryGraph": {
+      "verifiedSettledPoseFrame": 1148,
+      "matchingFullRAMFrames": 1148,
+      "verifiedTOnlyKeyboardReads": 131,
+      "consecutiveStableRoomPositionVelocityFrames": 3,
+      "injuryOrRecordChangeBeforeSettlement": false,
+      "representedCheckedSourceTransitions": [5, 5],
+      "representedValidatedSettledPoses": 6,
+      "exploredRoomEntryPoseStates": 9,
+      "sampledStaticPositions": 47324,
+      "routeToSelectedRecordFound": false,
+      "southEntryRebaseForThisGraphVerified": false
+    },
+    "singleSouthPoseCalibration": {
+      "independentRoundTripRAMFrames": 200,
+      "sameRoomPairAndTemplates": true,
+      "observedExitPoseStaticallyReachableFromFrame1148": true,
+      "observedEntryPoseFootprintClear": true,
+      "poseSpecificDirectedEdgesAdded": 1,
+      "representedCheckedSourceTransitions": [6, 6],
+      "representedValidatedPoses": 7,
+      "exploredRoomEntryPoseStates": 48,
+      "sampledStaticPositions": 256320,
+      "routeToSelectedRecordFound": false,
+      "sameLifePhaseAsFrame1148": false
+    },
     "fullRAMParityFramesPerAttempt": 900,
     "lifeByteStayedFour": true,
     "interventionPerformed": false
   },
-  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. A source-safe north/east/east sequence through frame 983 reduced target distance to four rooms; the local static component had no east/south/north exit, and west returns at frames 1008 and 1075 worsened distance to six. This is not proof the record room is unreachable by a non-greedy maze route. No item room/contact or sword hit is established. No actor teleport, record values, instruction bytes, images or disassembly are published."
+  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. A source-safe north/east/east sequence through frame 983 reduced target distance to four rooms; the local static component had no east/south/north exit, and west returns at frames 1008 and 1075 worsened distance to six. An offline graph from the settled frame-1148 pose still found no candidate route after adding one source-observed south directed edge from another life phase. Static connectivity is not source gameplay, so this is not proof the record room is unreachable. No item room/contact or sword hit is established. No actor teleport, record values, instruction bytes, images or disassembly are published."
 }
