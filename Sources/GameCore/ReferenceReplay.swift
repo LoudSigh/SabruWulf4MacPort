@@ -19,6 +19,7 @@ public struct ReferenceFrame: Decodable, Sendable {
     public let playerRoomID: Int
     public let playerX: Int
     public let playerY: Int
+    public let playerKind: Int?
     public let reportedLives: Int
 }
 
@@ -80,6 +81,7 @@ public struct ReferenceReplay: Decodable, Sendable {
                 && (0..<256).contains(frame.playerRoomID)
                 && (0..<256).contains(frame.playerX)
                 && (0..<192).contains(frame.playerY)
+                && (frame.playerKind.map { (0...255).contains($0) } ?? true)
                 && (0...9).contains(frame.reportedLives)
         })
         else {

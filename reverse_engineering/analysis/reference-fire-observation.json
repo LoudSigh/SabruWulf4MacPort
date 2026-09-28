@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "schedule": "fire-observation-schedule.json",
+  "frameBoundaryMode": "reference-relative",
+  "framesCompared": 100,
+  "matchingRAMFrames": 100,
+  "matchingScreenFrames": 100,
+  "actorStayedAt": {"roomID": 168, "x": 57, "y": 112},
+  "actorStateCheckpoints": [
+    {"frame": 20, "kind": 21},
+    {"frame": 21, "kind": 42},
+    {"frame": 23, "kind": 45},
+    {"frame": 27, "kind": 40},
+    {"frame": 31, "kind": 41},
+    {"frame": 35, "kind": 47},
+    {"frame": 40, "kind": 41},
+    {"frame": 41, "kind": 20}
+  ]
+}

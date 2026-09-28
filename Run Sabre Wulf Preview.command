@@ -82,7 +82,8 @@ TEMP_ENTITY="$(mktemp "$ROOT/$PRIVATE/.entity-XXXXXXXX.json")"
 TEMP_EAST="$(mktemp "$ROOT/$PRIVATE/.east-XXXXXXXX.json")"
 TEMP_WEST_REFERENCE="$(mktemp "$ROOT/$PRIVATE/.west-reference-XXXXXXXX.json")"
 TEMP_ENTITY_REFERENCE="$(mktemp "$ROOT/$PRIVATE/.entity-reference-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE"' EXIT
+TEMP_FIRE="$(mktemp "$ROOT/$PRIVATE/.fire-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -152,6 +153,21 @@ if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache
     exit 1
 fi
 "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$WEST_REFERENCE"
+
+printf 'Preparing a verified private 100-frame T-key actor-state observation...\n'
+FIRE_REPLAY="$ROOT/$PRIVATE/replay-fire-reference-100.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/fire-observation-schedule.json 100 \
+    --reference-timing --actor-kind > "$TEMP_FIRE"
+if [[ -e "$FIRE_REPLAY" ]]; then
+    if ! cmp -s "$FIRE_REPLAY" "$TEMP_FIRE"; then
+        printf 'Existing private fire observation differs; refusing to overwrite %s\n' "$FIRE_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_FIRE" "$FIRE_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$FIRE_REPLAY"
 
 printf 'Preparing a private provisional east-return reference...\n'
 EAST_RETURN="$ROOT/$PRIVATE/replay-east-return-279.json"
@@ -239,6 +255,7 @@ printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TR
 printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"
 printf 'Import %s for a provisional west exit; an enemy changes the independent emulator actor state before late Q.\n' "$WEST_EXIT"
 printf 'Import %s for the same schedule aligned to the full emulator (enemy contact included in the recorded state).\n' "$WEST_REFERENCE"
+printf 'Import %s to observe T-key actor state without claiming native combat.\n' "$FIRE_REPLAY"
 printf 'Import %s for a provisional east return; a moving enemy blocks the source at frame 280.\n' "$EAST_RETURN"
 printf 'Import %s with the legacy west replay to compare different enemy paths, or %s with the aligned replay to inspect matching paths.\n' "$ENTITY_TRACE" "$ENTITY_REFERENCE"
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
