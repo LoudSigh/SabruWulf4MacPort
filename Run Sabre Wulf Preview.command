@@ -326,6 +326,14 @@ for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
         mv "$TEMP_CONTACT" "$CONTACT_REPORT"
     fi
 done
+printf 'Checking a narrow source enemy motion step against three private encounter paths...\n'
+if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
+    swift test --filter 'CapturedEntityMotionTests/testPrivateEnemyMovesAgainstReferenceWhenProvided' \
+    > "$ROOT/$PRIVATE/entity-motion-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/entity-motion-test.log" >&2
+    exit 1
+fi
 printf 'Preparing a private 600-frame injury and remaining-life observation...\n'
 LONG_REPLAY="$ROOT/$PRIVATE/replay-no-fire-600.json"
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \

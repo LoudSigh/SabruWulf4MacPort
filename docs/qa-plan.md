@@ -337,6 +337,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Only the published W→E input change is accepted. Later actor bitmap selection is explicitly unverified; no dynamic AI or general mixed-input capability is claimed.
 - **Edge Cases / Variants**: Input release during coasting, short imported replay, missing private sprite atlas, transition to other rooms.
 
+### TC-030: One source-driven enemy motion update
+- **Priority**: P1
+- **Preconditions**: Verified version-2 private world and three 190-frame T/no-T/A replay/entity-trace pairs; source `CapturedEntityMotion` available.
+- **Steps**:
+  1. For slot 12 in room 152, feed the observed signed X velocities −48/+48/+96 and Y velocity +80 to the pure source-update helper only on frames when the verified reference entity changes position.
+  2. Compare all changed X/Y values with the full emulator trace: require 8/8 T, 2/2 no-T and 4/4 A updates.
+  3. Confirm Y moves from 130 to 135 once, then static room collision holds it at 135; reject unsupported kinds, rooms and velocities explicitly.
+  4. Ensure the native measured preview still does **not** autonomously spawn entities, choose RNG directions or convert contact directly to damage.
+- **Expected Result**: **14/14** bounded, caller-driven source movement updates match. This proves a per-update motion rule, not enemy AI timing, RNG, all room collisions or a playable combat system.
+- **Edge Cases / Variants**: Unsigned wraparound, non-multiple-of-16 velocities, obstacle boundaries, killed entity kind and changed room.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

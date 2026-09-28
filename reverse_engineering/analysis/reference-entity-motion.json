@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "entitySlot": 12,
+  "roomID": 152,
+  "observedEntityKinds": [108, 109, 110, 111],
+  "staticCollisionBox": {"width": 16, "height": 19},
+  "rule": "On an observed entity update, signed horizontal and vertical velocity units divide by 16 (toward zero); the candidate position resolves independently against verified room-background bounds. No RNG decision or actor-update scheduling is inferred.",
+  "paths": [
+    {"schedule": "no-fire-encounter-schedule.json", "inputVelocityX": 96, "inputVelocityY": 80, "firstMove": [92, 130, 98, 135], "matchingMovingUpdates": 2, "observedMovingUpdates": 2},
+    {"schedule": "unrelated-a-control-schedule.json", "inputVelocityX": 48, "inputVelocityY": 80, "firstMove": [92, 130, 95, 135], "matchingMovingUpdates": 4, "observedMovingUpdates": 4},
+    {"schedule": "fire-before-contact-schedule.json", "inputVelocityX": -48, "inputVelocityY": 80, "firstMove": [92, 130, 89, 135], "matchingMovingUpdates": 8, "observedMovingUpdates": 8}
+  ],
+  "totals": {"matchingMovingUpdates": 14, "observedMovingUpdates": 14},
+  "limits": "This models one *supplied* source enemy-update event, only for the measured kind range, room and three velocities. It does not choose random velocity, decide when to update, move other enemies, apply player contact/damage or generate an autonomous native enemy."
+}
