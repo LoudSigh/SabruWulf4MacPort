@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "framesPerRun": 190,
+  "fireSchedule": "fire-before-contact-schedule.json",
+  "comparisonSchedule": "no-fire-encounter-schedule.json",
+  "unrelatedKeyControlSchedule": "unrelated-a-control-schedule.json",
+  "fireRAMAndScreenMatches": 190,
+  "comparisonRAMAndScreenMatches": 190,
+  "unrelatedKeyRAMAndScreenMatches": 190,
+  "firstPlayerStateDifferenceFrame": 146,
+  "firstEnemyStateDifferenceFrame": 156,
+  "firstEnemyPositionDifferenceFrame": 159,
+  "unrelatedKeyFirstEnemyPositionDifferenceFrame": 159,
+  "noFireDamageFrame": 164,
+  "unrelatedKeyDamageFrame": 170,
+  "fireDamageFramesThrough190": 0,
+  "checkpoints": [
+    {
+      "frame": 163,
+      "playerRoomID": 152,
+      "playerX": 121,
+      "playerY": 126,
+      "firePlayerKind": 36,
+      "noFirePlayerKind": 27,
+      "fireEnemyX": 86,
+      "fireEnemyY": 135,
+      "noFireEnemyX": 104,
+      "noFireEnemyY": 135
+    },
+    {
+      "frame": 164,
+      "firePlayerKind": 36,
+      "noFirePlayerKind": 64
+    },
+    {
+      "frame": 190,
+      "firePlayerKind": 16,
+      "noFirePlayerKind": 65
+    }
+  ],
+  "limits": "An unrelated A-key press also shifts enemy timing and delays damage by six frames, but does not produce the T-specific early enemy state/direction change or prevent damage through frame 190. The contrast is not enough to infer a hitbox, enemy damage rule, score event or general native combat implementation."
+}

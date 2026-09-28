@@ -93,7 +93,9 @@ TEMP_EAST="$(mktemp "$ROOT/$PRIVATE/.east-XXXXXXXX.json")"
 TEMP_WEST_REFERENCE="$(mktemp "$ROOT/$PRIVATE/.west-reference-XXXXXXXX.json")"
 TEMP_ENTITY_REFERENCE="$(mktemp "$ROOT/$PRIVATE/.entity-reference-XXXXXXXX.json")"
 TEMP_FIRE="$(mktemp "$ROOT/$PRIVATE/.fire-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE"' EXIT
+TEMP_COMBAT="$(mktemp "$ROOT/$PRIVATE/.combat-XXXXXXXX.json")"
+TEMP_COMBAT_ENTITY="$(mktemp "$ROOT/$PRIVATE/.combat-entity-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -223,6 +225,34 @@ if [[ -e "$ENTITY_REFERENCE" ]]; then
 else
     mv "$TEMP_ENTITY_REFERENCE" "$ENTITY_REFERENCE"
 fi
+
+printf 'Preparing three verified 190-frame pre-contact T/no-T/unrelated-key comparisons...\n'
+for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
+    SCHEDULE="reverse_engineering/analysis/$scenario-schedule.json"
+    SCENARIO_REPLAY="$ROOT/$PRIVATE/replay-$scenario-190.json"
+    SCENARIO_TRACE="$ROOT/$PRIVATE/trace-$scenario-190.json"
+    "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+        --schedule "$SCHEDULE" 190 --reference-timing --actor-kind > "$TEMP_COMBAT"
+    if [[ -e "$SCENARIO_REPLAY" ]]; then
+        if ! cmp -s "$SCENARIO_REPLAY" "$TEMP_COMBAT"; then
+            printf 'Existing private attack comparison differs; refusing to overwrite %s\n' "$SCENARIO_REPLAY" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_COMBAT" "$SCENARIO_REPLAY"
+    fi
+    "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$SCENARIO_REPLAY"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
+        --trace --reference-timing --require-ram-parity > "$TEMP_COMBAT_ENTITY"
+    if [[ -e "$SCENARIO_TRACE" ]]; then
+        if ! cmp -s "$SCENARIO_TRACE" "$TEMP_COMBAT_ENTITY"; then
+            printf 'Existing private entity comparison differs; refusing to overwrite %s\n' "$SCENARIO_TRACE" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_COMBAT_ENTITY" "$SCENARIO_TRACE"
+    fi
+done
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"
@@ -272,6 +302,8 @@ printf 'Import %s for the same schedule aligned to the full emulator (enemy cont
 printf 'Import %s to observe T-key actor state without claiming native combat.\n' "$FIRE_REPLAY"
 printf 'Import %s for a provisional east return; a moving enemy blocks the source at frame 280.\n' "$EAST_RETURN"
 printf 'Import %s with the legacy west replay to compare different enemy paths, or %s with the aligned replay to inspect matching paths.\n' "$ENTITY_TRACE" "$ENTITY_REFERENCE"
+printf 'Import replay-fire-before-contact-190.json or replay-no-fire-encounter-190.json from %s, each with its matching trace-*.json, to compare source attack effects.\n' "$PRIVATE"
+printf 'Use replay-unrelated-a-control-190.json and its matching trace as a keyboard-timing control, not a combat outcome.\n'
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
 printf 'Import %s to preview decoded background geometry in all source rooms.\n' "$BACKGROUND_ATLAS"
 printf 'Import %s to browse decoded private bitmap silhouettes without bundled source art.\n' "$SPRITE_ATLAS"

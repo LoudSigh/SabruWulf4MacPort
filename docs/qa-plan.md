@@ -238,6 +238,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: The importer verifies 41 unique background records, 9,686 source bytes and all 919 references. Invalid data reports an error, with no silent fallback to invented bitmaps. Bitmap placement and actor markers convert source bottom-origin Y consistently. Optional standard 48K attribute colors are clearly approximate; FLASH timing, transparency and full-scene sprite compositing remain unimplemented. No original pixels are bundled or pushed.
 - **Edge Cases / Variants**: Multi-placement overlap, 4:3 resizing, VoiceOver room summary and iOS/visionOS private file access.
 
+### TC-021: Controlled fire/no-fire/unrelated-key enemy approach
+- **Priority**: P0
+- **Preconditions**: Generate three private 190-frame replays and matching entity traces with [fire-before-contact-schedule.json](../reverse_engineering/analysis/fire-before-contact-schedule.json), [no-fire-encounter-schedule.json](../reverse_engineering/analysis/no-fire-encounter-schedule.json) and [unrelated-a-control-schedule.json](../reverse_engineering/analysis/unrelated-a-control-schedule.json).
+- **Steps**:
+  1. Verify all 190 RAM and screen hashes of **each of the three** replays against the unmodified emulator.
+  2. Import each replay/trace pair in turn; inspect actor state at frame 146, enemy state at 156, enemy X at 159 and actor/enemy at frames 163–164.
+  3. Compare the A-key control at frames 156, 159, 164 and 170, then compare source-free [reference-fire-encounter.json](../reverse_engineering/analysis/reference-fire-encounter.json) checkpoints.
+- **Expected Result**: Input-dependent trajectories match the recorded evidence; an unrelated key changes the encounter timing but does not produce T's early enemy-state change or prevent damage through frame 190. The preview stays read-only and native combat is still explicitly unsupported.
+- **Edge Cases / Variants**: Same key held different frame counts, RNG phase changes, different enemy direction, missing private trace and damage-state timing.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |
