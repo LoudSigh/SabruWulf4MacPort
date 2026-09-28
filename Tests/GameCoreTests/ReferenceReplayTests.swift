@@ -87,13 +87,17 @@ final class ReferenceReplayTests: XCTestCase {
             "snapshotSHA256": WorldReference.supportedSnapshotSHA256,
             "frameBoundaryMode": "reference-relative",
             "input": "schedule",
-            "schedule": [["key": "w", "startFrame": 20, "endFrame": 30]],
+            "schedule": [
+                ["key": "w", "startFrame": 20, "endFrame": 30],
+                ["key": "0", "startFrame": 530, "endFrame": 535],
+            ],
             "frames": Array(frames.prefix(800)),
         ]
         let imported = try ReferenceReplay.load(
             from: JSONSerialization.data(withJSONObject: payload)
         )
         XCTAssertEqual(imported.frames.count, 800)
+        XCTAssertEqual(imported.schedule?.map(\.key), ["w", "0"])
         XCTAssertEqual(imported.frames[230].reportedLives, 0)
         payload["frames"] = frames
         XCTAssertThrowsError(try ReferenceReplay.load(
@@ -201,5 +205,30 @@ final class ReferenceReplayTests: XCTestCase {
         XCTAssertEqual(replay.frames[230].playerKind, 17)
         XCTAssertEqual(replay.frames[230].reportedLives, 0)
         XCTAssertEqual(replay.frames[317].playerKind, 70)
+    }
+
+    func testPrivateRestartAfterMenuWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_RESTART_REPLAY"]
+        else {
+            throw XCTSkip("Set SABRE_PRIVATE_RESTART_REPLAY for local new-start observation")
+        }
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(replay.frameBoundaryMode, "reference-relative")
+        XCTAssertEqual(replay.frames.count, 800)
+        XCTAssertEqual(replay.schedule?.map(\.key), ["w", "e", "0"])
+        let cleared = replay.frames[534]
+        XCTAssertEqual(cleared.playerRoomID, 0)
+        let restored = replay.frames[653]
+        XCTAssertEqual(restored.playerRoomID, 168)
+        for index in [659, 663, 699, 799] {
+            let frame = replay.frames[index]
+            XCTAssertEqual(frame.playerRoomID, 168)
+            XCTAssertEqual(frame.playerX, 120)
+            XCTAssertEqual(frame.playerY, 112)
+            XCTAssertEqual(frame.playerKind, 16)
+            XCTAssertEqual(frame.reportedLives, 4)
+        }
     }
 }

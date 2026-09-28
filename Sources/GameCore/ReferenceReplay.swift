@@ -49,7 +49,7 @@ public struct ReferenceReplay: Decodable, Sendable {
                 || replay.frameBoundaryMode == "reference-relative" else {
             throw ReferenceReplayError.unsupportedFormat
         }
-        let keys = ["q", "w", "e", "r", "t", "a", "o", "p", "space"]
+        let keys = ["q", "w", "e", "r", "t", "a", "o", "p", "space", "0", "3"]
         switch replay.schemaVersion {
         case 1:
             guard replay.schedule == nil,

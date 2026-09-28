@@ -12,7 +12,7 @@ private enum ScreenError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: VerifyBackgroundScreen <48k.rom> <gameplay.z80> <private-world.json> <private-background-atlas.json> [--schedule <private-or-source-free-schedule.json> <frames: 1...600>]"
+            "Usage: VerifyBackgroundScreen <48k.rom> <gameplay.z80> <private-world.json> <private-background-atlas.json> [--schedule <private-or-source-free-schedule.json> <frames: 1...800>]"
         case .invalidInput:
             "Expected the verified 48K ROM, gameplay snapshot, atlas and valid schedule"
         case .frameBudget(let frame):
@@ -49,6 +49,7 @@ private func key(_ name: String) throws -> KeyboardMatrix.Key {
     case "e": .e
     case "r": .r
     case "t": .t
+    case "0": .num0
     default: throw ScreenError.invalidInput
     }
 }
@@ -67,7 +68,7 @@ private struct VerifyBackgroundScreen {
             let targetFrame: Int?
             let segments: [Segment]
             if args.count == 8 {
-                guard let frames = Int(args[7]), (1...600).contains(frames) else {
+                guard let frames = Int(args[7]), (1...800).contains(frames) else {
                     throw ScreenError.usage
                 }
                 let scheduleData = try Data(contentsOf: URL(fileURLWithPath: args[6]))

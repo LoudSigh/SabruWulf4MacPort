@@ -5,10 +5,10 @@
   "frameBoundaryMode": "reference-relative",
   "comparison": "First frame whose center menu-text region (screen x=48..207, y=72..87) matches all 2560 RGB pixels in the independently supplied main-menu snapshot",
   "scenarios": [
-    {"schedule": "no-fire-encounter-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1305, "matchingFirstInjuryUpdates": 63, "firstExactMenuTextFrame": 503},
-    {"schedule": "unrelated-a-control-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1339, "matchingFirstInjuryUpdates": 63, "firstExactMenuTextFrame": 510},
-    {"schedule": "fire-before-contact-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1833, "matchingFirstInjuryUpdates": 63, "firstExactMenuTextFrame": 679}
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1305, "matchingFirstInjuryUpdates": 63, "secondContactFrame": 298, "menuSetupFrame": 366, "menuReturnRoutineFrame": 497, "firstExactMenuTextFrame": 503},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1339, "matchingFirstInjuryUpdates": 63, "secondContactFrame": 305, "menuSetupFrame": 373, "menuReturnRoutineFrame": 504, "firstExactMenuTextFrame": 510},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1833, "matchingFirstInjuryUpdates": 63, "secondContactFrame": 474, "menuSetupFrame": 542, "menuReturnRoutineFrame": 673, "firstExactMenuTextFrame": 679}
   ],
   "totals": {"frameChecks": 2400, "matchingRAMAndScreenFrames": 2400, "matchingContactCalls": 4477, "matchingFirstInjuryUpdates": 189},
-  "limits": "These three paths are separately controlled inputs from one user-captured gameplay state, not a complete title/start/game-over specification. The exact center-text comparison does not claim complete 256x192 menu screen parity, score reset, option selection, new-game initial state or original tape-boot equivalence. All original screen pixels and per-frame hashes remain private."
+  "limits": "The three paths show menu setup at second contact+68, menu return routine at contact+199, and the first matching center text at contact+205. These bounded offsets do not prove that one constant frame timer generalizes to different lives, enemies, rooms or input histories. The center-text comparison does not claim complete 256x192 menu screen parity, score reset, option selection, new-game initial state or original tape-boot equivalence. All original screen pixels and per-frame hashes remain private."
 }

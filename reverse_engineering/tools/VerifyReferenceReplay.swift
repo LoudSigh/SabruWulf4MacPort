@@ -64,6 +64,8 @@ private func inputKey(_ name: String) throws -> KeyboardMatrix.Key {
     case "o": .o
     case "p": .p
     case "space": .space
+    case "0": .num0
+    case "3": .num3
     default: throw VerificationError.invalidReplay
     }
 }

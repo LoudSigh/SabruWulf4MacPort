@@ -152,7 +152,8 @@ TEMP_LONG_CONTACT="$(mktemp "$ROOT/$PRIVATE/.long-contact-XXXXXXXX.json")"
 TEMP_LONG_INJURY="$(mktemp "$ROOT/$PRIVATE/.long-injury-XXXXXXXX.json")"
 TEMP_MENU="$(mktemp "$ROOT/$PRIVATE/.menu-return-XXXXXXXX.json")"
 TEMP_MENU_CONTACT="$(mktemp "$ROOT/$PRIVATE/.menu-contact-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT"' EXIT
+TEMP_RESTART_SCREEN="$(mktemp "$ROOT/$PRIVATE/.restart-screen-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -368,7 +369,7 @@ for spec in no-fire-encounter:503 unrelated-a-control:510 fire-before-contact:67
     scenario="${spec%%:*}"
     firstMenuFrame="${spec#*:}"
     MENU_REPLAY="$ROOT/$PRIVATE/replay-$scenario-800.json"
-    MENU_CONTACT="$ROOT/$PRIVATE/injury-check-$scenario-800.json"
+    MENU_CONTACT="$ROOT/$PRIVATE/menu-sequence-$scenario-800.json"
     "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
         --schedule "reverse_engineering/analysis/$scenario-schedule.json" 800 \
         --reference-timing --actor-kind > "$TEMP_MENU"
@@ -385,7 +386,7 @@ for spec in no-fire-encounter:503 unrelated-a-control:510 fire-before-contact:67
     "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
         "reverse_engineering/analysis/$scenario-schedule.json" 800 \
         --reference-timing --require-ram-parity --require-contact-parity \
-        --require-first-injury-parity > "$TEMP_MENU_CONTACT"
+        --require-first-injury-parity --require-menu-sequence > "$TEMP_MENU_CONTACT"
     if [[ -e "$MENU_CONTACT" ]]; then
         if ! cmp -s "$MENU_CONTACT" "$TEMP_MENU_CONTACT"; then
             printf 'Existing private menu-return contact comparison differs: %s\n' "$MENU_CONTACT" >&2
@@ -395,6 +396,48 @@ for spec in no-fire-encounter:503 unrelated-a-control:510 fire-before-contact:67
         mv "$TEMP_MENU_CONTACT" "$MENU_CONTACT"
     fi
 done
+printf 'Verifying private zero-key restart and first fully drawn source room...\n'
+RESTART_SCHEDULE=reverse_engineering/analysis/restart-after-menu-schedule.json
+RESTART_REPLAY="$ROOT/$PRIVATE/replay-restart-after-menu-800.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule "$RESTART_SCHEDULE" 800 --reference-timing --actor-kind \
+    > "$TEMP_MENU"
+if [[ -e "$RESTART_REPLAY" ]]; then
+    if ! cmp -s "$RESTART_REPLAY" "$TEMP_MENU"; then
+        printf 'Existing private restart replay differs: %s\n' "$RESTART_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU" "$RESTART_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$RESTART_REPLAY" \
+    --menu "$MENU" 503
+RESTART_CONTACT="$ROOT/$PRIVATE/restart-contact-800.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$RESTART_SCHEDULE" 800 \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    --require-first-injury-parity --require-menu-sequence \
+    > "$TEMP_MENU_CONTACT"
+if [[ -e "$RESTART_CONTACT" ]]; then
+    if ! cmp -s "$RESTART_CONTACT" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private restart contact check differs: %s\n' "$RESTART_CONTACT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$RESTART_CONTACT"
+fi
+RESTART_SCREEN="$ROOT/$PRIVATE/restart-background-664.json"
+"$ROOT/$PRIVATE/VerifyBackgroundScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
+    --schedule "$RESTART_SCHEDULE" 664 > "$TEMP_RESTART_SCREEN"
+if [[ -e "$RESTART_SCREEN" ]]; then
+    if ! cmp -s "$RESTART_SCREEN" "$TEMP_RESTART_SCREEN"; then
+        printf 'Existing private restart screen check differs: %s\n' "$RESTART_SCREEN" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_RESTART_SCREEN" "$RESTART_SCREEN"
+fi
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"

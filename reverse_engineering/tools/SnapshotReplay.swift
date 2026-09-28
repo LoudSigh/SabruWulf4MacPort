@@ -15,13 +15,13 @@ private enum ReplayError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space> [frames: 1...150] [--hold] [--reference-timing] [--actor-kind] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...800> [--reference-timing] [--actor-kind] | --self-test"
+            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space|0|3> [frames: 1...150] [--hold] [--reference-timing] [--actor-kind] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...800> [--reference-timing] [--actor-kind] | --self-test"
         case .invalidROM:
             return "Expected exactly 16384 reference ROM bytes"
         case .invalidSnapshot:
             return "Expected a 48K snapshot containing 49152 RAM bytes"
         case .unsupportedKey:
-            return "Supported inputs: none, q, w, e, r, t, a, o, p, space"
+            return "Supported inputs: none, q, w, e, r, t, a, o, p, space, 0, 3"
         case .stepBudget:
             return "Replay exceeded 100000 CPU steps in a frame"
         case let .unimplemented(pc):
@@ -102,6 +102,8 @@ private func key(_ input: String) throws -> KeyboardMatrix.Key? {
     case "o": .o
     case "p": .p
     case "space": .space
+    case "0": .num0
+    case "3": .num3
     default: throw ReplayError.unsupportedKey
     }
 }
@@ -115,7 +117,15 @@ private struct SnapshotReplay {
     static func main() {
         do {
             if CommandLine.arguments == [CommandLine.arguments[0], "--self-test"] {
-                guard try key("none") == nil, try key("q") != nil else {
+                var keyboard = KeyboardMatrix()
+                if let digit = try key("0") { keyboard.press(digit) }
+                guard try key("none") == nil, try key("q") != nil,
+                      keyboard.readPortFE(highByte: 0xEF) & 1 == 0 else {
+                    throw ReplayError.unsupportedKey
+                }
+                keyboard.clearAll()
+                if let digit = try key("3") { keyboard.press(digit) }
+                guard keyboard.readPortFE(highByte: 0xF7) & 0x04 == 0 else {
                     throw ReplayError.unsupportedKey
                 }
                 do {

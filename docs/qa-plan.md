@@ -287,10 +287,22 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Steps**:
   1. Generate an 800-frame reference-relative replay for each schedule and verify every RAM/screen hash against the unmodified emulator.
   2. Run `VerifyReferenceReplay --menu SNAPSHOTS/Snapshot.z80` with expected first menu-text frames 503 (no T), 510 (A), and 679 (T); reject an intentionally incorrect expected frame.
-  3. Scrub each imported replay just before and after that frame; note that the viewer **does not render the replay's menu screen** and the numeric player fields left in memory are inactive once the menu appears.
-  4. Check import accepts 800 frames and rejects 801; verify the private replay and screen are not bundled or committed.
+  3. Also require `SnapshotDivergence --require-menu-sequence` alongside reference/RAM/contact parity: verify menu setup at second contact+68, menu return routine at +199, and first exact text at +205 in all three schedules.
+  4. Scrub each imported replay just before and after that frame; note that the viewer **does not render the replay's menu screen** and the numeric player fields left in memory are inactive once the menu appears.
+  5. Check import accepts 800 frames and rejects 801; verify the private replay and screen are not bundled or committed.
 - **Expected Result**: All 2,400 RAM and screen hashes match, while the first exact central menu-text region matches 2,560/2,560 RGB pixels only at the expected frame in each run. The result proves this bounded visible return, not full-screen parity, starting a new game, or a native game-over implementation.
 - **Edge Cases / Variants**: FLASH/color phase, changed menu snapshot, replay hash corruption, later matching frames, app slider on final frame.
+
+### TC-026: Restart source game with zero key after menu return
+- **Priority**: P0
+- **Preconditions**: Verified 48K gameplay/menu snapshots, 48K ROM and private world/background atlases; [restart-after-menu-schedule.json](../reverse_engineering/analysis/restart-after-menu-schedule.json).
+- **Steps**:
+  1. Run an 800-frame reference-relative replay and verify all RAM and screen hashes against the unmodified emulator, plus contact/injury/menu sequence parity.
+  2. Compare `0` held at frames 530–534 with a one-frame `0` tap and 10/20-frame holds; do not infer key response from held duration alone.
+  3. Verify the actor room clears at frame 535, returns to room 168 at 654, and settles at X=120/Y=112, kind 16, life byte 4 from frame 660.
+  4. Run the source background verifier at frame 663 (expected non-match: 27,318/29,056 covered pixels) and frame 664 (expected exact: 29,056/29,056).
+- **Expected Result**: The reference-timed `0` path recovers one rendered source-game start; the native viewer can scrub its recorded actor bytes, but no native start-game, enemy or quest initialization is claimed. Do not infer immediate keyboard movement from a static early-start frame.
+- **Edge Cases / Variants**: Menu polling phase, new-game redrawing versus actor-byte initialization, option choice, different pre-menu input history and input release.
 
 ## Regression cadence and coverage
 
