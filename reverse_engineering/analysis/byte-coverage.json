@@ -38,9 +38,9 @@
   "candidateInstructionStartsInIsolatedGameplayTrace": 1422,
   "candidateInstructionStartsClassifiedAsCode": false,
   "observedExecutedByteExtents": {
-    "scope": "Three reference-relative 190-frame encounter paths; candidate code within the static unknown category",
-    "distinctFetchedRAMBytes": 3593,
-    "unknownBytesNotObservedAsFetchedCode": 16381,
+    "scope": "Twelve measured runs, including the eight published executed-PC inventory schedules; candidate code within the static unknown category",
+    "distinctFetchedRAMBytes": 4915,
+    "unknownBytesNotObservedAsFetchedCode": 15059,
     "fetchedAddressesWithMultipleValues": 2,
     "immutableDataOverlaps": 0,
     "evidence": "reference-fetched-code-extents.json"

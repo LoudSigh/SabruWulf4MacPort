@@ -16,5 +16,41 @@
     "originallyUnknownBytesOutsideThisObservedUnion": 16381,
     "matchingFullRAMFrames": 570
   },
-  "limits": "These are executed candidate code extents in three paths, not a complete or immutable code classification. Two fetched byte positions vary during each replay. The instruction bytes, fetched addresses and any disassembly remain private; unexecuted paths, overlays and the 16,381 other unknown bytes are unclassified."
+  "additionalPaths": [
+    {"schedule": "fire-before-contact-schedule.json", "frames": 250, "distinctFetchedRAMBytes": 3633, "newBytesBeyondThreePathUnion": 44},
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 800, "distinctFetchedRAMBytes": 4260, "newBytesBeyondFourPathUnion": 804}
+  ],
+  "fivePathUnion": {
+    "distinctFetchedRAMBytes": 4441,
+    "overlapWithValidatedImmutableData": 0,
+    "addressesWithMultipleFetchedValues": 2,
+    "originallyUnknownBytesOutsideThisObservedUnion": 15533,
+    "matchingFullRAMFrames": 1620
+  },
+  "furtherPaths": [
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 800, "newBytesBeyondPriorUnion": 2},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 800, "newBytesBeyondPriorUnion": 9},
+    {"schedule": "restart-ready-movement-schedule.json", "frames": 900, "newBytesBeyondPriorUnion": 457}
+  ],
+  "eightRunUnion": {
+    "distinctFetchedRAMBytes": 4909,
+    "overlapWithValidatedImmutableData": 0,
+    "addressesWithMultipleFetchedValues": 2,
+    "originallyUnknownBytesOutsideThisObservedUnion": 15065,
+    "matchingFullRAMFrames": 4120
+  },
+  "restartVariants": [
+    {"schedule": "restart-ready-q-schedule.json", "frames": 900, "newBytesBeyondPriorUnion": 5},
+    {"schedule": "restart-ready-e-schedule.json", "frames": 900, "newBytesBeyondPriorUnion": 0},
+    {"schedule": "restart-ready-r-schedule.json", "frames": 900, "newBytesBeyondPriorUnion": 1},
+    {"schedule": "restart-ready-w-e-schedule.json", "frames": 900, "newBytesBeyondPriorUnion": 0}
+  ],
+  "twelveRunUnion": {
+    "distinctFetchedRAMBytes": 4915,
+    "overlapWithValidatedImmutableData": 0,
+    "addressesWithMultipleFetchedValues": 2,
+    "originallyUnknownBytesOutsideThisObservedUnion": 15059,
+    "matchingFullRAMFrames": 7720
+  },
+  "limits": "These are executed candidate code extents in twelve measured runs, including the eight published PC inventory schedules, not complete or immutable code coverage. Two fetched byte positions vary during the replays. The instruction bytes, fetched addresses and any disassembly remain private; unexecuted paths, overlays and the 15,059 other unknown bytes are unclassified."
 }

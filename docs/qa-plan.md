@@ -1,6 +1,6 @@
 # Release test plan
 
-Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; macOS, iOS and visionOS apps were launched, with visible layouts inspected on iOS and visionOS simulators. User-captured 48K `.z80` snapshots provide verified **menu and in-game screen/RAM images**; a bounded, independently checked replay now crosses one room boundary. **Full original-game parity, a native original-game simulator and control-interaction UI tests remain unverified.** XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
+Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; an iOS simulator visibly launched the app, while a Vision Pro simulator launched its process but headless window visibility and interaction remain unverified. User-captured 48K `.z80` snapshots provide verified **menu and in-game screen/RAM images**; bounded, independently checked replays cross a few room boundaries. **Full original-game parity and cross-platform control-interaction UI tests remain unverified.** XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
 
 ## Functional and integration cases
 
@@ -429,11 +429,11 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Priority**: P1
 - **Preconditions**: SHA-checked private gameplay snapshot/ROM, isolated CPU fetch probe and T/no-T/A 190-frame schedules.
 - **Steps**:
-  1. Check synthetic prefix/HALT fetch lengths; replay all three paths with reference-relative complete RAM parity.
-  2. Union fetched RAM byte extents and require 3,593 unique addresses with no overlap with validated immutable game data.
+  1. Check synthetic prefix/HALT fetch lengths; replay three 190-frame encounters, one 250-frame T extension, three 800-frame menu returns and five 900-frame restart variants with reference-relative complete RAM parity.
+  2. Union fetched RAM byte extents and require 4,915 unique addresses with no overlap with validated immutable game data.
   3. Confirm the two addresses whose fetched values changed stay marked as possible mutable code; do not publish bytes, address lists or disassembly.
   4. Ensure [byte-coverage.json](../reverse_engineering/analysis/byte-coverage.json) retains its static unknown classification instead of treating three paths as complete program coverage.
-- **Expected Result**: 570/570 RAM frames pass, 16,381 originally unknown bytes remain outside the observed candidate-code union, and no immutable code/data partition is claimed.
+- **Expected Result**: 7,720/7,720 RAM frames pass, 15,059 originally unknown bytes remain outside the observed candidate-code union, and no immutable code/data partition is claimed.
 - **Edge Cases / Variants**: Self-modifying instructions, prefixed operands, unexecuted branches, ROM-only fetches and shared bytes used differently at another time.
 
 ## Regression cadence and coverage
