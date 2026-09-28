@@ -65,6 +65,16 @@ fi
 "$ROOT/$PRIVATE/SnapshotRoomIndex" "$MENU" "$GAME" --private-map \
     > "$ROOT/$PRIVATE/room-index-report.json"
 
+printf 'Recovering a private 196-ID sprite atlas from matching snapshots...\n'
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift reverse_engineering/tools/SnapshotSpriteIndex.swift \
+    -o "$ROOT/$PRIVATE/SnapshotSpriteIndex" > "$ROOT/$PRIVATE/sprite-index-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/sprite-index-build.log" >&2
+    exit 1
+fi
+"$ROOT/$PRIVATE/SnapshotSpriteIndex" "$MENU" "$GAME" --private-atlas \
+    > "$ROOT/$PRIVATE/sprite-index-report.json"
+
 printf 'Preparing a private 100-frame Q-key reference replay...\n'
 if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
     "$CORE"/*.swift reverse_engineering/tools/SnapshotReplay.swift \
@@ -230,9 +240,11 @@ done
 MENU_PNG="$ROOT/$PRIVATE/snapshot-${MENU_SHA:0:12}-screen.png"
 GAME_PNG="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-screen.png"
 WORLD_MAP="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world.html"
+SPRITE_ATLAS="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-sprite-atlas-v1.json"
 require_file "$MENU_PNG"
 require_file "$GAME_PNG"
 require_file "$WORLD_MAP"
+require_file "$SPRITE_ATLAS"
 
 if ! command -v xcodegen >/dev/null 2>&1; then
     printf 'Missing xcodegen. Reference images are ready in %s, but the native prototype cannot be built.\n' "$PRIVATE" >&2
@@ -259,4 +271,5 @@ printf 'Import %s to observe T-key actor state without claiming native combat.\n
 printf 'Import %s for a provisional east return; a moving enemy blocks the source at frame 280.\n' "$EAST_RETURN"
 printf 'Import %s with the legacy west replay to compare different enemy paths, or %s with the aligned replay to inspect matching paths.\n' "$ENTITY_TRACE" "$ENTITY_REFERENCE"
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
+printf 'Import %s to browse decoded private bitmap silhouettes without bundled source art.\n' "$SPRITE_ATLAS"
 printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'

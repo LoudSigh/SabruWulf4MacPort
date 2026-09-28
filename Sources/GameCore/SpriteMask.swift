@@ -40,4 +40,11 @@ public struct SpriteMask: Sendable {
         let offset = y * (width / 8) + x / 8
         return bitmap[offset] & (1 << (7 - x % 8)) != 0
     }
+
+    public func pixels() -> [Bool] {
+        (0..<(width * height)).map { index in
+            let byte = bitmap[(index / width) * (width / 8) + (index % width) / 8]
+            return byte & (1 << (7 - index % 8)) != 0
+        }
+    }
 }

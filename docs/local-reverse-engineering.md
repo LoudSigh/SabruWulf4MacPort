@@ -48,9 +48,12 @@ For a source-free sprite *pointer index* (not sprite images or frame data), comp
 swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift reverse_engineering/tools/SnapshotSpriteIndex.swift -o "$OUT/SnapshotSpriteIndex"
 "$OUT/SnapshotSpriteIndex" --self-test
 "$OUT/SnapshotSpriteIndex" SNAPSHOTS/Snapshot.z80 SNAPSHOTS/Snapshot_GamePlay.z80
+"$OUT/SnapshotSpriteIndex" SNAPSHOTS/Snapshot.z80 SNAPSHOTS/Snapshot_GamePlay.z80 --private-atlas \
+  > reverse_engineering/private/sprite-index-report.json
+git check-ignore reverse_engineering/private/snapshot-803e4197989c-sprite-atlas-v1.json
 ```
 
-The numeric result is summarized in [sprite-index.json](../reverse_engineering/analysis/sprite-index.json). The loader, bitmap and sprite record layouts still need separate validation; this tool does not emit original bytes.
+The numeric result is summarized in [sprite-index.json](../reverse_engineering/analysis/sprite-index.json). Without `--private-atlas`, the tool emits no original bytes. With the flag, it checks both captures agree before writing the 196-pointer table and 153 bounded records **only** to the ignored private JSON file. One 0×0 record is an explicit empty sentinel reused by 14 IDs; the other 152 records contain bitmap shapes. Never stage or distribute the atlas. Its raw bitmap format was verified for two examples; palette, compositor and animation remain unverified.
 
 ## Private, bounded input comparison
 

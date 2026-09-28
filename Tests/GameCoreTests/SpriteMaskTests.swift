@@ -12,6 +12,10 @@ final class SpriteMaskTests: XCTestCase {
         XCTAssertTrue(try sprite.isSet(x: 7, y: 1))
         XCTAssertTrue(try sprite.isSet(x: 8, y: 1))
         XCTAssertFalse(try sprite.isSet(x: 1, y: 0))
+        XCTAssertEqual(sprite.pixels().count, 32)
+        XCTAssertTrue(sprite.pixels()[0])
+        XCTAssertTrue(sprite.pixels()[15])
+        XCTAssertTrue(sprite.pixels()[16 + 7])
     }
 
     func testRejectsTruncatedAndInvalidBounds() throws {

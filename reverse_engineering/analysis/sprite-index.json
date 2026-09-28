@@ -12,6 +12,9 @@
   "minimumPointer": "0xC10C",
   "maximumPointer": "0xEC10",
   "validatedUniqueRecordHeaders": 153,
+  "nonEmptyBitmapRecords": 152,
+  "emptySentinelPointer": 49420,
+  "emptySentinelIDs": [0, 7, 14, 15, 90, 91, 94, 95, 124, 125, 126, 127, 150, 151],
   "recordsEndingAtNextPointer": 148,
   "spriteRecordBytesAccountedFor": 8006,
   "largestRecordBytes": 130,
@@ -28,7 +31,7 @@
   "identicalBetweenCaptures": true,
   "externalReference": "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/asm/49028.html",
   "limits": [
-    "153 distinct records have plausible two-byte width/height headers and bounded payloads; 148 end at the next pointer and 5 leave gaps whose bytes remain unclassified.",
+    "153 distinct pointer targets include one explicit 0-by-0 empty sentinel and 152 non-empty bounded bitmap records; 148 end at the next pointer and 5 leave gaps whose bytes remain unclassified.",
     "The record data and table are unchanged across two snapshots; image orientation, color/mask semantics and animation timing remain unverified.",
     "No sprite bytes, rendered frames, images or instructions are included in this metadata."
   ]

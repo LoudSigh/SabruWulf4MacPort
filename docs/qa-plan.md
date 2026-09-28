@@ -206,6 +206,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Recorded T action changes actor state, not position, in the checked room. The native game does not imply verified hit detection, enemies or animation from the observed state numbers.
 - **Edge Cases / Variants**: Wrong snapshot hash, missing actor-state field on older replay imports, changing from T to a directional key.
 
+### TC-018: Import and browse locally extracted sprite masks
+- **Priority**: P1
+- **Preconditions**: `SnapshotSpriteIndex --private-atlas` has verified both private 48K captures; the app's world viewer has imported the matching world JSON.
+- **Steps**:
+  1. Import `snapshot-803e4197989c-sprite-atlas-v1.json` through the app's private atlas picker.
+  2. Visit IDs 0, 16, 21 and 195. Verify the sentinel is empty, samples 16/21 have 16×21 and 16×22 dimensions, and other IDs render only decoded monochrome pixels.
+  3. Attempt a malformed base64 record, a changed pointer address, and a wrong snapshot hash.
+- **Expected Result**: All 196 pointer IDs are selectable; 152 distinct nonempty records decode and 14 IDs reuse the empty sentinel. The importer verifies table and record hashes, rejects changed source data explicitly and neither changes movement nor bundles bitmap bytes.
+- **Edge Cases / Variants**: iOS/visionOS Files provider permissions, VoiceOver slider labels, resetting atlas on world replacement, smallest/largest sprite and unsupported color/animation claims.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

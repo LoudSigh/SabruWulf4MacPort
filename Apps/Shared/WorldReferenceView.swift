@@ -30,6 +30,9 @@ struct WorldReferenceView: View {
     @State private var artStatus: String?
     @State private var importingSprites = false
     @State private var spriteSamples: [Int: WorldRaster] = [:]
+    @State private var importingAtlas = false
+    @State private var spriteAtlas: SpriteAtlas?
+    @State private var spriteID = 16.0
     @State private var importingReplay = false
     @State private var replay: ReferenceReplay?
     @State private var replayFrameValue = 0.0
@@ -174,6 +177,29 @@ struct WorldReferenceView: View {
                         }
                     }
                     Text("Local shape samples only; palette, animation and room placement are not validated.")
+                        .font(.caption)
+                }
+                Button("Import your private snapshot sprite atlas (optional)") {
+                    importingAtlas = true
+                }
+                .buttonStyle(.bordered)
+                if let spriteAtlas {
+                    Slider(value: $spriteID, in: 0...195, step: 1)
+                        .accessibilityLabel("Original sprite pointer ID")
+                    let id = Int(spriteID)
+                    switch Result(catching: { try spriteAtlas.mask(at: id) }) {
+                    case .success(let mask?):
+                        Text("Snapshot silhouette \(id) · \(mask.width) × \(mask.height) pixels")
+                            .font(.caption.monospacedDigit())
+                        NativeSpritePreview(mask: mask)
+                    case .success(nil):
+                        Text("Sprite ID \(id) uses the empty source sentinel.")
+                            .font(.caption)
+                    case .failure(let error):
+                        Text(error.localizedDescription)
+                            .foregroundStyle(.red)
+                    }
+                    Text("Private monochrome bitmap only; palette and animation order are unverified.")
                         .font(.caption)
                 }
             }
@@ -333,6 +359,8 @@ struct WorldReferenceView: View {
                 art = [:]
                 artStatus = nil
                 spriteSamples = [:]
+                spriteAtlas = nil
+                spriteID = 16
                 replay = nil
                 entityTrace = nil
                 replayFrameValue = 0
@@ -418,6 +446,28 @@ struct WorldReferenceView: View {
             }
         }
         .fileImporter(
+            isPresented: $importingAtlas,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first, world != nil else {
+                    throw CocoaError(.fileNoSuchFile)
+                }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                if let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                   size > 100_000 {
+                    throw SpriteAtlasError.unsupportedFormat
+                }
+                spriteAtlas = try SpriteAtlas.load(from: Data(contentsOf: url))
+                spriteID = 16
+                importError = nil
+            } catch {
+                importError = error.localizedDescription
+            }
+        }
+        .fileImporter(
             isPresented: $importingReplay,
             allowedContentTypes: [.json],
             allowsMultipleSelection: false
@@ -443,6 +493,7 @@ struct WorldReferenceView: View {
                 importError = error.localizedDescription
             }
         }
+
         .fileImporter(
             isPresented: $importingEntityTrace,
             allowedContentTypes: [.json],
@@ -466,6 +517,7 @@ struct WorldReferenceView: View {
                 importError = error.localizedDescription
             }
         }
+
         .onReceive(movementTimer) { _ in
             if scenePhase == .active && playingMovement {
                 advanceMovement()
@@ -595,5 +647,27 @@ struct WorldReferenceView: View {
             }
         }
         .disabled(world?.adjacent(to: selected, direction: direction) == nil)
+    }
+}
+
+private struct NativeSpritePreview: View {
+    let mask: SpriteMask
+
+    var body: some View {
+        let pixels = mask.pixels()
+        Canvas { context, size in
+            let scaleX = size.width / CGFloat(mask.width)
+            let scaleY = size.height / CGFloat(mask.height)
+            for index in pixels.indices where pixels[index] {
+                let x = CGFloat(index % mask.width) * scaleX
+                let y = CGFloat(index / mask.width) * scaleY
+                context.fill(
+                    Path(CGRect(x: x, y: y, width: scaleX, height: scaleY)),
+                    with: .color(.cyan)
+                )
+            }
+        }
+        .frame(width: CGFloat(mask.width * 4), height: CGFloat(mask.height * 4))
+        .accessibilityLabel("Private source silhouette, \(mask.width) by \(mask.height) pixels")
     }
 }

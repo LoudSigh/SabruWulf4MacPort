@@ -20,6 +20,8 @@ The native apps can [import the private 16×16 world reference](docs/build.md) f
 
 A private, reference-timed 100-frame T-key replay also verifies every RAM/screen hash and exposes numeric player-state changes in the viewer. It is a **recorded fire observation**, not implemented combat; the native movement slice continues to reject fire until hit detection and outcomes are recovered.
 
+The preview launcher can export a **private 196-ID sprite atlas** from the two matching snapshots. The app decodes 152 nonempty bitmap shapes and displays user-selected masks as newly drawn 1-bit silhouettes; the original bytes remain ignored. This does not establish original color, animation order or redistributable art.
+
 To inspect the 160 images linked from its graphics page—or make an **authorized local copy** under ignored `SNAPSHOTS/graphics/downloaded/`—use the [private graphics downloader](docs/download-skoolkit-assets.md). No third-party images are included in this repository.
 
 **Never commit or push disassembly, original instruction bytes, raw RAM dumps or extracted game assets.** The user expressly requires keeping disassembly out of GitHub; `.gitignore` excludes the private analysis directories and common listing formats. Do not distribute original tape, snapshot, Spectrum ROM or game art/audio without confirming applicable rights. A faithful native port still needs source-backed behavioral comparisons.

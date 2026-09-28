@@ -5,15 +5,24 @@ private enum SpriteIndexError: Error, CustomStringConvertible {
     case usage
     case invalidSnapshot
     case invalidTable
+    case inconsistentCaptures
+    case unsafeOutput
+    case existingOutputMismatch
 
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotSpriteIndex <menu.z80> <gameplay.z80> | --self-test"
+            return "Usage: SnapshotSpriteIndex <menu.z80> <gameplay.z80> [--private-atlas] | --self-test"
         case .invalidSnapshot:
             return "Expected two ZX Spectrum 48K snapshots"
         case .invalidTable:
             return "Expected 196 valid sprite pointers beginning at the documented table address"
+        case .inconsistentCaptures:
+            return "The two snapshots have different sprite records or pointers"
+        case .unsafeOutput:
+            return "Run from the repository root with an ignored, non-symlink private directory"
+        case .existingOutputMismatch:
+            return "The existing private sprite atlas has different content"
         }
     }
 }
@@ -41,6 +50,18 @@ private struct Report: Encodable {
     let menu: Summary
     let gameplay: Summary
     let tableIdenticalBetweenCaptures: Bool
+}
+
+private struct AtlasRecord: Encodable {
+    let address: Int
+    let bitmap: Data
+}
+
+private struct PrivateAtlas: Encodable {
+    let schemaVersion = 1
+    let snapshotSHA256: String
+    let pointers: [Int]
+    let records: [AtlasRecord]
 }
 
 private func sha256(_ bytes: [UInt8]) -> String {
@@ -82,19 +103,25 @@ private func inspect(_ file: [UInt8]) throws -> Summary {
     var largest = 0
     for (index, address) in unique.enumerated() {
         let offset = address - 0x4000
+        guard offset + 1 < snapshot.ram48.count else {
+            throw SpriteIndexError.invalidTable
+        }
         let width = Int(snapshot.ram48[offset])
         let height = Int(snapshot.ram48[offset + 1])
         let length = 2 + width * height
         let next = index + 1 < unique.count ? unique[index + 1] : 65536
-        if width <= 8 && height <= 64 && length <= next - address {
-            validHeaders += 1
-            payloadBytes += length
-            spriteRecordBytes.append(
-                contentsOf: snapshot.ram48[offset..<(offset + length)]
-            )
-            largest = max(largest, length)
-            if length == next - address { aligned += 1 }
+        let validBitmap = (1...8).contains(width) && (1...64).contains(height)
+        let emptySentinel = address == 49420 && width == 0 && height == 0
+        guard validBitmap || emptySentinel,
+              length <= next - address,
+              length <= snapshot.ram48.count - offset else {
+            throw SpriteIndexError.invalidTable
         }
+        validHeaders += 1
+        payloadBytes += length
+        spriteRecordBytes.append(contentsOf: snapshot.ram48[offset..<(offset + length)])
+        largest = max(largest, length)
+        if length == next - address { aligned += 1 }
     }
     return Summary(
         snapshotSha256: sha256(file),
@@ -110,6 +137,72 @@ private func inspect(_ file: [UInt8]) throws -> Summary {
         spriteRecordSHA256: sha256(spriteRecordBytes),
         largestRecordBytes: largest
     )
+}
+
+private func writePrivateAtlas(
+    menu: Summary, gameplay: Summary, gameplayFile: [UInt8]
+) throws -> URL {
+    guard menu.tableSha256 == gameplay.tableSha256,
+          menu.spriteRecordSHA256 == gameplay.spriteRecordSHA256,
+          menu.uniquePointers == 153,
+          menu.validSpriteHeaders == 153 else {
+        throw SpriteIndexError.inconsistentCaptures
+    }
+    let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    let tool = root.appendingPathComponent("reverse_engineering/tools/SnapshotSpriteIndex.swift")
+    let ignore = root.appendingPathComponent(".gitignore")
+    guard FileManager.default.fileExists(atPath: tool.path),
+          let rules = try? String(contentsOf: ignore, encoding: .utf8),
+          rules.components(separatedBy: .newlines).contains("reverse_engineering/private/")
+    else { throw SpriteIndexError.unsafeOutput }
+    let directory = root.appendingPathComponent("reverse_engineering/private", isDirectory: true)
+    if FileManager.default.fileExists(atPath: directory.path) {
+        let values = try directory.resourceValues(forKeys: [.isSymbolicLinkKey])
+        guard values.isSymbolicLink != true else { throw SpriteIndexError.unsafeOutput }
+    }
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let snapshot = try Z80Snapshot.load(from: Data(gameplayFile))
+    let tableStart = 49028 - 0x4000
+    let pointers = try decode(Array(snapshot.ram48[tableStart..<(tableStart + 392)]))
+    let unique = Array(Set(pointers)).sorted()
+    let records = try unique.enumerated().map { index, address in
+        let offset = address - 0x4000
+        guard offset + 1 < snapshot.ram48.count else {
+            throw SpriteIndexError.invalidTable
+        }
+        let width = Int(snapshot.ram48[offset])
+        let height = Int(snapshot.ram48[offset + 1])
+        let length = 2 + width * height
+        let next = index + 1 < unique.count ? unique[index + 1] : 65_536
+        let validBitmap = (1...8).contains(width) && (1...64).contains(height)
+        let emptySentinel = address == 49420 && width == 0 && height == 0
+        guard validBitmap || emptySentinel,
+              length <= next - address,
+              length <= snapshot.ram48.count - offset else {
+            throw SpriteIndexError.invalidTable
+        }
+        return AtlasRecord(
+            address: address, bitmap: Data(snapshot.ram48[offset..<(offset + length)])
+        )
+    }
+    let atlas = PrivateAtlas(
+        snapshotSHA256: gameplay.snapshotSha256, pointers: pointers, records: records
+    )
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    let content = try encoder.encode(atlas)
+    let url = directory.appendingPathComponent(
+        "snapshot-\(gameplay.snapshotSha256.prefix(12))-sprite-atlas-v1.json"
+    )
+    if FileManager.default.fileExists(atPath: url.path) {
+        guard try Data(contentsOf: url) == content else {
+            throw SpriteIndexError.existingOutputMismatch
+        }
+    } else {
+        try content.write(to: url, options: .atomic)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
+    return url
 }
 
 @main
@@ -134,13 +227,19 @@ private struct SnapshotSpriteIndex {
                 print("SnapshotSpriteIndex self-test passed")
                 return
             }
-            guard CommandLine.arguments.count == 3 else { throw SpriteIndexError.usage }
-            let menu = try inspect([UInt8](Data(
+            guard (3...4).contains(CommandLine.arguments.count),
+                  CommandLine.arguments.count == 3
+                    || CommandLine.arguments[3] == "--private-atlas" else {
+                throw SpriteIndexError.usage
+            }
+            let menuFile = try [UInt8](Data(
                 contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])
-            )))
-            let gameplay = try inspect([UInt8](Data(
+            ))
+            let gameplayFile = try [UInt8](Data(
                 contentsOf: URL(fileURLWithPath: CommandLine.arguments[2])
-            )))
+            ))
+            let menu = try inspect(menuFile)
+            let gameplay = try inspect(gameplayFile)
             let report = Report(
                 menu: menu,
                 gameplay: gameplay,
@@ -150,6 +249,12 @@ private struct SnapshotSpriteIndex {
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             FileHandle.standardOutput.write(try encoder.encode(report))
             FileHandle.standardOutput.write(Data([0x0A]))
+            if CommandLine.arguments.count == 4 {
+                let url = try writePrivateAtlas(
+                    menu: menu, gameplay: gameplay, gameplayFile: gameplayFile
+                )
+                fputs("Private sprite atlas: \(url.path)\n", stderr)
+            }
         } catch {
             fputs("SnapshotSpriteIndex: \(error)\n", stderr)
             exit(1)
