@@ -28,6 +28,8 @@ struct WorldReferenceView: View {
     @State private var importError: String?
     @State private var art: [Int: WorldRaster] = [:]
     @State private var artStatus: String?
+    @State private var importingBackgroundAtlas = false
+    @State private var backgroundAtlas: BackgroundAtlas?
     @State private var importingSprites = false
     @State private var spriteSamples: [Int: WorldRaster] = [:]
     @State private var importingAtlas = false
@@ -167,9 +169,19 @@ struct WorldReferenceView: View {
                 }
                 .buttonStyle(.bordered)
                 Text(
-                    artStatus ?? "Markers and measured outlines (if available) show placements; no original art is bundled."
+                    backgroundAtlas != nil
+                        ? "Private source shapes take precedence over imported PNG overlays."
+                        : (artStatus ?? "Markers and measured outlines (if available) show placements; no original art is bundled.")
                 )
                 .font(.caption)
+                Button("Import private snapshot backgrounds (optional)") {
+                    importingBackgroundAtlas = true
+                }
+                .buttonStyle(.bordered)
+                if backgroundAtlas != nil {
+                    Text("41 private source bitmaps displayed as monochrome geometry; original attribute color and composition are not yet reproduced.")
+                        .font(.caption)
+                }
                 Button("Preview private sprite silhouettes (optional)") {
                     importingSprites = true
                 }
@@ -268,30 +280,7 @@ struct WorldReferenceView: View {
                         Rectangle().fill(.teal.opacity(0.12))
                         ForEach(placements.indices, id: \.self) { index in
                             let placement = placements[index]
-                            if let graphic = art[placement.graphicAddress] {
-                                image(for: graphic)
-                                    .resizable()
-                                    .interpolation(.none)
-                                    .frame(
-                                        width: graphic.size.width / 4 * area.size.width / 256,
-                                        height: graphic.size.height / 4 * area.size.height / 192
-                                    )
-                                    .blendMode(.screen)
-                                    .position(
-                                        x: (CGFloat(placement.x) + graphic.size.width / 8)
-                                            * area.size.width / 256,
-                                        y: (CGFloat(placement.y) + graphic.size.height / 8)
-                                            * area.size.height / 192
-                                    )
-                            } else {
-                                Circle()
-                                    .fill(.yellow)
-                                    .frame(width: 7, height: 7)
-                                    .position(
-                                        x: (CGFloat(placement.x) + 4) * area.size.width / 256,
-                                        y: (CGFloat(placement.y) + 4) * area.size.height / 192
-                                    )
-                            }
+                            backgroundGraphic(placement, size: area.size)
                             if let width = placement.widthPixels,
                                let height = placement.heightPixels {
                                 Rectangle()
@@ -372,6 +361,7 @@ struct WorldReferenceView: View {
                 selected = WorldReference.capturedGameplayRoom
                 art = [:]
                 artStatus = nil
+                backgroundAtlas = nil
                 spriteSamples = [:]
                 spriteAtlas = nil
                 spriteID = 16
@@ -419,6 +409,29 @@ struct WorldReferenceView: View {
                 artStatus =
                     "Loaded \(imported.count) of \(addresses.count) locally supplied images. "
                     + "Overlaps are approximated; original composition is not yet verified."
+                importError = nil
+            } catch {
+                importError = error.localizedDescription
+            }
+        }
+        .fileImporter(
+            isPresented: $importingBackgroundAtlas,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first, let world else {
+                    throw CocoaError(.fileNoSuchFile)
+                }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                if let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                   size > 100_000 {
+                    throw BackgroundAtlasError.unsupportedFormat
+                }
+                let imported = try BackgroundAtlas.load(from: Data(contentsOf: url))
+                try imported.validate(world: world)
+                backgroundAtlas = imported
                 importError = nil
             } catch {
                 importError = error.localizedDescription
@@ -545,6 +558,51 @@ struct WorldReferenceView: View {
         return movement.player
     }
 
+    @ViewBuilder
+    private func backgroundGraphic(
+        _ placement: WorldPlacement, size: CGSize
+    ) -> some View {
+        if let backgroundAtlas {
+            switch Result(catching: { try backgroundAtlas.mask(at: placement.graphicAddress) }) {
+            case .success(let mask):
+                NativeBackgroundPreview(mask: mask)
+                    .frame(
+                        width: CGFloat(mask.width) * size.width / 256,
+                        height: CGFloat(mask.height) * size.height / 192
+                    )
+                    .position(
+                        x: (CGFloat(placement.x) + CGFloat(mask.width) / 2) * size.width / 256,
+                        y: (CGFloat(placement.y) + CGFloat(mask.height) / 2) * size.height / 192
+                    )
+            case .failure(let error):
+                Text(error.localizedDescription)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+            }
+        } else if let graphic = art[placement.graphicAddress] {
+            image(for: graphic)
+                .resizable()
+                .interpolation(.none)
+                .frame(
+                    width: graphic.size.width / 4 * size.width / 256,
+                    height: graphic.size.height / 4 * size.height / 192
+                )
+                .blendMode(.screen)
+                .position(
+                    x: (CGFloat(placement.x) + graphic.size.width / 8) * size.width / 256,
+                    y: (CGFloat(placement.y) + graphic.size.height / 8) * size.height / 192
+                )
+        } else {
+            Circle()
+                .fill(.yellow)
+                .frame(width: 7, height: 7)
+                .position(
+                    x: (CGFloat(placement.x) + 4) * size.width / 256,
+                    y: (CGFloat(placement.y) + 4) * size.height / 192
+                )
+        }
+    }
+
     private var currentEntityFrame: ReferenceEntityFrame? {
         guard let entityTrace else { return nil }
         return entityTrace.trace[min(Int(replayFrameValue), entityTrace.trace.count - 1)]
@@ -585,6 +643,9 @@ struct WorldReferenceView: View {
         }
         if movementMarkerPosition != nil {
             parts.append("Pink ring marks the measured movement position.")
+        }
+        if backgroundAtlas != nil {
+            parts.append("Private bitmap silhouettes show the room backgrounds in monochrome.")
         }
         if let frame = currentEntityFrame,
            frame.manualEntity.kind != 0 || frame.fullEmulatorEntity.kind != 0 {
@@ -681,7 +742,31 @@ private struct NativeSpritePreview: View {
                 )
             }
         }
+
         .frame(width: CGFloat(mask.width * 4), height: CGFloat(mask.height * 4))
         .accessibilityLabel("Private source silhouette, \(mask.width) by \(mask.height) pixels")
+    }
+}
+
+private struct NativeBackgroundPreview: View {
+    let mask: BackgroundMask
+
+    var body: some View {
+        let pixels = mask.pixels()
+        Canvas { context, size in
+            let scaleX = size.width / CGFloat(mask.width)
+            let scaleY = size.height / CGFloat(mask.height)
+            for index in pixels.indices where pixels[index] {
+                context.fill(
+                    Path(CGRect(
+                        x: CGFloat(index % mask.width) * scaleX,
+                        y: CGFloat(index / mask.width) * scaleY,
+                        width: scaleX, height: scaleY
+                    )),
+                    with: .color(.mint.opacity(0.8))
+                )
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

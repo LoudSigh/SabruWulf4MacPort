@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "sourceSnapshots": [
+    "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+    "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c"
+  ],
+  "distinctBackgrounds": 41,
+  "totalPlacements": 919,
+  "recordBytes": 9686,
+  "recordBytesSHA256": "2691664c054cf02c5dc03076f5cc6633857d98c0c800cb053787bd9dd5360f61",
+  "recordsIdenticalBetweenCaptures": true,
+  "bitmapFormat": "height in pixels, width in bytes, height-times-width 1-bit MSB-first bitmap bytes, then attribute height in 8-pixel rows, attribute width in bytes and per-cell attribute bytes",
+  "limits": "The local preview draws only 1-bit shapes. The source's color attributes, layering, transparency and animation order have not yet been reproduced in the native compositor."
+}

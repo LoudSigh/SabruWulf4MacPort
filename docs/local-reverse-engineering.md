@@ -55,6 +55,18 @@ git check-ignore reverse_engineering/private/snapshot-803e4197989c-sprite-atlas-
 
 The numeric result is summarized in [sprite-index.json](../reverse_engineering/analysis/sprite-index.json). Without `--private-atlas`, the tool emits no original bytes. With the flag, it checks both captures agree before writing the 196-pointer table and 153 bounded records **only** to the ignored private JSON file. One 0×0 record is an explicit empty sentinel reused by 14 IDs; the other 152 records contain bitmap shapes. Never stage or distribute the atlas. Its raw bitmap format was verified for two examples; palette, compositor and animation remain unverified.
 
+The room exporter has a similar local output:
+
+```sh
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift \
+  reverse_engineering/tools/SnapshotRoomIndex.swift -o "$OUT/SnapshotRoomIndex"
+"$OUT/SnapshotRoomIndex" SNAPSHOTS/Snapshot.z80 SNAPSHOTS/Snapshot_GamePlay.z80 --private-map \
+  > reverse_engineering/private/room-index-report.json
+git check-ignore reverse_engineering/private/snapshot-803e4197989c-background-atlas-v1.json
+```
+
+This additionally checks the bitmap and attribute headers of all 41 background records, matches the complete records across snapshots, and writes their bytes **only** under the ignored private directory. The native app validates the aggregate hash and placement dimensions before drawing 1-bit room geometry. [background-index.json](../reverse_engineering/analysis/background-index.json) contains numeric evidence, not graphics or instruction bytes.
+
 ## Private, bounded input comparison
 
 `SnapshotReplay.swift` schedules one keyboard key at frame index 20 and releases it at index 40, with a 48K IM1 boundary at 69,888 cycles. It reads the FE keyboard matrix on **every** I/O read rather than relying on a frozen emulator time counter. It records numeric instruction/read/write counts and frame hashes, no screen pixels or original code:

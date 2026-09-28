@@ -226,6 +226,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: All 100 T-run actor-state IDs resolve to nonempty source masks. No bitmap payload is bundled or pushed, and source-mask display never changes movement or claims full animation/combat fidelity.
 - **Edge Cases / Variants**: Invalid actor ID, empty sentinel ID, file permission loss and large text/accessibility settings.
 
+### TC-020: Render source background bitmaps from local snapshots
+- **Priority**: P1
+- **Preconditions**: `SnapshotRoomIndex --private-map` has generated the private world and background atlas from both verified captures.
+- **Steps**:
+  1. Import the matching world, then `snapshot-803e4197989c-background-atlas-v1.json`.
+  2. Visit several world positions and confirm native mint 1-bit shapes align with orange measured bounds; compare the captured room's placement coordinates.
+  3. Import local PNG backgrounds as well, then replace the world. Check that source atlas precedence is clear and stale art/atlas data is removed when world data changes.
+  4. Attempt a modified bitmap byte, a malformed attribute header, an oversized file and an atlas missing one of 41 referenced records.
+- **Expected Result**: The importer verifies 41 unique background records, 9,686 source bytes and all 919 references. Invalid data reports an error, with no silent fallback to invented bitmaps. Original attribute color and sprite compositing remain unimplemented; no original pixels are bundled or pushed.
+- **Edge Cases / Variants**: Multi-placement overlap, 4:3 resizing, VoiceOver room summary and iOS/visionOS private file access.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

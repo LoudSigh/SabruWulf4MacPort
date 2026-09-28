@@ -6,6 +6,8 @@ An additional reference-timed T-key replay matches **100/100 RAM and screen fram
 
 A validated private atlas now holds 196 sprite-pointer IDs and 153 targets: 152 nonempty bitmap records and one empty sentinel. The native viewer decodes and draws their generic monochrome shapes after a rights-safe local import; these source pixels and the original game bytes remain untracked. Palette, masking/compositing and animation-to-game-state mapping are not verified.
 
+The same private pipeline now validates **41 background bitmap-plus-attribute records** (9,686 bytes identical across both snapshots) and draws the monochrome shapes behind all 919 room placements in the native 4:3 viewer. The attribute grid is parsed but original color/layer composition is not ported; the public app still bundles no game pixels.
+
 ## 1. Outcome and boundaries
 
 Analyze the user-supplied ZX Spectrum 48K edition of Ultimate's *Sabre Wulf*: recover its loaded program, code/data boundaries, graphics, room data, audio behavior, rules, and observable interactions. Deliver independently launchable, native macOS, iOS, and visionOS apps implemented in Swift. The playable port must implement the recovered behavior, not embed a Spectrum emulator as its game runtime. Use the emulator only as a reference, test oracle, and analysis tool.

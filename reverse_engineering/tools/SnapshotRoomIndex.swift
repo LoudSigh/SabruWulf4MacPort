@@ -144,6 +144,49 @@ private struct PrivatePlacement: Encodable {
     let heightPixels: Int
 }
 
+private struct PrivateBackgroundRecord: Encodable, Equatable {
+    let address: Int
+    let data: Data
+}
+
+private struct PrivateBackgroundAtlas: Encodable {
+    let schemaVersion = 1
+    let snapshotSHA256: String
+    let records: [PrivateBackgroundRecord]
+}
+
+private func backgroundRecords(
+    _ ram: [UInt8], addresses: [Int]
+) throws -> [PrivateBackgroundRecord] {
+    try addresses.enumerated().map { index, address in
+        let offset = address - 0x4000
+        guard offset >= 0, offset + 3 < ram.count else {
+            throw RoomIndexError.invalidTable
+        }
+        let height = Int(ram[offset])
+        let width = Int(ram[offset + 1])
+        let bitmapLength = height * width
+        let attributes = offset + 2 + bitmapLength
+        guard (1...192).contains(height), (1...32).contains(width),
+              attributes + 1 < ram.count else {
+            throw RoomIndexError.invalidTable
+        }
+        let attributeHeight = Int(ram[attributes])
+        let attributeWidth = Int(ram[attributes + 1])
+        let length = 4 + bitmapLength + attributeHeight * attributeWidth
+        let next = index + 1 < addresses.count ? addresses[index + 1] : 0x9692
+        guard attributeHeight == (height + 7) / 8,
+              attributeWidth == width,
+              address + length <= next,
+              length <= ram.count - offset else {
+            throw RoomIndexError.invalidTable
+        }
+        return PrivateBackgroundRecord(
+            address: address, data: Data(ram[offset..<(offset + length)])
+        )
+    }
+}
+
 private func roomPlacements(_ ram: [UInt8], address: Int, before next: Int) throws -> PrivateRoom {
     var cursor = address
     var placements: [PrivatePlacement] = []
@@ -379,6 +422,27 @@ private func writePrivateWorld(_ world: PrivateWorld) throws -> URL {
     return url
 }
 
+private func writePrivateBackgroundAtlas(_ atlas: PrivateBackgroundAtlas) throws -> URL {
+    let directory = try privateDirectory()
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    let data = try encoder.encode(atlas)
+    let url = directory.appendingPathComponent(
+        "snapshot-\(atlas.snapshotSHA256.prefix(12))-background-atlas-v1.json"
+    )
+    if FileManager.default.fileExists(atPath: url.path) {
+        guard try Data(contentsOf: url) == data else {
+            throw RoomIndexError.existingOutputMismatch
+        }
+    } else {
+        try data.write(to: url, options: .atomic)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o600], ofItemAtPath: url.path
+        )
+    }
+    return url
+}
+
 @main
 private struct SnapshotRoomIndex {
     static func main() {
@@ -429,6 +493,7 @@ private struct SnapshotRoomIndex {
             )
             var privateMap: URL?
             var privateWorld: URL?
+            var privateBackgrounds: URL?
             if CommandLine.arguments.count == 4 {
                 guard report.layoutIdenticalBetweenCaptures,
                       report.roomTableIdenticalBetweenCaptures,
@@ -455,6 +520,21 @@ private struct SnapshotRoomIndex {
                         rooms: rooms
                     )
                 )
+                let addresses = Array(
+                    Set(rooms.flatMap(\.placements).map(\.graphicAddress))
+                ).sorted()
+                let gameRecords = try backgroundRecords(
+                    gameplay.ram48, addresses: addresses
+                )
+                guard try gameRecords == backgroundRecords(
+                    menu.ram48, addresses: addresses
+                ) else { throw RoomIndexError.inconsistentCaptures }
+                privateBackgrounds = try writePrivateBackgroundAtlas(
+                    PrivateBackgroundAtlas(
+                        snapshotSHA256: gameplaySummary.snapshotSha256,
+                        records: gameRecords
+                    )
+                )
             }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -465,6 +545,9 @@ private struct SnapshotRoomIndex {
             }
             if let privateWorld {
                 fputs("Private world data: \(privateWorld.path)\n", stderr)
+            }
+            if let privateBackgrounds {
+                fputs("Private backgrounds: \(privateBackgrounds.path)\n", stderr)
             }
         } catch {
             fputs("SnapshotRoomIndex: \(error)\n", stderr)
