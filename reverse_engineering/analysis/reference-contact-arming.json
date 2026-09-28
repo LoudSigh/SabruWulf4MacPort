@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "observedFirstContactArming": [
+    {"schedule": "no-fire-encounter-schedule.json", "positiveContactFrame": 162, "timerZeroToOneFrame": 163, "inputKind": 27, "roomID": 152, "lifeByte": 1},
+    {"schedule": "unrelated-a-control-schedule.json", "positiveContactFrame": 169, "timerZeroToOneFrame": 169, "inputKind": 27, "roomID": 152, "lifeByte": 1},
+    {"schedule": "fire-before-contact-schedule.json", "positiveContactFrame": 228, "timerZeroToOneFrame": 228, "inputKind": 16, "roomID": 152, "lifeByte": 1},
+    {"schedule": "restart-ready-w-q-schedule.json", "positiveContactFrame": 868, "timerZeroToOneFrame": 868, "inputKind": 19, "roomID": 168, "lifeByte": 4}
+  ],
+  "totals": {"matchingTimerArmingWrites": 4, "observedTimerArmingWrites": 4, "referenceContactRunRAMFrames": 3300},
+  "limits": "The pure timer-arming rule receives an already-positive source contact and supports only four measured first-injury states. Different display-frame placement of contact and timer write is not a general delay. Neither collision polling, actor-tick scheduling nor subsequent injury onset is autonomously triggered by this helper."
+}

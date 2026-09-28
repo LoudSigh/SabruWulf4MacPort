@@ -471,6 +471,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: **4/4** source-supplied first-injury entries match; this is not autonomous damage or a generalized contact delay.
 - **Edge Cases / Variants**: Different player kind, other room/life count, prior horizontal velocity and timer not equal to one.
 
+### TC-042: Arm only the observed positive first contacts
+- **Priority**: P1
+- **Preconditions**: SHA-checked private T/no-T/A 800-frame menu-return contact reports and W/Q 900-frame contact/player-write reports.
+- **Steps**:
+  1. Require 3,300/3,300 full RAM-parity frames and positive contact frames 162, 169, 228 and 868.
+  2. Match the corresponding first-injury player timer 0→1 writes at frames 163, 169, 228 and 868.
+  3. Supply a positive contact and each bounded player kind/room/life/velocity input to `CapturedContactArming`; verify timer one.
+  4. Reject contact false and all unsupported states. Keep polling cadence and subsequent kind-64 onset external.
+- **Expected Result**: **4/4** bounded source arming writes match without asserting a fixed display-frame damage delay.
+- **Edge Cases / Variants**: Contact at a display-frame boundary, repeat contact during injury, other life counts and a source contact predicate with no player damage.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

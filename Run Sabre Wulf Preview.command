@@ -853,6 +853,12 @@ if ! SABRE_PRIVATE_INJURY_START_DIR="$ROOT/$PRIVATE" \
     cat "$ROOT/$PRIVATE/injury-start-test.log" >&2
     exit 1
 fi
+if ! SABRE_PRIVATE_INJURY_START_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedContactArmingTests \
+    > "$ROOT/$PRIVATE/contact-arming-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/contact-arming-test.log" >&2
+    exit 1
+fi
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"

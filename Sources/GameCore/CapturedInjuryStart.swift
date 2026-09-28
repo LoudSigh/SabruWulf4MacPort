@@ -20,13 +20,21 @@ public enum CapturedInjuryStart {
         kind: UInt8, timer: UInt8, lifeByte: UInt8,
         room: RoomID, velocityX: Int
     ) throws -> CapturedInjuryStartStep {
+        guard timer == 1,
+              supportsPlayer(kind: kind, lifeByte: lifeByte,
+                             room: room, velocityX: velocityX) else {
+            throw CapturedInjuryStartError.unsupportedState
+        }
+        return CapturedInjuryStartStep(kind: 64, timer: 32, velocityX: 3)
+    }
+
+    static func supportsPlayer(
+        kind: UInt8, lifeByte: UInt8, room: RoomID, velocityX: Int
+    ) -> Bool {
         let oneLifeEncounter = lifeByte == 1 && room == RoomID(8, 9)
             && (kind == 16 || kind == 27) && velocityX == 0
         let fourLifeRestart = lifeByte == 4 && room == RoomID(8, 10)
             && kind == 19 && velocityX == -29
-        guard timer == 1, oneLifeEncounter || fourLifeRestart else {
-            throw CapturedInjuryStartError.unsupportedState
-        }
-        return CapturedInjuryStartStep(kind: 64, timer: 32, velocityX: 3)
+        return oneLifeEncounter || fourLifeRestart
     }
 }
