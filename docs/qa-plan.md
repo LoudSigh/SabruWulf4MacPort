@@ -504,6 +504,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: One verified source restart-to-menu path; its state sequence is a future native parity target, not a finished port.
 - **Edge Cases / Variants**: Earlier menu match at 503, source actor bytes after menu return, skipped keyboard poll and alternate damage paths.
 
+### TC-045: Final-life reverse knockback before kind 69
+- **Priority**: P1
+- **Preconditions**: Verified private 1,500-frame W/Q source player-write report and life byte 1 before the final injury.
+- **Steps**:
+  1. Pair 45 observed X writes (191→56) with 45 timer writes (32→77) by source execution order during kind 68, not display frames.
+  2. Supply each measured actor tick to `CapturedNewGameInjuryTick` with room 168, life byte 1 and horizontal velocity −3.
+  3. Verify kind 68→69 and timer 77→63 at frame 1434; reject an additional unsupported kind-68 tick.
+- **Expected Result**: **45/45** reverse-knockback X/timer updates and the terminal phase match; no general direction choice or automatic native damage is inferred.
+- **Edge Cases / Variants**: Last-life contact trigger, wall collision at X=56, cross-frame timer write and subsequent kind-69 countdown.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

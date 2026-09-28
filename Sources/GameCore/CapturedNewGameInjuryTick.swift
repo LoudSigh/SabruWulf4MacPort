@@ -4,7 +4,7 @@ public enum CapturedNewGameInjuryError: Error, LocalizedError {
     case unsupportedState
 
     public var errorDescription: String? {
-        "This injury tick covers only the observed four-life, kind-64 knockback in room 168."
+        "This injury tick covers only the observed four-life and final-life knockback paths in room 168."
     }
 }
 
@@ -24,24 +24,31 @@ public enum CapturedNewGameInjuryTick {
         kind: UInt8, room: RoomID, x: Int, y: Int,
         timer: UInt8, lifeByte: UInt8, velocityX: Int
     ) throws -> CapturedNewGameInjuryStep {
-        guard kind == 64, room == RoomID(8, 10),
-              (56...188).contains(x), y == 112,
-              (32...76).contains(Int(timer)), lifeByte == 4,
-              x == 56 + 3 * (Int(timer) - 32),
-              velocityX == 3 else {
+        let initial = kind == 64 && lifeByte == 4 && velocityX == 3
+            && x == 56 + 3 * (Int(timer) - 32)
+        let final = kind == 68 && lifeByte == 1 && velocityX == -3
+            && x == 191 - 3 * (Int(timer) - 32)
+        guard room == RoomID(8, 10), y == 112,
+              (32...76).contains(Int(timer)), initial || final else {
             throw CapturedNewGameInjuryError.unsupportedState
         }
-        return CapturedNewGameInjuryStep(x: x + 3, timer: timer + 1)
+        return CapturedNewGameInjuryStep(
+            x: x + velocityX, timer: timer + 1
+        )
     }
 
     public static func finishKnockback(
         kind: UInt8, room: RoomID, x: Int, y: Int,
         timer: UInt8, lifeByte: UInt8
     ) throws -> CapturedNewGameInjuryPhase {
-        guard kind == 64, room == RoomID(8, 10),
-              x == 191, y == 112, timer == 77, lifeByte == 4 else {
+        let initial = kind == 64 && x == 191 && lifeByte == 4
+        let final = kind == 68 && x == 56 && lifeByte == 1
+        guard room == RoomID(8, 10), y == 112, timer == 77,
+              initial || final else {
             throw CapturedNewGameInjuryError.unsupportedState
         }
-        return CapturedNewGameInjuryPhase(kind: 65, timer: 63)
+        return CapturedNewGameInjuryPhase(
+            kind: kind + 1, timer: 63
+        )
     }
 }
