@@ -30,6 +30,7 @@ struct WorldReferenceView: View {
     @State private var artStatus: String?
     @State private var importingBackgroundAtlas = false
     @State private var backgroundAtlas: BackgroundAtlas?
+    @State private var sourceAttributeColors = false
     @State private var importingSprites = false
     @State private var spriteSamples: [Int: WorldRaster] = [:]
     @State private var importingAtlas = false
@@ -179,7 +180,13 @@ struct WorldReferenceView: View {
                 }
                 .buttonStyle(.bordered)
                 if backgroundAtlas != nil {
-                    Text("41 private source bitmaps displayed as monochrome geometry; original attribute color and composition are not yet reproduced.")
+                    Toggle(
+                        "Preview 48K attribute colors (approximate)",
+                        isOn: $sourceAttributeColors
+                    )
+                    Text(sourceAttributeColors
+                        ? "Source ink/paper colors; background order, transparency and FLASH timing remain unverified."
+                        : "41 private source bitmaps displayed as monochrome geometry.")
                         .font(.caption)
                 }
                 Button("Preview private sprite silhouettes (optional)") {
@@ -362,6 +369,7 @@ struct WorldReferenceView: View {
                 art = [:]
                 artStatus = nil
                 backgroundAtlas = nil
+                sourceAttributeColors = false
                 spriteSamples = [:]
                 spriteAtlas = nil
                 spriteID = 16
@@ -432,6 +440,7 @@ struct WorldReferenceView: View {
                 let imported = try BackgroundAtlas.load(from: Data(contentsOf: url))
                 try imported.validate(world: world)
                 backgroundAtlas = imported
+                sourceAttributeColors = false
                 importError = nil
             } catch {
                 importError = error.localizedDescription
@@ -565,7 +574,9 @@ struct WorldReferenceView: View {
         if let backgroundAtlas {
             switch Result(catching: { try backgroundAtlas.mask(at: placement.graphicAddress) }) {
             case .success(let mask):
-                NativeBackgroundPreview(mask: mask)
+                NativeBackgroundPreview(
+                    mask: mask, useAttributes: sourceAttributeColors
+                )
                     .frame(
                         width: CGFloat(mask.width) * size.width / 256,
                         height: CGFloat(mask.height) * size.height / 192
@@ -645,7 +656,9 @@ struct WorldReferenceView: View {
             parts.append("Pink ring marks the measured movement position.")
         }
         if backgroundAtlas != nil {
-            parts.append("Private bitmap silhouettes show the room backgrounds in monochrome.")
+            parts.append(sourceAttributeColors
+                ? "Approximate 48K attribute colors show private source backgrounds."
+                : "Private bitmap silhouettes show the room backgrounds in monochrome.")
         }
         if let frame = currentEntityFrame,
            frame.manualEntity.kind != 0 || frame.fullEmulatorEntity.kind != 0 {
@@ -750,20 +763,30 @@ private struct NativeSpritePreview: View {
 
 private struct NativeBackgroundPreview: View {
     let mask: BackgroundMask
+    let useAttributes: Bool
 
     var body: some View {
         let pixels = mask.pixels()
+        let indices = useAttributes ? mask.paletteIndices() : []
+        let palette = SpectrumPalette.colors.map { rgb in
+            Color(
+                red: Double(rgb.red) / 255,
+                green: Double(rgb.green) / 255,
+                blue: Double(rgb.blue) / 255
+            )
+        }
         Canvas { context, size in
             let scaleX = size.width / CGFloat(mask.width)
             let scaleY = size.height / CGFloat(mask.height)
-            for index in pixels.indices where pixels[index] {
+            for index in pixels.indices where useAttributes || pixels[index] {
                 context.fill(
                     Path(CGRect(
                         x: CGFloat(index % mask.width) * scaleX,
                         y: CGFloat(index / mask.width) * scaleY,
                         width: scaleX, height: scaleY
                     )),
-                    with: .color(.mint.opacity(0.8))
+                    with: .color(useAttributes
+                        ? palette[Int(indices[index])] : .mint.opacity(0.8))
                 )
             }
         }

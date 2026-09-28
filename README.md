@@ -22,7 +22,7 @@ A private, reference-timed 100-frame T-key replay also verifies every RAM/screen
 
 The preview launcher can export a **private 196-ID sprite atlas** from the two matching snapshots. The app decodes 152 nonempty bitmap shapes and displays user-selected masks as newly drawn 1-bit silhouettes; the original bytes remain ignored. This does not establish original color, animation order or redistributable art.
 
-A second ignored atlas recovers **41 distinct background bitmaps** and their attribute-grid structure from the supplied snapshots, covering all 919 imported placements. The native explorer can draw the recovered shapes in monochrome without downloaded PNGs; original per-cell colors, transparency and compositing are still unknown. This is inspectable progress toward faithful presentation, not completed gameplay or a distributable original-art build.
+A second ignored atlas recovers **41 distinct background bitmaps** and their attribute-grid structure from the supplied snapshots, covering all 919 imported placements. The native explorer can draw recovered monochrome shapes without downloaded PNGs, with an optional **approximate 48K ink/paper color preview**. FLASH timing, transparency and whole-room compositing remain unverified. This is inspectable progress toward faithful presentation, not completed gameplay or a distributable original-art build.
 
 To inspect the 160 images linked from its graphics page—or make an **authorized local copy** under ignored `SNAPSHOTS/graphics/downloaded/`—use the [private graphics downloader](docs/download-skoolkit-assets.md). No third-party images are included in this repository.
 

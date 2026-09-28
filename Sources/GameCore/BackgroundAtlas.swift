@@ -24,6 +24,8 @@ public struct BackgroundMask: Sendable {
     public let width: Int
     public let height: Int
     private let decodedPixels: [Bool]
+    private let sourceAttributes: [UInt8]
+    private let decodedPaletteIndices: [UInt8]
 
     public init(record: Data) throws {
         guard record.count >= 5 else { throw BackgroundAtlasError.invalidRecord }
@@ -43,14 +45,34 @@ public struct BackgroundMask: Sendable {
         width = pixelWidth
         self.height = height
         let bitmap = Array(record[2..<attributes])
-        decodedPixels = (0..<(pixelWidth * height)).map { index in
+        let attributeBytes = Array(record[(attributes + 2)..<record.count])
+        let pixels = (0..<(pixelWidth * height)).map { index in
             let byte = bitmap[(index / pixelWidth) * bytesPerRow + (index % pixelWidth) / 8]
             return byte & (1 << (7 - index % 8)) != 0
+        }
+        decodedPixels = pixels
+        sourceAttributes = attributeBytes
+        decodedPaletteIndices = pixels.indices.map { index in
+            let attributeOffset = (index / pixelWidth / 8) * bytesPerRow
+                + (index % pixelWidth) / 8
+            return SpectrumAttribute(attributeBytes[attributeOffset])
+                .paletteIndex(pixelOn: pixels[index])
         }
     }
 
     public func pixels() -> [Bool] {
         decodedPixels
+    }
+
+    public func paletteIndices(flashOn: Bool = false) -> [UInt8] {
+        if !flashOn { return decodedPaletteIndices }
+        let bytesPerRow = width / 8
+        return decodedPixels.indices.map { index in
+            let attributeOffset = (index / width / 8) * bytesPerRow
+                + (index % width) / 8
+            return SpectrumAttribute(sourceAttributes[attributeOffset])
+                .paletteIndex(pixelOn: decodedPixels[index], flashOn: flashOn)
+        }
     }
 }
 

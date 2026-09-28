@@ -232,9 +232,10 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Steps**:
   1. Import the matching world, then `snapshot-803e4197989c-background-atlas-v1.json`.
   2. Visit several world positions and confirm native mint 1-bit shapes align with orange measured bounds; compare the captured room's placement coordinates.
-  3. Import local PNG backgrounds as well, then replace the world. Check that source atlas precedence is clear and stale art/atlas data is removed when world data changes.
-  4. Attempt a modified bitmap byte, a malformed attribute header, an oversized file and an atlas missing one of 41 referenced records.
-- **Expected Result**: The importer verifies 41 unique background records, 9,686 source bytes and all 919 references. Invalid data reports an error, with no silent fallback to invented bitmaps. Original attribute color and sprite compositing remain unimplemented; no original pixels are bundled or pushed.
+  3. Toggle the approximate attribute-color preview; verify synthetic ink/paper/bright/FLASH-bit tests, but do not claim screen parity.
+  4. Import local PNG backgrounds as well, then replace the world. Check that source atlas precedence is clear and stale art/atlas data is removed when world data changes.
+  5. Attempt a modified bitmap byte, a malformed attribute header, an oversized file and an atlas missing one of 41 referenced records.
+- **Expected Result**: The importer verifies 41 unique background records, 9,686 source bytes and all 919 references. Invalid data reports an error, with no silent fallback to invented bitmaps. Optional standard 48K attribute colors are clearly approximate; FLASH timing, transparency and full-scene sprite compositing remain unimplemented. No original pixels are bundled or pushed.
 - **Edge Cases / Variants**: Multi-placement overlap, 4:3 resizing, VoiceOver room summary and iOS/visionOS private file access.
 
 ## Regression cadence and coverage
