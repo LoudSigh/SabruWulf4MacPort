@@ -21,6 +21,29 @@
     "uncoveredPixels": 20096,
     "method": "Direct source X/Y in room placement order; complement each bitmap bit before mapping the record's 48K attribute ink/paper to RGB."
   },
+  "replayedRoomScreenChecks": [
+    {
+      "schedule": "upper-exit-schedule.json",
+      "frame": 180,
+      "roomID": 152,
+      "roomTemplate": 6,
+      "placements": 20,
+      "coveredRGBPixels": 28544,
+      "matchingRGBPixels": 28544,
+      "uncoveredPixels": 20608
+    },
+    {
+      "schedule": "west-early-schedule.json",
+      "frame": 260,
+      "roomID": 151,
+      "roomTemplate": 14,
+      "placements": 17,
+      "coveredRGBPixels": 30720,
+      "matchingRGBPixels": 30720,
+      "uncoveredPixels": 18432,
+      "matchingRAMFramesAgainstBackup": 260
+    }
+  ],
   "bitmapFormat": "height in pixels, width in bytes, height-times-width 1-bit MSB-first bitmap bytes, then attribute height in 8-pixel rows, attribute width in bytes and per-cell attribute bytes",
   "limits": "The local preview draws 1-bit shapes with an optional approximate ink/paper palette. FLASH timing, layering, transparency and animation remain unverified in the native compositor."
 }

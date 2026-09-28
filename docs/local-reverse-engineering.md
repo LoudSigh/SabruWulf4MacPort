@@ -78,7 +78,22 @@ swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift Sources/GameCore/*.swift 
   > reverse_engineering/private/background-pixel-parity.json
 ```
 
-The tool fails unless the bitmap-bit inversion and source-direct X/Y reproduce **29,056/29,056 covered RGB pixels** in room 168 of the unmodified snapshot. The remaining 20,096 screen pixels are **uncovered**, not claimed as correct. It prints only numeric evidence and never writes a screenshot or source pixels outside the ignored private directory.
+The tool fails unless the bitmap-bit inversion and source-direct X/Y reproduce **29,056/29,056 covered RGB pixels** in room 168 of the unmodified snapshot. The remaining 20,096 screen pixels are **uncovered**, not claimed as correct. It prints only numeric evidence and never writes a screenshot or source pixels outside the ignored private directory. To compare later reference-timed frames in other rooms, pass a sorted, nonoverlapping source-free keyboard schedule and frame count:
+
+```sh
+"$OUT/VerifyBackgroundScreen" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+  reverse_engineering/private/snapshot-803e4197989c-world-v2.json \
+  reverse_engineering/private/snapshot-803e4197989c-background-atlas-v1.json \
+  --schedule reverse_engineering/analysis/upper-exit-schedule.json 180 \
+  > reverse_engineering/private/background-north-parity.json
+"$OUT/VerifyBackgroundScreen" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+  reverse_engineering/private/snapshot-803e4197989c-world-v2.json \
+  reverse_engineering/private/snapshot-803e4197989c-background-atlas-v1.json \
+  --schedule reverse_engineering/analysis/west-early-schedule.json 260 \
+  > reverse_engineering/private/background-west-parity.json
+```
+
+The north exit matches **28,544/28,544** covered pixels in room 152 (template 6); the earlier west exit matches **30,720/30,720** in room 151 (template 14), with **260/260 RAM frames** also matching the backup emulator. The launcher repeats all three checks locally. Their uncovered areas, dynamic sprites and other room templates remain unverified.
 
 ## Private, bounded input comparison
 

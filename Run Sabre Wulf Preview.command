@@ -88,6 +88,16 @@ fi
     "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
     > "$ROOT/$PRIVATE/background-pixel-parity.json"
+"$ROOT/$PRIVATE/VerifyBackgroundScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
+    --schedule reverse_engineering/analysis/upper-exit-schedule.json 180 \
+    > "$ROOT/$PRIVATE/background-north-parity.json"
+"$ROOT/$PRIVATE/VerifyBackgroundScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
+    --schedule reverse_engineering/analysis/west-early-schedule.json 260 \
+    > "$ROOT/$PRIVATE/background-west-parity.json"
 
 printf 'Preparing a private 100-frame Q-key reference replay...\n'
 if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \

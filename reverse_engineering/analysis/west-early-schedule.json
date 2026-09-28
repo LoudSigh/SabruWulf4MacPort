@@ -1,0 +1,5 @@
+[
+  {"key": "w", "startFrame": 20, "endFrame": 30},
+  {"key": "e", "startFrame": 30, "endFrame": 100},
+  {"key": "q", "startFrame": 100, "endFrame": 260}
+]
