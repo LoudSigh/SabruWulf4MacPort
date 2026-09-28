@@ -39,6 +39,10 @@
     "nextKind": 69,
     "nextTimer": 63
   },
+  "intermediateStationaryInjuries": [
+    {"lifeByte": 3, "kind64EntryFrame": 1064, "kind65EntryFrame": 1066, "x": 191, "inputTimer": 32, "nextTimer": 63},
+    {"lifeByte": 2, "kind64EntryFrame": 1251, "kind65EntryFrame": 1253, "x": 191, "inputTimer": 32, "nextTimer": 63}
+  ],
   "observedLifeByteChanges": [
     {"frame": 983, "from": 4, "to": 3},
     {"frame": 1131, "from": 3, "to": 2},
@@ -53,5 +57,5 @@
     "lifeDecrementEntryFrames": [231, 983, 1131, 1317, 1499],
     "note": "The initial kind-65 countdown precedes the new-game restart; later life-byte 4, 3 and 2 injuries use kind 65. The final 1-to-0 loss uses kind 69 and ends in kind 21."
   },
-  "limits": "Source X and timer writes may straddle displayed frames. The pure helpers accept externally scheduled actor-update events only for the measured kind-64 and kind-68 directional knockbacks, kind-65 life-byte 1-4 countdowns, and final kind-69 life-byte-1 countdown in room 168. They do not infer contact-to-injury timing, generalize room collisions or trigger the subsequent menu/game-over flow."
+  "limits": "Source X and timer writes may straddle displayed frames. The pure helpers accept externally scheduled actor-update events only for the measured kind-64 and kind-68 directional knockbacks, two stationary kind-64 intermediate exits, kind-65 life-byte 1-4 countdowns, and final kind-69 life-byte-1 countdown in room 168. They do not infer contact-to-injury timing, generalize room collisions or trigger the subsequent menu/game-over flow."
 }

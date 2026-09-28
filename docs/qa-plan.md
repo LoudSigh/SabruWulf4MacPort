@@ -514,6 +514,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: **45/45** reverse-knockback X/timer updates and the terminal phase match; no general direction choice or automatic native damage is inferred.
 - **Edge Cases / Variants**: Last-life contact trigger, wall collision at X=56, cross-frame timer write and subsequent kind-69 countdown.
 
+### TC-046: Intermediate stationary injury exits
+- **Priority**: P1
+- **Preconditions**: Verified 1,500-frame private W/Q source player-write report.
+- **Steps**:
+  1. Confirm life bytes 3 and 2 enter kind 64 at frames 1064 and 1251 with X=191.
+  2. Verify no X writes before kind 64→65/timer 32→63 at frames 1066 and 1253.
+  3. Supply the two observed phase-exit events to `CapturedIntermediateInjuryTick`; reject other lives, positions and timers.
+- **Expected Result**: **2/2** stationary transitions match; no general injury duration is inferred.
+- **Edge Cases / Variants**: Collision-free motion, final-life reverse knockback and interrupted source actor updates.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

@@ -893,7 +893,7 @@ if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json
 fi
 if ! SABRE_PRIVATE_NEW_GAME_INJURY_WRITES="$REVERSE_PLAYER_WRITES" \
     SABRE_PRIVATE_NEW_GAME_INJURY_COUNTDOWN="$REVERSE_LONG_INJURY" \
-    swift test --filter CapturedNewGameInjuryTickTests \
+    swift test --filter 'Captured(NewGame|Intermediate)InjuryTickTests' \
     > "$ROOT/$PRIVATE/new-game-injury-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-injury-test.log" >&2
     exit 1
