@@ -18,6 +18,8 @@ The user pointed to [ArcadeGeek's SkoolKit Sabre Wulf index](https://skoolkit.ar
 
 The source-backed ranges `0x6066–0x70BB`, sprite pointer table `0xBF84–0xC10B`, and its bounded sprite records can now be treated as data in [byte-coverage.json](../reverse_engineering/analysis/byte-coverage.json). Screen bitmap/attributes are also known, totaling **19,492 classified data bytes** of 49,152 RAM bytes. The remaining 29,660 are still marked `unknown`; diagnostic instruction-start addresses do not by themselves classify instruction lengths. [room-index.json](../reverse_engineering/analysis/room-index.json) and [sprite-index.json](../reverse_engineering/analysis/sprite-index.json) record aggregate counts and input hashes without publishing original layout, images or instruction bytes.
 
+Two independently recovered Sabreman bitmap records (sprite IDs 16 and 21) were compared **privately** to the site's locally downloaded sample images. The simple 1-bit MSB-first bitmap shape matches their nonblack pixels exactly (336/336 and 352/352) after accounting for the image reader's vertical coordinate direction. A generic [SpriteMask decoder](../Sources/GameCore/SpriteMask.swift) and synthetic unit tests are in the shared Swift package; no bitmap payload or source PNG is in Git. The check does not validate the full sprite catalogue or original display attributes.
+
 ## Reproduce and inspect privately
 
 Run from the repository root. This tool uses the locally installed Carbon Neural emulator's `SpeccyCore` parser without copying its source here:

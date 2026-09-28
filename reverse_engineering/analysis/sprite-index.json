@@ -17,6 +17,13 @@
   "largestRecordBytes": 130,
   "spriteRecordBytesSha256": "5fd461c98ff54f2c67ca8c050fa32880f1660ae6badc3ece9006b5e0b4b2b890",
   "spriteRecordBytesIdenticalBetweenCaptures": true,
+  "bitmapMaskCrossCheck": {
+    "method": "Private 1-bit most-significant-bit-first mask compared with locally downloaded page PNGs after accounting for CoreGraphics bottom-up image coordinates; comparisons use only on/off pixels, not original colors.",
+    "sampledSpriteIDs": [16, 21],
+    "sprite16": {"width": 16, "height": 21, "matchingPixels": 336, "pixelsCompared": 336},
+    "sprite21": {"width": 16, "height": 22, "matchingPixels": 352, "pixelsCompared": 352},
+    "limits": "Two masks verify these examples, not all animation frames or the original game's palette, masks, or compositing order."
+  },
   "sha256": "de3f2a50b66244a65039c0ae772b96baa4c2f8de54f3227027b15af316b7a538",
   "identicalBetweenCaptures": true,
   "externalReference": "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/asm/49028.html",
