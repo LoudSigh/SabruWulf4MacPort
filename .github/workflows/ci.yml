@@ -25,6 +25,10 @@ jobs:
         run: |
           swiftc -parse-as-library Tools/TapeInventory.swift -o "$RUNNER_TEMP/TapeInventory"
           "$RUNNER_TEMP/TapeInventory" --self-test
+      - name: Validate source-free room evidence
+        run: |
+          jq -e '.layout.dimensions == [16,16] and .roomTable.pointerCount == 48 and .records.regularRooms.contiguousTerminatedRecords == 48 and .crossSnapshotComparison.regularRoomBytesIdentical' reverse_engineering/analysis/room-index.json
+          jq -e '(.classificationCounts | [.code, .data, .padding, .unknown] | add) == .totalBytes and .classificationCounts.data == 11094' reverse_engineering/analysis/byte-coverage.json
 
   native-app-builds:
     runs-on: macos-latest

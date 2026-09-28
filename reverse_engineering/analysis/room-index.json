@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "menuSnapshotSha256": "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+    "gameplaySnapshotSha256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+    "externalReference": "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/",
+    "externalLicenseStatus": "No explicit reuse license found; do not copy disassembly or graphics"
+  },
+  "layout": {
+    "start": "0x6066",
+    "endExclusive": "0x6166",
+    "dimensions": [16, 16],
+    "byteCount": 256,
+    "sha256": "bffb2402d1c3c3e514e885955e34c62845bb22e137a75de7df24367e5dcbf060",
+    "distinctRoomTypesUsed": 45,
+    "roomTypeRange": [0, 47]
+  },
+  "roomTable": {
+    "start": "0x6166",
+    "endExclusive": "0x61C6",
+    "pointerCount": 48,
+    "uniqueRecordPointers": 48,
+    "firstTwoPointers": ["0x6200", "0x624A"],
+    "sha256": "8bbd9a59bef165c8270f3eab3330be9229c6c951142f35f345621fcef6a15290"
+  },
+  "records": {
+    "specialMenuRoom": {
+      "start": "0x61C6",
+      "endExclusive": "0x6200",
+      "backgroundPlacements": 14,
+      "sha256": "7f8f849cc96577ab76cb40b28214c602aa9c1ec71cb000367ecf40da89849e57"
+    },
+    "regularRooms": {
+      "start": "0x6200",
+      "endExclusive": "0x70BC",
+      "sha256": "43aaa6d34d78b25c451f40933f1c81c2c62946b2b12147f7892df9b1e995498a",
+      "contiguousTerminatedRecords": 48,
+      "backgroundPlacementsAcrossTemplates": 919,
+      "distinctBackgroundReferences": 41,
+      "minimumBackgroundReference": "0x70BC",
+      "maximumBackgroundReference": "0x9673",
+      "minimumPlacementsPerTemplate": 13,
+      "maximumPlacementsPerTemplate": 26,
+      "placementsOff8PixelGrid": 4
+    }
+  },
+  "crossSnapshotComparison": {
+    "layoutBytesIdentical": true,
+    "roomTableBytesIdentical": true,
+    "specialMenuRoomBytesIdentical": true,
+    "regularRoomBytesIdentical": true
+  },
+  "limitations": [
+    "Templates are reused across 256 world positions; 48 templates do not imply only 48 screens.",
+    "Graphic-pointer semantics beyond the validated record structure and collision geometry have not been independently reconstructed.",
+    "No original world layout bytes, room placements, assembly listing or graphic images are included in this public metadata."
+  ]
+}

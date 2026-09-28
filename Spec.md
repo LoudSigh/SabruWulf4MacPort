@@ -1,6 +1,6 @@
 # Sabre Wulf: ZX Spectrum 48K analysis and native Apple port
 
-Status: implementation specification; a rights-safe three-platform app prototype exists. Two user-captured `.z80` files now provide **verified 48K menu and in-game screen/RAM states**, with 4,558 changed RAM bytes between them. The TZX still has not yielded a reference boot; successful gameplay input replay in the tested emulator, original rules/assets, edition equivalence and redistribution rights remain unverified. Do not claim the port is complete until the phase gates below are satisfied. The associated [Autopilot prompt](./COPILOT_PROMPT.md) tells the coding agent how to execute this spec.
+Status: implementation specification; a rights-safe three-platform app prototype exists. Two user-captured `.z80` files provide **verified 48K menu and in-game screen/RAM states**, with 4,558 changed RAM bytes between them. A user-supplied SkoolKit reference led to an independently validated 16×16 world layout and 48 reusable room records; see [external-reference.md](./docs/external-reference.md). The TZX still has not yielded a reference boot; successful gameplay input replay in the tested emulator, original rules/assets, edition equivalence and redistribution rights remain unverified. Do not claim the port is complete until the phase gates below are satisfied. The associated [Autopilot prompt](./COPILOT_PROMPT.md) tells the coding agent how to execute this spec.
 
 ## 1. Outcome and boundaries
 

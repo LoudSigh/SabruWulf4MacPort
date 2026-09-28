@@ -8,7 +8,12 @@ Input: user-captured `SNAPSHOTS/Snapshot.z80`, SHA-256 `34d98ec3dc55d60755a7d9ce
 | `4000-57FF` | ULA bitmap | Menu screen bitmap; 3,135/6,144 bytes nonzero |
 | `5800-5AFF` | ULA attributes | Menu color attributes (13 distinct byte values) |
 | `5B00-5FFF` | Printer buffer/system/workspace region | Unknown; do not classify as game code by location alone |
-| `6000-FFFF` | General RAM | Mixed code/data/graphics/stack, mostly **unclassified** |
+| `6000-6065` | General RAM | Unknown (external reference identifies a game entry at `6000`; entry signature only partially cross-checked) |
+| `6066-6165` | General RAM | Verified 256-byte 16x16 world layout indexes |
+| `6166-61C5` | General RAM | Verified 48-entry little-endian room pointer table |
+| `61C6-61FF` | General RAM | Verified terminated special menu-room record |
+| `6200-70BB` | General RAM | Verified 48 contiguous terminated room-template records |
+| `70BC-FFFF` | General RAM | Mixed code/data/graphics/stack, mostly **unclassified** |
 
 At the capture the PC is `BDAF` (RAM) and the SP is `5FF8`; these pinpoint one **executing address** and the stack top, not code extents or routine names. The ROM and game RAM relationship to the supplied TZX revision still needs validation.
 
@@ -31,7 +36,7 @@ Nonzero counts describe density only; they do **not** distinguish instructions f
 | `E000` | 3023 | `cff32417993d24fd9acee40ad55f6d33c034dc90beb127d37e32d068790cf22d` |
 | `F000` | 3331 | `bc4f3b160d9b4a53b2a66ebb3e40c9e6ce74f3e75642b1af816b7945b866b9f1` |
 
-Next: acquire a snapshot during gameplay and compare per-address changes with the menu image. Use controlled emulator tracing to identify actual read/write/execute regions before naming routines or extracting assets for a distributed app. Maintain the `[code, data, padding, unknown]` accounting required by [Spec.md](../../Spec.md); this page is a starting inventory, **not** completed byte coverage.
+Next: validate more input-driven states against the existing gameplay snapshot and verify graphics pointer formats. Use controlled emulator tracing to identify actual read/write/execute regions before naming routines or extracting assets for a distributed app. Maintain the `[code, data, padding, unknown]` accounting required by [Spec.md](../../Spec.md); this page is a starting inventory, **not** completed byte coverage.
 
 ## Menu-to-gameplay comparison
 
@@ -63,3 +68,7 @@ An instruction-PC-to-write-address correlation placed all 1,141 diagnostic displ
 A longer *separate* 1,000,000-step no-input diagnostic reached 1,422 distinct instruction starts and 100 CALL edges; the extra addresses remain within `9000-BFFF` plus `5CB0`. These are **observed instruction-start candidates in an incomplete, untimed execution mode**. They do not establish that the other 48K RAM bytes are data or that the complete game state space has been reached.
 
 While this cluster was running, diagnostic reads outside display/code regions touched 174 distinct addresses in `D000-DFFF` and 191 in `F000-FFFF`, alongside smaller groups in `5xxx`, `9xxx` and `Cxxx`. These pages are **candidates to investigate for graphics and lookup data**, not proven sprite tables: reads may also be control flags, pointers or other mutable state. Original content stays only in the ignored local RAM image.
+
+## Reference-guided room structure
+
+The user-supplied [SkoolKit index](../../docs/external-reference.md) gave numeric boundaries that were checked against **both** snapshot RAM images: layout `6066-6165`, 48 room pointers `6166-61C5`, special menu room `61C6-61FF` and 48 contiguous zero-terminated room templates `6200-70BB`. The 256 layout bytes use room type indexes 0–47 and reuse 45 distinct types across the 16×16 world. The private `SnapshotRoomIndex` parser validates the complete region without committing map IDs, placement records or background graphics. These extra 4,182 bytes are now classified as data in [byte-coverage.json](./byte-coverage.json); the remainder remains unknown until analyzed, not presumed code.

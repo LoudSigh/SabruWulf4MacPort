@@ -55,10 +55,22 @@ fi
 "$ROOT/$PRIVATE/SnapshotExport" "$MENU" --screen "$ROM"
 "$ROOT/$PRIVATE/SnapshotExport" "$GAME" --screen "$ROM"
 
+printf 'Building a private 16x16 world-type overview from your snapshots...\n'
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift reverse_engineering/tools/SnapshotRoomIndex.swift \
+    -o "$ROOT/$PRIVATE/SnapshotRoomIndex" > "$ROOT/$PRIVATE/room-index-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/room-index-build.log" >&2
+    exit 1
+fi
+"$ROOT/$PRIVATE/SnapshotRoomIndex" "$MENU" "$GAME" --private-map \
+    > "$ROOT/$PRIVATE/room-index-report.json"
+
 MENU_PNG="$ROOT/$PRIVATE/snapshot-${MENU_SHA:0:12}-screen.png"
 GAME_PNG="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-screen.png"
+WORLD_MAP="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world.html"
 require_file "$MENU_PNG"
 require_file "$GAME_PNG"
+require_file "$WORLD_MAP"
 
 if ! command -v xcodegen >/dev/null 2>&1; then
     printf 'Missing xcodegen. Reference images are ready in %s, but the native prototype cannot be built.\n' "$PRIVATE" >&2
@@ -74,5 +86,6 @@ APP="$ROOT/$PRIVATE/DerivedData/Build/Products/Debug/SabreWulfMac.app"
 require_file "$APP/Contents/MacOS/SabreWulfMac"
 open "$APP"
 open -a Preview "$MENU_PNG" "$GAME_PNG"
-printf '\nOpened the native placeholder app and both original static captures in Preview.\n'
-printf 'Use Command-Tab to switch. The captures are not interactive and the prototype is not yet the 1984 game.\n'
+open "$WORLD_MAP"
+printf '\nOpened the native placeholder app, two original static captures, and a private world-type map.\n'
+printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'
