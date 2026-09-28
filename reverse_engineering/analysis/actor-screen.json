@@ -13,5 +13,5 @@
     {"key": "t", "exactColorFrames": 100, "frames": 100, "matchingColorPixels": 37280, "totalPlayerPixels": 37280}
   ],
   "totals": {"exactColorFrames": 489, "frames": 500, "matchingColorPixels": 173348, "totalPlayerPixels": 173472},
-  "limits": "The 124 color mismatches occur in 11 W frames (43–53) where other runtime graphics/attributes affect the player rectangle. This verifies the player sprite's orientation, bottom anchoring and color only in the measured unobstructed states. It does not establish full sprite overlap, occlusion, enemy rendering or native combat."
+  "limits": "The 124 white/off mismatches occur in 11 W frames (43–53): 48 also differ in the bitmap bit and 76 have the expected bitmap bit but not the expected white color. There are 16 additional bitmap-bit differences whose white/off color still agrees (64 bitmap-bit differences total). The cause is not yet isolated: overlap, redraw phase and changed screen attributes remain possibilities. This verifies orientation, bottom anchoring and white color only in matching states, not general layering or combat."
 }
