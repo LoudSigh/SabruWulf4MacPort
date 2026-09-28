@@ -87,6 +87,20 @@ final class BackgroundAtlasTests: XCTestCase {
             from: JSONSerialization.data(withJSONObject: object),
             expectedHash: source.digest, expectedBytes: source.count
         ))
+        var misaligned = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: source.data) as? [String: Any]
+        )
+        var shifted = try XCTUnwrap(misaligned["records"] as? [[String: Any]])
+        shifted[1]["address"] = 28_874
+        misaligned["records"] = shifted
+        XCTAssertThrowsError(try BackgroundAtlas.load(
+            from: JSONSerialization.data(withJSONObject: misaligned),
+            expectedHash: source.digest, expectedBytes: source.count
+        )) { error in
+            guard case BackgroundAtlasError.invalidRecord = error else {
+                return XCTFail("Expected a gap between source records to be rejected")
+            }
+        }
         XCTAssertThrowsError(try BackgroundAtlas.load(from: Data(repeating: 0, count: 100_001)))
     }
 

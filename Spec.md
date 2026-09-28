@@ -8,6 +8,7 @@ Three 190-frame reference-timed runs compare T/no-T/unrelated A before a moving 
 A validated private atlas now holds 196 sprite-pointer IDs and 153 targets: 152 nonempty bitmap records and one empty sentinel. The native viewer decodes and draws their generic monochrome shapes after a rights-safe local import; these source pixels and the original game bytes remain untracked. Palette, masking/compositing and animation-to-game-state mapping are not verified.
 
 The same private pipeline validates **41 background bitmap-plus-attribute records** (9,686 bytes identical across both snapshots) and draws their shapes behind all 919 room placements in the native 4:3 viewer. An optional approximate 48K ink/paper preview decodes the attribute grid, but FLASH timing, transparency and final original-color/layer composition remain unverified; the public app still bundles no game pixels.
+All 41 records abut exactly across `0x70BC–0x9691`; known data coverage is now **29,178/49,152 bytes** with **19,974 unknown**. Observed instruction starts do not classify the remaining bytes as code; continue reachable disassembly and controlled traces privately.
 
 ## 1. Outcome and boundaries
 

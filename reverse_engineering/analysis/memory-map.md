@@ -13,7 +13,8 @@ Input: user-captured `SNAPSHOTS/Snapshot.z80`, SHA-256 `34d98ec3dc55d60755a7d9ce
 | `6166-61C5` | General RAM | Verified 48-entry little-endian room pointer table |
 | `61C6-61FF` | General RAM | Verified terminated special menu-room record |
 | `6200-70BB` | General RAM | Verified 48 contiguous terminated room-template records |
-| `70BC-BF83` | General RAM | Mixed code/data/graphics/stack, mostly **unclassified** |
+| `70BC-9691` | General RAM | Verified 41 contiguous bitmap-plus-attribute background records (9,686 bytes) |
+| `9692-BF83` | General RAM | Mixed code, state and other data, mostly **unclassified** |
 | `BF84-C10B` | General RAM | Verified 196-entry sprite-frame pointer table, 392 bytes |
 | `C10C-FFFF` | General RAM | Pointed-to sprite data and other mixed RAM, not yet classified by byte |
 
@@ -59,7 +60,7 @@ The user later supplied a distinct, same-machine in-game snapshot, SHA-256 `803e
 | `E000` | 326 |
 | `F000` | 0 |
 
-**Interpretation limit:** identical pages are candidate static game code/data, not proven code. Differences outside the screen mark potential state/tables/stack/animation; two captures alone cannot separate these. `B8A1` is an observed PC, not a function name. The RAM classifications in [byte-coverage.json](./byte-coverage.json) cover only the known 6,912 display bytes; all other bytes are deliberately `unknown`.
+**Interpretation limit:** identical pages are candidate static game code/data, not proven code. Differences outside the screen mark potential state/tables/stack/animation; two captures alone cannot separate these. `B8A1` is an observed PC, not a function name. [byte-coverage.json](./byte-coverage.json) now also classifies verified world, background and sprite data; other unclassified bytes remain `unknown`.
 
 ## Bounded diagnostic trace
 
@@ -74,5 +75,6 @@ While this cluster was running, diagnostic reads outside display/code regions to
 ## Reference-guided room structure
 
 The user-supplied [SkoolKit index](../../docs/external-reference.md) gave numeric boundaries that were checked against **both** snapshot RAM images: layout `6066-6165`, 48 room pointers `6166-61C5`, special menu room `61C6-61FF` and 48 contiguous zero-terminated room templates `6200-70BB`. The 256 layout bytes use room type indexes 0–47 and reuse 45 distinct types across the 16×16 world. The private `SnapshotRoomIndex` parser validates the complete region without committing map IDs, placement records or background graphics. These extra 4,182 bytes are now classified as data in [byte-coverage.json](./byte-coverage.json); the remainder remains unknown until analyzed, not presumed code.
+The same parser validates **41 adjacent background records** from `70BC` through `9691`: each has a bounded pixel bitmap followed by a correctly sized per-cell attribute grid. All 41 end at the next record or the `9692` game-state boundary; **9,686/9,686 bytes** agree across both captures. They are now classified as data, raising known RAM data to **29,178 bytes** (unknown **19,974**). All source pixels remain ignored, never in this memory map or Git.
 
 A separate private `SnapshotSpriteIndex` check confirmed 196 little-endian pointers at `BF84-C10B` in **both** captures, 153 distinct targets, and an identical table hash. Each unique pointed-to record has a plausible two-byte width/height header and `width × height` bounded data bytes; 148 records end precisely at the next pointer, five leave gaps. The **392 table bytes and 8,006 bounded record bytes** are identical across menu and gameplay captures and now classified as data. The gaps, image orientation, color/mask rendering semantics and sprite animation rules remain unknown. See [sprite-index.json](./sprite-index.json); no original frames are stored in Git.

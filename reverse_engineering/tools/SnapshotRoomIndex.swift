@@ -177,7 +177,7 @@ private func backgroundRecords(
         let next = index + 1 < addresses.count ? addresses[index + 1] : 0x9692
         guard attributeHeight == (height + 7) / 8,
               attributeWidth == width,
-              address + length <= next,
+              address + length == next,
               length <= ram.count - offset else {
             throw RoomIndexError.invalidTable
         }

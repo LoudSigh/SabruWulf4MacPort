@@ -5,10 +5,13 @@
     "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c"
   ],
   "distinctBackgrounds": 41,
+  "contiguousRecords": 41,
+  "start": "0x70BC",
+  "endExclusive": "0x9692",
   "totalPlacements": 919,
   "recordBytes": 9686,
   "recordBytesSHA256": "2691664c054cf02c5dc03076f5cc6633857d98c0c800cb053787bd9dd5360f61",
   "recordsIdenticalBetweenCaptures": true,
   "bitmapFormat": "height in pixels, width in bytes, height-times-width 1-bit MSB-first bitmap bytes, then attribute height in 8-pixel rows, attribute width in bytes and per-cell attribute bytes",
-  "limits": "The local preview draws only 1-bit shapes. The source's color attributes, layering, transparency and animation order have not yet been reproduced in the native compositor."
+  "limits": "The local preview draws 1-bit shapes with an optional approximate ink/paper palette. FLASH timing, layering, transparency and animation remain unverified in the native compositor."
 }

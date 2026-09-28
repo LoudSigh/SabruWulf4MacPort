@@ -119,7 +119,9 @@ public struct BackgroundAtlas: Sendable {
         for (index, record) in atlas.records.enumerated() {
             let next = index + 1 < atlas.records.count
                 ? atlas.records[index + 1].address : 0x9692
-            guard record.address + record.data.count <= next else {
+            guard (index + 1 == atlas.records.count
+                ? record.address + record.data.count <= next
+                : record.address + record.data.count == next) else {
                 throw BackgroundAtlasError.invalidRecord
             }
             masks[record.address] = try BackgroundMask(record: record.data)

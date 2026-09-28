@@ -8,9 +8,9 @@
   "totalBytes": 49152,
   "classificationCounts": {
     "code": 0,
-    "data": 19492,
+    "data": 29178,
     "padding": 0,
-    "unknown": 29660
+    "unknown": 19974
   },
   "knownDataIntervals": [
     {"start": "0x4000", "endExclusive": "0x5800", "kind": "ULA bitmap"},
@@ -19,11 +19,12 @@
     {"start": "0x6166", "endExclusive": "0x61C6", "kind": "48 little-endian room-template pointers; 96 bytes"},
     {"start": "0x61C6", "endExclusive": "0x6200", "kind": "special menu room; 58 bytes"},
     {"start": "0x6200", "endExclusive": "0x70BC", "kind": "48 contiguous zero-terminated room templates; 3772 bytes"},
+    {"start": "0x70BC", "endExclusive": "0x9692", "kind": "41 contiguous bounded background bitmap-plus-attribute records; 9686 bytes"},
     {"start": "0xBF84", "endExclusive": "0xC10C", "kind": "196 little-endian sprite-frame pointers; 392 bytes"}
   ],
   "knownSparseData": [
     {
-      "kind": "153 validated unique sprite records addressed by the 196-entry pointer table",
+      "kind": "153 validated unique sprite targets (152 bitmaps and one empty sentinel) addressed by the 196-entry pointer table",
       "sourcePointerTableStart": "0xBF84",
       "recordBytes": 8006,
       "recordEncoding": "two-byte width/height header followed by width-times-height payload",
@@ -36,5 +37,5 @@
   ],
   "candidateInstructionStartsInIsolatedGameplayTrace": 1422,
   "candidateInstructionStartsClassifiedAsCode": false,
-  "note": "Display, validated layout/room intervals, sprite pointer table and 153 sprite records are classified; five gaps between records and remaining RAM stay unknown. PC starts are not complete instruction boundaries. No source bytes, sprites or disassembly are included."
+  "note": "Display, world layout/rooms, all 41 contiguous background bitmap-plus-attribute records, the sprite pointer table and its 153 sprite targets are classified. Five gaps between sprite records and remaining RAM stay unknown. PC starts are not complete instruction boundaries. No source bytes, images or disassembly are included."
 }
