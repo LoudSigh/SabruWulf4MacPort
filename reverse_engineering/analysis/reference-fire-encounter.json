@@ -12,6 +12,14 @@
   "firstPlayerStateDifferenceFrame": 146,
   "firstFireVsNoFireRNGDifferenceFrame": 146,
   "firstUnrelatedAKeyVsNoFireRNGDifferenceFrame": 147,
+  "rngUpdateSites": ["0x99D7", "0x9A2D"],
+  "rngInputObservation": {
+    "frame": 146,
+    "previousValue": 177,
+    "fireNextValue": 235,
+    "noFireNextValue": 212,
+    "cause": "The frequent 0x99D7 update mixes in the Z80 refresh register, so identical prior RNG bytes do not imply identical next bytes when executed instruction paths differ."
+  },
   "firstEnemyStateDifferenceFrame": 156,
   "firstEnemyStateChange": {
     "frame": 156,

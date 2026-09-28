@@ -85,6 +85,13 @@ private struct ActorStateWrite: Encodable {
     let rngValue: Int
 }
 
+private struct RNGWrite: Encodable {
+    let frame: Int
+    let instructionAddress: Int
+    let previous: Int
+    let value: Int
+}
+
 private struct Report: Encodable {
     let schemaVersion = 1
     let snapshotSHA256: String
@@ -99,6 +106,7 @@ private struct Report: Encodable {
     let trace: [TraceFrame]?
     let actorStateWrites: [ActorStateWrite]?
     let rngFrames: [Int]?
+    let rngWrites: [RNGWrite]?
 }
 
 private func hash(_ data: Data) -> String {
@@ -236,6 +244,7 @@ private struct SnapshotDivergence {
             var trace: [TraceFrame] = []
             var actorStateWrites: [ActorStateWrite] = []
             var rngFrames: [Int] = []
+            var rngWrites: [RNGWrite] = []
             var matchingRAMFrames = 0
 
             for frame in 0..<count {
@@ -272,6 +281,17 @@ private struct SnapshotDivergence {
                                         previous: Int(previous),
                                         value: Int(value),
                                         rngValue: Int(memory.read(0x9695))
+                                    ))
+                                }
+                            }
+                            if watchActorState && address == 0x9695 {
+                                let previous = memory.read(address)
+                                if previous != value {
+                                    rngWrites.append(RNGWrite(
+                                        frame: frame + 1,
+                                        instructionAddress: instructionAddress,
+                                        previous: Int(previous),
+                                        value: Int(value)
                                     ))
                                 }
                             }
@@ -361,7 +381,8 @@ private struct SnapshotDivergence {
                 firstPlayerPositionDifference: firstPosition,
                 trace: includeTrace ? trace : nil,
                 actorStateWrites: watchActorState ? actorStateWrites : nil,
-                rngFrames: watchActorState ? rngFrames : nil
+                rngFrames: watchActorState ? rngFrames : nil,
+                rngWrites: watchActorState ? rngWrites : nil
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
