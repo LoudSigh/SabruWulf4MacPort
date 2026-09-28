@@ -536,6 +536,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Only rules reproducible on the user's hashed source edition enter `GameCore`; unobserved locations, item values, bonuses and win timing remain explicitly unknown.
 - **Edge Cases / Variants**: Attack held during pickup, duplicate pickup, player switch, random placement, other Spectrum revision and restored save with three pieces.
 
+### TC-048: Four-record placement is not fixed-location proof
+- **Priority**: P1
+- **Preconditions**: Hashed private gameplay snapshot/ROM, verified 800-frame menu and keyboard restart schedules, isolated PC/write probe.
+- **Steps**:
+  1. Require 800/800 full RAM parity per path and two calls to the candidate placement PC per restart.
+  2. Confirm 22 write addresses per call and four bounded 12-byte records with valid room/coordinate/sprite fields.
+  3. Compare first- and second-call outputs across the two paths; keep record values private.
+  4. Reject an assumption of fixed four-room placement if four room fields differ after the second call; do not label the records as quest pieces until pickup is demonstrated.
+- **Expected Result**: Four source-supported dynamic placement records are measured, but quest identity and deterministic placement inputs remain unknown.
+- **Edge Cases / Variants**: Different key timing, player count, repeated restart, item disappearance and renderer overlap.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "candidateRoutinePC": 41557,
+  "paths": [
+    {"schedule": "restart-ready-movement-schedule.json", "matchingFullRAMFrames": 800, "entryFrames": [654, 656]},
+    {"schedule": "restart-keyboard-movement-schedule.json", "matchingFullRAMFrames": 800, "entryFrames": [650, 652]}
+  ],
+  "calls": 4,
+  "cyclesPerCall": 1296,
+  "perCallWriteAddressCount": 22,
+  "writeAddressGroups": [
+    {"start": "0x5FF6", "endInclusive": "0x5FF7"},
+    {"start": "0x97FE", "endInclusive": "0x9827", "recordCount": 4, "bytesPerRecord": 12, "sparseFields": true}
+  ],
+  "observedComparison": {
+    "firstInvocationStateMatchesAcrossPaths": true,
+    "secondInvocationMatchingChangedAddressValues": 16,
+    "secondInvocationDifferingRoomFields": 4,
+    "secondInvocationDifferingPositionFields": 2,
+    "secondInvocationDifferingSpriteIDs": 0,
+    "roomsDistinctWithinEachExit": true,
+    "spriteIDsDistinctWithinEachExit": true
+  },
+  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. The two paths do not support fixed four-room placement. No record values, instruction bytes, images or disassembly are published."
+}
