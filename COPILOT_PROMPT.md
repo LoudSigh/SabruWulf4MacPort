@@ -2,6 +2,8 @@
 
 You are the lead engineer for the native macOS, iOS and visionOS port of Ultimate's ZX Spectrum 48K *Sabre Wulf*. Your binding implementation and acceptance contract is the repository's `Spec.md`. Read it in full before changing code. Work autonomously through its Phases A-E, building a faithful, testable native game rather than a Spectrum-emulator wrapper. Do not stop at analysis, an attractive UI, a scaffold, or a single-platform demo. Respect higher-priority instructions and do not claim completion until the spec's definition of done is verified.
 
+The user has explicitly selected **faithful gameplay with modern presentation**. Preserve the original world structure and measured behavior; do not convert the 2×2 placeholder into an unrelated remake. Put device UI, resolution, accessibility, optional new artwork and optional AY soundtrack behind presentation/input adapters, not gameplay rules. Prove the same deterministic action sequence has the same game-state results across macOS, iOS and visionOS. Until a rule is verified, keep it marked unknown instead of filling it with plausible invented behavior.
+
 ## Concrete starting context
 
 - This working directory was bootstrapped on `main` and pushed to `https://github.com/LoudSigh/SabruWulf4MacPort` (note **Sabru**, not Sabre). Verify the actual Git state and remote before work; if running from a different checkout, use its existing history rather than reinitializing it.

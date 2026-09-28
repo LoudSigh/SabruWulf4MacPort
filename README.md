@@ -1,6 +1,6 @@
 # Sabre Wulf native-port workbench
 
-**Current result: a rights-safe native prototype, not a completed port of the 1984 game.** The three SwiftUI targets build as separate macOS, iOS and visionOS apps and share a deterministic `GameCore`. The four-room maze, icons, interactions and timing are independently authored placeholders. The original 16×16 layout and room-template *structure* have now been validated privately, but original room/art bytes are not bundled; the complete game code, audio, rules and winning conditions have **not** been reconstructed in these apps.
+**Chosen direction: faithful 1984 gameplay with modern native presentation. Current result: a rights-safe prototype, not the completed port.** The three SwiftUI targets build as separate macOS, iOS and visionOS apps and share a deterministic `GameCore`. The four-room maze, icons, interactions and timing are independently authored placeholders. The original 16×16 layout and room-template *structure* have now been validated privately, but original room/art bytes are not bundled; the complete game code, audio, rules and winning conditions have **not** been reconstructed in these apps. [Spec.md](Spec.md) distinguishes the behavior that must be preserved from presentation that may change.
 
 ## Get started
 
