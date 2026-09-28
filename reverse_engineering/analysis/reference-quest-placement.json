@@ -126,9 +126,46 @@
       "positiveContactOrInjuryBeforeExit": false,
       "lifeByteAtExit": 4
     },
+    "laterRoomStall": {
+      "checkpointFrame": 983,
+      "attempts": [
+        {"direction": "down", "matchingFullRAMFrames": 1300, "observedDownPixels": 2, "residualEastPixels": 25, "roomsCrossed": 0},
+        {"direction": "right", "matchingFullRAMFrames": 1300, "observedEastPixels": 24, "roomsCrossed": 0}
+      ],
+      "worldGridDistanceBeforeAndAfter": [4, 4],
+      "connectedComponentSampledStaticPositions": 260,
+      "eastOrSouthStaticExitWithinComponent": false,
+      "heldDirectionTwoPixelStepBlockedAtFrame1300": true,
+      "positiveContactOrInjury": false,
+      "lifeByteAtStop": 4,
+      "selectedRecordStayedActiveWithoutRelocation": true
+    },
+    "laterRoomWestReturn": {
+      "checkpointFrame": 983,
+      "northStaticExitWithinComponent": false,
+      "westStaticExitWithinComponent": true,
+      "matchingFullRAMFramesThroughExit": 1008,
+      "westRoomTransitionFrame": 1008,
+      "recordWorldGridDistanceBeforeAndAfter": [4, 5],
+      "selectedRecordStayedActiveWithoutRelocation": true,
+      "positiveContactOrInjuryBeforeExit": false,
+      "lifeByteAtExit": 4
+    },
+    "priorRoomAlternateWest": {
+      "checkpointFrame": 1008,
+      "northStaticExitWithinComponent": false,
+      "westStaticExitWithinComponent": true,
+      "matchingFullRAMFramesThroughExit": 1075,
+      "westRoomTransitionFrame": 1075,
+      "recordWorldGridDistanceBeforeAndAfter": [5, 6],
+      "selectedRecordStayedActiveWithoutRelocation": true,
+      "positiveContactOrInjuryBeforeExit": false,
+      "lifeByteAtExit": 4,
+      "staticTwoPixelProposalDidNotPredictTransitionFrames": true
+    },
     "fullRAMParityFramesPerAttempt": 900,
     "lifeByteStayedFour": true,
     "interventionPerformed": false
   },
-  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. A source-safe north/east/east sequence through frame 983 has reduced distance to four rooms, without contacting the record; prior frame horizons and sampled update counts were not general movement limits. No item room/contact or sword hit is established. No actor teleport, record values, instruction bytes, images or disassembly are published."
+  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. A source-safe north/east/east sequence through frame 983 reduced target distance to four rooms; the local static component had no east/south/north exit, and west returns at frames 1008 and 1075 worsened distance to six. This is not proof the record room is unreachable by a non-greedy maze route. No item room/contact or sword hit is established. No actor teleport, record values, instruction bytes, images or disassembly are published."
 }

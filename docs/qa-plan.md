@@ -551,6 +551,9 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   9. Continue from the exact frame-827 north-room checkpoint with unchanged CPU/RAM/interrupt state; compare two 900/900 RAM-parity routes and withhold an east-edge claim until 58 northward clearance pixels are actually achieved.
   10. Extend one corrected source continuation to frame 915; require 915/915 RAM frames, full 58-pixel clearance, a second room transition, no injury and one-room improvement in target distance—still no pickup claim.
   11. Reuse the exact frame-915 source state, settle T-only for eight frames, then check one T-assisted east room transition at frame 983 with 983/983 RAM parity and distance 5→4 while the record remains active.
+  12. Continue down/right from frame 983; require two 1,300/1,300 RAM-parity runs with no injury and no room transition. Check the 260-position static component has no east/south edge rather than interpreting nonzero velocity as movement.
+  13. Check the north edge is also absent from that component; confirm a T-assisted west return at frame 1008 (1008/1008 RAM frames), no hazard and distance 4→5. Do not generalize this local dead end to the entire maze.
+  14. From the exact frame-1008 return, verify one further T-assisted west transition at frame 1075 (1075/1075 RAM frames), no hazard and distance 5→6; do not mistake static edge length for a timing rule.
 - **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown. A two-pixel east step stalls at one-pixel clearance; correcting an initial offset permits a source-verified north exit, not a collectible contact.
 - **Edge Cases / Variants**: Different key timing, player count, repeated restart, item disappearance and renderer overlap.
 
