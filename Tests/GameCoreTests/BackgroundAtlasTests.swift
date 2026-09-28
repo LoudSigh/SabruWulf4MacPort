@@ -106,6 +106,55 @@ final class BackgroundAtlasTests: XCTestCase {
         XCTAssertThrowsError(try BackgroundAtlas.load(from: Data(repeating: 0, count: 100_001)))
     }
 
+    func testComposesOverlappingBackgroundsAndKeepsUncoveredPixelsTransparent() throws {
+        let first = Data([8, 1, 0x80] + Array(repeating: 0, count: 7) + [1, 1, 7])
+        let second = Data([8, 1, 0x80] + Array(repeating: 0, count: 7) + [1, 1, 2])
+        let records: [Data] = Array(repeating: first, count: 40) + [second]
+        let addresses = (0..<41).map { 28_860 + $0 * first.count }
+        var aggregate = Data()
+        for record in records { aggregate.append(record) }
+        let digest = SHA256.hash(data: aggregate)
+            .map { String(format: "%02x", $0) }.joined()
+        let data = try JSONSerialization.data(withJSONObject: [
+            "schemaVersion": 1,
+            "snapshotSHA256": WorldReference.supportedSnapshotSHA256,
+            "records": zip(addresses, records).map { address, record in
+                ["address": address, "data": record.base64EncodedString()] as [String: Any]
+            },
+        ])
+        let atlas = try BackgroundAtlas.load(
+            from: data, expectedHash: digest, expectedBytes: aggregate.count
+        )
+        let placement: (Int) -> [String: Any] = { address in
+            ["graphicAddress": address, "x": 248, "y": 190,
+             "widthPixels": 8, "heightPixels": 8]
+        }
+        let rooms: [[String: Any]] = (0..<48).map { index in
+            ["placements": index == 0
+                ? addresses.map(placement)
+                : [placement(addresses[0])]]
+        }
+        let world = try WorldReference.load(
+            from: JSONSerialization.data(withJSONObject: [
+                "schemaVersion": 2,
+                "snapshotSha256": WorldReference.supportedSnapshotSHA256,
+                "width": 16, "height": 16,
+                "layout": Array(repeating: 0, count: 256),
+                "rooms": rooms,
+            ]),
+            verifySource: false
+        )
+        let scene = try BackgroundScene(world: world, atlas: atlas, template: 0)
+        let firstPixel = 190 * BackgroundScene.width + 248
+        XCTAssertEqual(scene.covered.filter { $0 }.count, 16)
+        XCTAssertEqual(scene.colors[firstPixel], SpectrumPalette.colors[0])
+        XCTAssertEqual(scene.colors[firstPixel + 1], SpectrumPalette.colors[2])
+        XCTAssertEqual(Array(scene.rgba[(firstPixel * 4)..<(firstPixel * 4 + 4)]),
+                       [0, 0, 0, 255])
+        XCTAssertEqual(Array(scene.rgba[0..<4]), [0, 0, 0, 0])
+        XCTAssertThrowsError(try BackgroundScene(world: world, atlas: atlas, template: 48))
+    }
+
     func testPrivateBackgroundsAgreeWithImportedWorldWhenProvided() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let backgroundPath = environment["SABRE_PRIVATE_BACKGROUND_ATLAS"],
@@ -122,5 +171,20 @@ final class BackgroundAtlasTests: XCTestCase {
         let graphic = try atlas.mask(at: 28_860)
         XCTAssertEqual(graphic.width, 72)
         XCTAssertEqual(graphic.height, 24)
+        XCTAssertEqual(
+            try BackgroundScene(world: world, atlas: atlas, template: 8)
+                .covered.filter { $0 }.count,
+            29_056
+        )
+        XCTAssertEqual(
+            try BackgroundScene(world: world, atlas: atlas, template: 6)
+                .covered.filter { $0 }.count,
+            28_544
+        )
+        XCTAssertEqual(
+            try BackgroundScene(world: world, atlas: atlas, template: 14)
+                .covered.filter { $0 }.count,
+            30_720
+        )
     }
 }

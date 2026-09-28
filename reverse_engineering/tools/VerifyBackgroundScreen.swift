@@ -171,31 +171,14 @@ private struct VerifyBackgroundScreen {
                 throw ScreenError.invalidInput
             }
             let screen = ULA.render(mem: memory, flashOn: false)
+            let scene = try BackgroundScene(world: world, atlas: atlas, template: roomType)
             let placements = world.rooms[roomType].placements
-            let area = 256 * 192
-            var predicted = Array(repeating: SpectrumRGB(red: 0, green: 0, blue: 0), count: area)
-            var covered = Array(repeating: false, count: area)
-            for placement in placements {
-                let bitmap = try atlas.mask(at: placement.graphicAddress)
-                let indices = bitmap.paletteIndices(invertBitmap: true)
-                for y in 0..<bitmap.height {
-                    let screenY = placement.y + y
-                    guard (0..<192).contains(screenY) else { continue }
-                    for x in 0..<bitmap.width {
-                        let screenX = placement.x + x
-                        guard (0..<256).contains(screenX) else { continue }
-                        let target = screenY * 256 + screenX
-                        let sourceIndex = y * bitmap.width + x
-                        predicted[target] = SpectrumPalette.colors[Int(indices[sourceIndex])]
-                        covered[target] = true
-                    }
-                }
-            }
+            let area = BackgroundScene.width * BackgroundScene.height
             var matches = 0
             var count = 0
-            for index in 0..<area where covered[index] {
+            for index in 0..<area where scene.covered[index] {
                 count += 1
-                let color = predicted[index]
+                let color = scene.colors[index]
                 let offset = index * 4
                 if color.red == screen[offset + 2],
                    color.green == screen[offset + 1],

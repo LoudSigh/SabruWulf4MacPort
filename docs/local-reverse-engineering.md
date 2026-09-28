@@ -93,7 +93,7 @@ The tool fails unless the bitmap-bit inversion and source-direct X/Y reproduce *
   > reverse_engineering/private/background-west-parity.json
 ```
 
-The north exit matches **28,544/28,544** covered pixels in room 152 (template 6); the earlier west exit matches **30,720/30,720** in room 151 (template 14), with **260/260 RAM frames** also matching the backup emulator. The launcher repeats all three checks locally. Their uncovered areas, dynamic sprites and other room templates remain unverified.
+The north exit matches **28,544/28,544** covered pixels in room 152 (template 6); the earlier west exit matches **30,720/30,720** in room 151 (template 14), with **260/260 RAM frames** also matching the backup emulator. The verifier now calls shared `GameCore.BackgroundScene`, which also produces the native viewer's locally cached, transparent 256×192 color images. The launcher repeats all three checks locally. Their uncovered areas, native display scaling, dynamic sprites and other room templates remain unverified.
 
 ## Private, bounded input comparison
 

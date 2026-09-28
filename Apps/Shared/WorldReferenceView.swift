@@ -1,4 +1,5 @@
 import Combine
+import CoreGraphics
 import GameCore
 import SwiftUI
 import UniformTypeIdentifiers
@@ -19,6 +20,14 @@ private enum SpriteImportError: Error, LocalizedError {
     }
 }
 
+private enum BackgroundPreviewError: Error, LocalizedError {
+    case imageCreation
+
+    var errorDescription: String? {
+        "Could not prepare a private source background preview image."
+    }
+}
+
 struct WorldReferenceView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var world: WorldReference?
@@ -30,6 +39,7 @@ struct WorldReferenceView: View {
     @State private var artStatus: String?
     @State private var importingBackgroundAtlas = false
     @State private var backgroundAtlas: BackgroundAtlas?
+    @State private var sourceRoomImages: [Int: CGImage] = [:]
     @State private var sourceAttributeColors = false
     @State private var importingSprites = false
     @State private var spriteSamples: [Int: WorldRaster] = [:]
@@ -288,9 +298,18 @@ struct WorldReferenceView: View {
                 GeometryReader { area in
                     ZStack(alignment: .topLeading) {
                         Rectangle().fill(.teal.opacity(0.12))
+                        if sourceAttributeColors,
+                           let sourceImage = sourceRoomImages[world.roomType(at: selected) ?? 0] {
+                            Image(decorative: sourceImage, scale: 1)
+                                .resizable()
+                                .interpolation(.none)
+                                .frame(width: area.size.width, height: area.size.height)
+                        }
                         ForEach(placements.indices, id: \.self) { index in
                             let placement = placements[index]
-                            backgroundGraphic(placement, size: area.size)
+                            if !sourceAttributeColors || sourceRoomImages.isEmpty {
+                                backgroundGraphic(placement, size: area.size)
+                            }
                             if let width = placement.widthPixels,
                                let height = placement.heightPixels {
                                 Rectangle()
@@ -372,6 +391,7 @@ struct WorldReferenceView: View {
                 art = [:]
                 artStatus = nil
                 backgroundAtlas = nil
+                sourceRoomImages = [:]
                 sourceAttributeColors = false
                 spriteSamples = [:]
                 spriteAtlas = nil
@@ -442,7 +462,29 @@ struct WorldReferenceView: View {
                 }
                 let imported = try BackgroundAtlas.load(from: Data(contentsOf: url))
                 try imported.validate(world: world)
+                var images: [Int: CGImage] = [:]
+                for template in world.rooms.indices {
+                    let scene = try BackgroundScene(
+                        world: world, atlas: imported, template: template
+                    )
+                    guard let provider = CGDataProvider(data: Data(scene.rgba) as CFData),
+                          let image = CGImage(
+                              width: BackgroundScene.width, height: BackgroundScene.height,
+                              bitsPerComponent: 8, bitsPerPixel: 32,
+                              bytesPerRow: BackgroundScene.width * 4,
+                              space: CGColorSpaceCreateDeviceRGB(),
+                              bitmapInfo: CGBitmapInfo(
+                                  rawValue: CGImageAlphaInfo.premultipliedLast.rawValue
+                              ),
+                              provider: provider, decode: nil,
+                              shouldInterpolate: false, intent: .defaultIntent
+                          ) else {
+                        throw BackgroundPreviewError.imageCreation
+                    }
+                    images[template] = image
+                }
                 backgroundAtlas = imported
+                sourceRoomImages = images
                 sourceAttributeColors = false
                 importError = nil
             } catch {
