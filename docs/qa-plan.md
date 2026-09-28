@@ -279,7 +279,18 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. In the viewer import `replay-no-fire-600.json`; scrub frames 162, 164, 165, 230, 231, 298 and 318. Compare the displayed source life byte and actor kind with the numeric evidence.
   4. Scrub T through frame 228 and 297; confirm the previous 190-frame no-contact observation is not mislabeled as permanent protection. Confirm the measured native movement slice does not apply a fabricated injury transition.
 - **Expected Result**: The source life byte drops 1→0 after 63 kind-65 **actor updates** spread across 66 displayed frames in each first-injury run. The pure core tick matches 189/189 source transitions; the kind-64 duration, actor-update scheduling and subsequent zero-life kinds still differ or remain unmodeled. The viewer remains read-only; native health and end-state behavior are **not** asserted from these bounded traces.
-- **Edge Cases / Variants**: Long replay import limit (600), replay mismatch/timing mode, second contact after lives byte reaches zero, T held during a later encounter and unsupported damage model.
+- **Edge Cases / Variants**: Long replay import limit (800), replay mismatch/timing mode, second contact after lives byte reaches zero, T held during a later encounter and unsupported damage model.
+
+### TC-025: Verify bounded return to menu
+- **Priority**: P0
+- **Preconditions**: Both hash-checked menu/gameplay snapshots, verified ROM, three source-free encounter schedules.
+- **Steps**:
+  1. Generate an 800-frame reference-relative replay for each schedule and verify every RAM/screen hash against the unmodified emulator.
+  2. Run `VerifyReferenceReplay --menu SNAPSHOTS/Snapshot.z80` with expected first menu-text frames 503 (no T), 510 (A), and 679 (T); reject an intentionally incorrect expected frame.
+  3. Scrub each imported replay just before and after that frame; note that the viewer **does not render the replay's menu screen** and the numeric player fields left in memory are inactive once the menu appears.
+  4. Check import accepts 800 frames and rejects 801; verify the private replay and screen are not bundled or committed.
+- **Expected Result**: All 2,400 RAM and screen hashes match, while the first exact central menu-text region matches 2,560/2,560 RGB pixels only at the expected frame in each run. The result proves this bounded visible return, not full-screen parity, starting a new game, or a native game-over implementation.
+- **Edge Cases / Variants**: FLASH/color phase, changed menu snapshot, replay hash corruption, later matching frames, app slider on final frame.
 
 ## Regression cadence and coverage
 

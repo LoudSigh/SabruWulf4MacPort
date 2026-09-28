@@ -58,7 +58,7 @@ public struct ReferenceEntityTrace: Decodable, Sendable {
               } ?? true) else {
             throw ReferenceEntityTraceError.unsupportedFormat
         }
-        guard (1...600).contains(result.framesCompared),
+        guard (1...800).contains(result.framesCompared),
               result.trace.count == result.framesCompared,
               result.trace.enumerated().allSatisfy({ offset, frame in
                   frame.index == offset + 1

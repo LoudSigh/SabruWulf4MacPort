@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "gameplaySnapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "menuSnapshotSHA256": "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+  "frameBoundaryMode": "reference-relative",
+  "comparison": "First frame whose center menu-text region (screen x=48..207, y=72..87) matches all 2560 RGB pixels in the independently supplied main-menu snapshot",
+  "scenarios": [
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1305, "matchingFirstInjuryUpdates": 63, "firstExactMenuTextFrame": 503},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1339, "matchingFirstInjuryUpdates": 63, "firstExactMenuTextFrame": 510},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 800, "matchingRAMAndScreenFrames": 800, "matchingContactCalls": 1833, "matchingFirstInjuryUpdates": 63, "firstExactMenuTextFrame": 679}
+  ],
+  "totals": {"frameChecks": 2400, "matchingRAMAndScreenFrames": 2400, "matchingContactCalls": 4477, "matchingFirstInjuryUpdates": 189},
+  "limits": "These three paths are separately controlled inputs from one user-captured gameplay state, not a complete title/start/game-over specification. The exact center-text comparison does not claim complete 256x192 menu screen parity, score reset, option selection, new-game initial state or original tape-boot equivalence. All original screen pixels and per-frame hashes remain private."
+}

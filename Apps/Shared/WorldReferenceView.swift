@@ -129,12 +129,14 @@ struct WorldReferenceView: View {
                         : "Legacy absolute-frame timing (dynamic actors may diverge)")
                         .font(.caption)
                     Text(
-                        "Recorded \(input.uppercased()) · frame \(frame.index) "
+                        "Recorded actor RAM · \(input.uppercased()) · frame \(frame.index) "
                             + "· room \(frame.playerRoomID) · X \(frame.playerX), Y \(frame.playerY)"
                             + " · source life byte \(frame.reportedLives)"
                             + (frame.playerKind.map { " · actor state \($0)" } ?? "")
                     )
                     .font(.caption.monospacedDigit())
+                    Text("After a return to the menu, these retained RAM bytes are not an active player or a rendered replay screen.")
+                        .font(.caption)
                     Slider(
                         value: $replayFrameValue,
                         in: 0...Double(replay.frames.count - 1),
@@ -342,7 +344,7 @@ struct WorldReferenceView: View {
                                     y: screenY(position.y)
                                         * area.size.height / 192
                                 )
-                                .accessibilityLabel("Recorded player position")
+                                .accessibilityLabel("Recorded actor position bytes; may be stale after returning to the menu")
                         }
                         if let position = movementMarkerPosition {
                             Circle()

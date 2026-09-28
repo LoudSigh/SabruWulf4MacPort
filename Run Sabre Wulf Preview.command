@@ -150,7 +150,9 @@ TEMP_CONTACT="$(mktemp "$ROOT/$PRIVATE/.contact-XXXXXXXX.json")"
 TEMP_LONG="$(mktemp "$ROOT/$PRIVATE/.long-replay-XXXXXXXX.json")"
 TEMP_LONG_CONTACT="$(mktemp "$ROOT/$PRIVATE/.long-contact-XXXXXXXX.json")"
 TEMP_LONG_INJURY="$(mktemp "$ROOT/$PRIVATE/.long-injury-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY"' EXIT
+TEMP_MENU="$(mktemp "$ROOT/$PRIVATE/.menu-return-XXXXXXXX.json")"
+TEMP_MENU_CONTACT="$(mktemp "$ROOT/$PRIVATE/.menu-contact-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -361,6 +363,38 @@ if [[ -e "$LONG_INJURY" ]]; then
 else
     mv "$TEMP_LONG_INJURY" "$LONG_INJURY"
 fi
+printf 'Verifying private returns to the menu after the second contact...\n'
+for spec in no-fire-encounter:503 unrelated-a-control:510 fire-before-contact:679; do
+    scenario="${spec%%:*}"
+    firstMenuFrame="${spec#*:}"
+    MENU_REPLAY="$ROOT/$PRIVATE/replay-$scenario-800.json"
+    MENU_CONTACT="$ROOT/$PRIVATE/injury-check-$scenario-800.json"
+    "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+        --schedule "reverse_engineering/analysis/$scenario-schedule.json" 800 \
+        --reference-timing --actor-kind > "$TEMP_MENU"
+    if [[ -e "$MENU_REPLAY" ]]; then
+        if ! cmp -s "$MENU_REPLAY" "$TEMP_MENU"; then
+            printf 'Existing private menu-return replay differs: %s\n' "$MENU_REPLAY" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_MENU" "$MENU_REPLAY"
+    fi
+    "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$MENU_REPLAY" \
+        --menu "$MENU" "$firstMenuFrame"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+        "reverse_engineering/analysis/$scenario-schedule.json" 800 \
+        --reference-timing --require-ram-parity --require-contact-parity \
+        --require-first-injury-parity > "$TEMP_MENU_CONTACT"
+    if [[ -e "$MENU_CONTACT" ]]; then
+        if ! cmp -s "$MENU_CONTACT" "$TEMP_MENU_CONTACT"; then
+            printf 'Existing private menu-return contact comparison differs: %s\n' "$MENU_CONTACT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_MENU_CONTACT" "$MENU_CONTACT"
+    fi
+done
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"

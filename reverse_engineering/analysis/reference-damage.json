@@ -45,5 +45,5 @@
       "laterKinds": [{"kind": 68, "frames": [475, 475]}, {"kind": 69, "frames": [476, 493]}, {"kind": 70, "frames": [494, 600]}]
     }
   ],
-  "limits": "Each 600-frame run matches the unmodified emulator's individual RAM/screen hashes and the pure contact predicate's individual source returns. Kind 65 occupies exactly 66 frames before the first life-byte decrement in these three cases; kind 64 occupies one or two frames, and the second contact follows a different kind sequence. These observations do not establish the full injury algorithm, lives interpretation, game-over screen, attack damage, respawn or native enemy AI."
+  "limits": "Each 600-frame run matches the unmodified emulator's individual RAM/screen hashes and the pure contact predicate's individual source returns. Kind 65 occupies exactly 66 frames before the first life-byte decrement in these three cases; kind 64 occupies one or two frames, and the second contact follows a different kind sequence. Separate 800-frame runs verify the center menu-text return; see reference-menu-return.json. These observations do not establish the full injury algorithm, complete menu screen parity, attack damage, respawn or native enemy AI."
 }
