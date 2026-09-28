@@ -231,4 +231,22 @@ final class ReferenceReplayTests: XCTestCase {
             XCTAssertEqual(frame.reportedLives, 4)
         }
     }
+
+    func testPrivateKeyboardRestartMovementWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_KEYBOARD_RESTART_REPLAY"]
+        else {
+            throw XCTSkip("Set SABRE_PRIVATE_KEYBOARD_RESTART_REPLAY for local 3/0/W path")
+        }
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(replay.frames.count, 800)
+        XCTAssertEqual(replay.schedule?.map(\.key), ["w", "e", "3", "0", "w"])
+        XCTAssertEqual(replay.frames[787].playerX, 120)
+        XCTAssertEqual(replay.frames[788].playerX, 121)
+        XCTAssertEqual(replay.frames.last?.playerRoomID, 168)
+        XCTAssertEqual(replay.frames.last?.playerX, 148)
+        XCTAssertEqual(replay.frames.last?.playerKind, 22)
+        XCTAssertEqual(replay.frames.last?.reportedLives, 4)
+    }
 }

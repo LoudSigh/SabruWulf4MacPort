@@ -50,6 +50,7 @@ private func key(_ name: String) throws -> KeyboardMatrix.Key {
     case "r": .r
     case "t": .t
     case "0": .num0
+    case "3": .num3
     default: throw ScreenError.invalidInput
     }
 }

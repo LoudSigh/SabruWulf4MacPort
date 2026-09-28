@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "schedule": "restart-keyboard-movement-schedule.json",
+  "frames": 800,
+  "matchingRAMAndScreenFrames": 800,
+  "firstExactMenuTextFrame": 503,
+  "keyboardMenuKey": "3",
+  "keyboardMenuIntervalZeroBased": [515, 525],
+  "startKeyIntervalZeroBased": [530, 540],
+  "rightKeyIntervalZeroBased": [680, 800],
+  "firstPlayerXMoveFrame": 789,
+  "actorAtFrame800": {"roomID": 168, "x": 148, "y": 112, "kind": 22, "lifeByte": 4},
+  "coveredRGBPixelsAt800": 29056,
+  "matchingCoveredRGBPixelsAt800": 29056,
+  "matchingContactCalls": 2309,
+  "matchingFirstInjuryUpdates": 63,
+  "noKeyboardMenuKeyControl": {
+    "matchingRAMAndScreenFrames": 800,
+    "firstPlayerXMoveFrame": 793,
+    "actorAtFrame800": {"roomID": 168, "x": 136, "y": 112, "kind": 20, "lifeByte": 4}
+  },
+  "limits": "The 3 key changes RAM at frame 519 and the timing of the menu 0 poll, so the four-frame movement difference cannot by itself establish a different controller mapping. Both schedules with W continuously held from frame 680 eventually move the actor; neither of the earlier 40-frame W holds moved it by frame 800. The startup polling/initialization delay and dynamic actors are not modeled in the native game. Original replay hashes and screen pixels remain private."
+}

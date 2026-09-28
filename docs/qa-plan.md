@@ -304,6 +304,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: The reference-timed `0` path recovers one rendered source-game start; the native viewer can scrub its recorded actor bytes, but no native start-game, enemy or quest initialization is claimed. Do not infer immediate keyboard movement from a static early-start frame.
 - **Edge Cases / Variants**: Menu polling phase, new-game redrawing versus actor-byte initialization, option choice, different pre-menu input history and input release.
 
+### TC-027: Keyboard-selected movement after recorded restart
+- **Priority**: P1
+- **Preconditions**: The two private 48K snapshots, 48K ROM, world/background atlases, and [restart-keyboard-movement-schedule.json](../reverse_engineering/analysis/restart-keyboard-movement-schedule.json).
+- **Steps**:
+  1. Replay the menu `3`/`0`/long-W schedule for 800 reference-relative frames and verify every RAM/screen hash and 2,309 contact returns against the unmodified emulator.
+  2. Assert actor X stays 120 through frame 788, first reaches 121 at 789 and reaches 148 (kind 22, life byte 4) at frame 800. Assert covered room 168 static pixels match 29,056/29,056 at 800.
+  3. Compare a no-`3` schedule with W still held long enough; it first moves at frame 793 and reaches X=136 at 800. Verify short W holds through frame 720 do not prove input is broken.
+- **Expected Result**: A bounded post-start actor motion path is observable in source RAM; native game initialization, enemy AI and input polling cadence are still incomplete. Menu `3` changes RAM and polling phase, so its four-frame movement shift is **not** labeled a verified control-mode effect.
+- **Edge Cases / Variants**: Different menu phase, W held/released during setup, player collision after X=193 and alternate life counts.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

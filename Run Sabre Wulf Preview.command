@@ -153,7 +153,8 @@ TEMP_LONG_INJURY="$(mktemp "$ROOT/$PRIVATE/.long-injury-XXXXXXXX.json")"
 TEMP_MENU="$(mktemp "$ROOT/$PRIVATE/.menu-return-XXXXXXXX.json")"
 TEMP_MENU_CONTACT="$(mktemp "$ROOT/$PRIVATE/.menu-contact-XXXXXXXX.json")"
 TEMP_RESTART_SCREEN="$(mktemp "$ROOT/$PRIVATE/.restart-screen-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN"' EXIT
+TEMP_KEYBOARD_SCREEN="$(mktemp "$ROOT/$PRIVATE/.keyboard-screen-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -437,6 +438,48 @@ if [[ -e "$RESTART_SCREEN" ]]; then
     fi
 else
     mv "$TEMP_RESTART_SCREEN" "$RESTART_SCREEN"
+fi
+printf 'Verifying movement after selecting keyboard control on the returned menu...\n'
+KEYBOARD_SCHEDULE=reverse_engineering/analysis/restart-keyboard-movement-schedule.json
+KEYBOARD_REPLAY="$ROOT/$PRIVATE/replay-restart-keyboard-movement-800.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule "$KEYBOARD_SCHEDULE" 800 --reference-timing --actor-kind \
+    > "$TEMP_MENU"
+if [[ -e "$KEYBOARD_REPLAY" ]]; then
+    if ! cmp -s "$KEYBOARD_REPLAY" "$TEMP_MENU"; then
+        printf 'Existing private keyboard-restart replay differs: %s\n' "$KEYBOARD_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU" "$KEYBOARD_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$KEYBOARD_REPLAY" \
+    --menu "$MENU" 503
+KEYBOARD_CONTACT="$ROOT/$PRIVATE/restart-keyboard-contact-800.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$KEYBOARD_SCHEDULE" 800 \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    --require-first-injury-parity --require-menu-sequence \
+    > "$TEMP_MENU_CONTACT"
+if [[ -e "$KEYBOARD_CONTACT" ]]; then
+    if ! cmp -s "$KEYBOARD_CONTACT" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private keyboard-restart contact check differs: %s\n' "$KEYBOARD_CONTACT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$KEYBOARD_CONTACT"
+fi
+KEYBOARD_SCREEN="$ROOT/$PRIVATE/restart-keyboard-background-800.json"
+"$ROOT/$PRIVATE/VerifyBackgroundScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
+    --schedule "$KEYBOARD_SCHEDULE" 800 > "$TEMP_KEYBOARD_SCREEN"
+if [[ -e "$KEYBOARD_SCREEN" ]]; then
+    if ! cmp -s "$KEYBOARD_SCREEN" "$TEMP_KEYBOARD_SCREEN"; then
+        printf 'Existing private keyboard-restart screen check differs: %s\n' "$KEYBOARD_SCREEN" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_KEYBOARD_SCREEN" "$KEYBOARD_SCREEN"
 fi
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
