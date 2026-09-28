@@ -65,3 +65,21 @@ swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift reverse_engineering/tools
 ```
 
 Valid keys: `q`, `w`, `e`, `r`, `t`, `a`, `o`, `p`, `space`; `none` is the comparison baseline. `--hold` keeps the chosen key down beyond frame index 40. A second Q run matched the first's output byte-for-byte. The linked SkoolKit handler and a private snapshot check confirm Q/W/E/R/T as the selected keyboard row; controlled Q/W/E/R/T inputs each altered frame hashes. During one T run the documented PlayerMovement entry was observed with IX `0x9702`; the tool tracks that entity's room and X/Y bytes at every frame, distinct from the transient saved-actor buffer. The [public summary](../reverse_engineering/analysis/reference-replay.json) contains only numeric checkpoints and hashes. This is **not** a cycle-accurate emulator: peripheral I/O beyond the keyboard, ULA contention, tape and audio are incomplete. Do not infer exact combat, collision masks or all room transitions from one starting position. Compare visually and with the user's working emulator before promoting outcomes to faithful core tests.
+
+For bounded multi-key schedules, use a source-free JSON file containing sorted, nonoverlapping zero-based `{ "key", "startFrame", "endFrame" }` intervals. The [north-exit](../reverse_engineering/analysis/upper-exit-schedule.json), [round-trip](../reverse_engineering/analysis/round-trip-schedule.json) and [provisional west-exit](../reverse_engineering/analysis/west-exit-schedule.json) schedules are examples. Results are private:
+
+```sh
+"$OUT/SnapshotReplay" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 --schedule \
+  reverse_engineering/analysis/west-exit-schedule.json 256 \
+  > reverse_engineering/private/replay-west-exit-256.json
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift \
+  reverse_engineering/tools/SnapshotDivergence.swift -o "$OUT/SnapshotDivergence"
+"$OUT/SnapshotDivergence" --self-test
+"$OUT/SnapshotDivergence" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+  reverse_engineering/analysis/west-exit-schedule.json 256 \
+  > reverse_engineering/private/west-divergence.json
+jq '{firstRNGDifference,firstMovingEntityDifference,firstPlayerStateDifference,firstPlayerPositionDifference}' \
+  reverse_engineering/private/west-divergence.json
+```
+
+The divergence tool compares fresh-FE CPU stepping with the unmodified emulator's `stepFrame()` under the same inputs; it emits only hashes and selected numeric state, not RAM or instructions. For the west schedule it measures the first RNG difference at frame 101, moving-entity placement difference at 102, player state change at 163, and player coordinate difference at 183. The unmodified emulator's moving entity reaches the player before the late Q press; this is **not** evidence of a faulty keyboard. The earlier RNG split may depend on CPU refresh-register phase, but that link is still unproven. Never publish the full private replays or original game bytes.

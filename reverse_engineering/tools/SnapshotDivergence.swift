@@ -1,0 +1,253 @@
+import CryptoKit
+import Darwin
+import Foundation
+
+private enum DivergenceError: Error, CustomStringConvertible {
+    case usage
+    case invalidSchedule
+    case invalidInput
+    case stepBudget
+    case unimplemented
+
+    var description: String {
+        switch self {
+        case .usage:
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> | --self-test"
+        case .invalidSchedule:
+            "Schedule intervals must be sorted, nonoverlapping and within the frame count"
+        case .invalidInput:
+            "Expected a verified 48K ROM and gameplay snapshot"
+        case .stepBudget:
+            "Manual CPU run exceeded 100000 instructions in one frame"
+        case .unimplemented:
+            "The reference CPU did not implement an instruction in this replay"
+        }
+    }
+}
+
+private struct Segment: Decodable {
+    let key: String
+    let startFrame: Int
+    let endFrame: Int
+}
+
+private struct Difference: Encodable {
+    let frame: Int
+    let manual: [Int]
+    let fullEmulator: [Int]
+}
+
+private struct Report: Encodable {
+    let snapshotSHA256: String
+    let romSHA256: String
+    let framesCompared: Int
+    let firstRNGDifference: Difference?
+    let firstMovingEntityDifference: Difference?
+    let firstPlayerStateDifference: Difference?
+    let firstPlayerPositionDifference: Difference?
+}
+
+private func hash(_ data: Data) -> String {
+    SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+}
+
+private func key(_ name: String) throws -> KeyboardMatrix.Key {
+    switch name {
+    case "q": .q
+    case "w": .w
+    case "e": .e
+    case "r": .r
+    case "t": .t
+    default: throw DivergenceError.invalidSchedule
+    }
+}
+
+private func schedule(_ data: Data, frames: Int) throws -> [Segment] {
+    guard data.count <= 64_000 else { throw DivergenceError.invalidSchedule }
+    let entries = try JSONDecoder().decode([Segment].self, from: data)
+    guard !entries.isEmpty else { throw DivergenceError.invalidSchedule }
+    var end = 0
+    for entry in entries {
+        guard entry.startFrame >= end, entry.endFrame > entry.startFrame,
+              entry.endFrame <= frames else {
+            throw DivergenceError.invalidSchedule
+        }
+        _ = try key(entry.key)
+        end = entry.endFrame
+    }
+    return entries
+}
+
+private func playerState(_ memory: Memory) -> [Int] {
+    let base: UInt16 = 0x9702
+    return [0, 2, 5, 6, 7].map { Int(memory.read(base &+ UInt16($0))) }
+}
+
+private func playerPosition(_ memory: Memory) -> [Int] {
+    let base: UInt16 = 0x9702
+    return [1, 3, 4].map { Int(memory.read(base &+ UInt16($0))) }
+}
+
+private func movingEntity(_ memory: Memory) -> [Int] {
+    let base: UInt16 = 0x9702 + 12 * 12
+    return [0, 1, 3, 4].map { Int(memory.read(base &+ UInt16($0))) }
+}
+
+@main
+private struct SnapshotDivergence {
+    static func main() {
+        do {
+            let arguments = CommandLine.arguments
+            if arguments == [arguments[0], "--self-test"] {
+                let valid = Data("""
+                    [{"key":"w","startFrame":20,"endFrame":30},
+                     {"key":"e","startFrame":30,"endFrame":100}]
+                    """.utf8)
+                guard try schedule(valid, frames: 100).count == 2 else {
+                    throw DivergenceError.invalidSchedule
+                }
+                do {
+                    _ = try schedule(valid, frames: 99)
+                    throw DivergenceError.invalidSchedule
+                } catch DivergenceError.invalidSchedule {}
+                print("SnapshotDivergence self-test passed")
+                return
+            }
+            guard arguments.count == 5,
+                  let count = Int(arguments[4]), (1...600).contains(count) else {
+                throw DivergenceError.usage
+            }
+            let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
+            let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
+            let segments = try schedule(
+                Data(contentsOf: URL(fileURLWithPath: arguments[3])), frames: count
+            )
+            guard hash(rom) == "d55daa439b673b0e3f5897f99ac37ecb45f974d1862b4dadb85dec34af99cb42",
+                  hash(source) == "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+                  let snapshot = try? Z80Snapshot.load(from: source),
+                  snapshot.ram128Banks == nil,
+                  snapshot.ram48.count == 49_152 else {
+                throw DivergenceError.invalidInput
+            }
+
+            let savedOutput = dup(STDOUT_FILENO)
+            guard savedOutput >= 0 else { throw DivergenceError.invalidInput }
+            fflush(stdout)
+            guard dup2(STDERR_FILENO, STDOUT_FILENO) >= 0 else {
+                close(savedOutput)
+                throw DivergenceError.invalidInput
+            }
+            let manual = Speccy48Emulator(rom: [UInt8](rom))
+            let full = Speccy48Emulator(rom: [UInt8](rom))
+            fflush(stdout)
+            guard dup2(savedOutput, STDOUT_FILENO) >= 0 else {
+                close(savedOutput)
+                throw DivergenceError.invalidInput
+            }
+            close(savedOutput)
+            manual.apply(snapshot: snapshot)
+            full.apply(snapshot: snapshot)
+            var cpu = manual.cpu
+            var memory = manual.mem
+            var cycles = 0
+            var nextInterrupt = 69_888
+            var active: KeyboardMatrix.Key?
+            var firstRNG: Difference?
+            var firstEntity: Difference?
+            var firstState: Difference?
+            var firstPosition: Difference?
+
+            for frame in 0..<count {
+                let pressed = try segments.first(where: {
+                    $0.startFrame <= frame && frame < $0.endFrame
+                }).map { try key($0.key) }
+                if pressed != active {
+                    if let active {
+                        manual.keyboard.release(active)
+                        full.keyboard.release(active)
+                    }
+                    if let pressed {
+                        manual.keyboard.press(pressed)
+                        full.keyboard.press(pressed)
+                    }
+                    active = pressed
+                }
+                let boundary = (frame + 1) * 69_888
+                var steps = 0
+                while cycles < boundary {
+                    let result = cpu.step(
+                        read: { memory.read($0) },
+                        write: { memory.write($0, $1) },
+                        ioRead: { port in
+                            port & 1 == 0
+                                ? manual.keyboard.readPortFE(highByte: UInt8(port >> 8))
+                                : 0xFF
+                        },
+                        ioWrite: { _, _ in }
+                    )
+                    steps += 1
+                    guard steps <= 100_000 else { throw DivergenceError.stepBudget }
+                    switch result {
+                    case .ok(let cost): cycles += cost
+                    case .unimplemented: throw DivergenceError.unimplemented
+                    }
+                    while cycles >= nextInterrupt {
+                        cycles += cpu.acceptMaskableInterrupt(
+                            read: { memory.read($0) },
+                            write: { memory.write($0, $1) }
+                        )
+                        nextInterrupt += 69_888
+                    }
+                }
+                full.stepFrame()
+                guard full.unimplementedCount == 0 else {
+                    throw DivergenceError.unimplemented
+                }
+                let index = frame + 1
+                let reference = full.mem
+                let manualRNG = [Int(memory.read(0x9695))]
+                let fullRNG = [Int(reference.read(0x9695))]
+                if firstRNG == nil && manualRNG != fullRNG {
+                    firstRNG = Difference(frame: index, manual: manualRNG, fullEmulator: fullRNG)
+                }
+                let manualEntity = movingEntity(memory)
+                let fullEntity = movingEntity(reference)
+                if firstEntity == nil && manualEntity != fullEntity {
+                    firstEntity = Difference(
+                        frame: index, manual: manualEntity, fullEmulator: fullEntity
+                    )
+                }
+                let manualState = playerState(memory)
+                let fullState = playerState(reference)
+                if firstState == nil && manualState != fullState {
+                    firstState = Difference(
+                        frame: index, manual: manualState, fullEmulator: fullState
+                    )
+                }
+                let manualPosition = playerPosition(memory)
+                let fullPosition = playerPosition(reference)
+                if firstPosition == nil && manualPosition != fullPosition {
+                    firstPosition = Difference(
+                        frame: index, manual: manualPosition, fullEmulator: fullPosition
+                    )
+                }
+            }
+            let report = Report(
+                snapshotSHA256: hash(source),
+                romSHA256: hash(rom),
+                framesCompared: count,
+                firstRNGDifference: firstRNG,
+                firstMovingEntityDifference: firstEntity,
+                firstPlayerStateDifference: firstState,
+                firstPlayerPositionDifference: firstPosition
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            FileHandle.standardOutput.write(try encoder.encode(report))
+            FileHandle.standardOutput.write(Data([0x0A]))
+        } catch {
+            fputs("SnapshotDivergence: \(error)\n", stderr)
+            exit(1)
+        }
+    }
+}
