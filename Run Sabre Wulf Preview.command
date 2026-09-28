@@ -568,11 +568,54 @@ for direction in q e r; do
         mv "$TEMP_READY_SCREEN" "$READY_SCREEN"
     fi
 done
+printf 'Checking one bounded W-then-E source path after new-game setup...\n'
+MIXED_SCHEDULE=reverse_engineering/analysis/restart-ready-w-e-schedule.json
+MIXED_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-w-e-900.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule "$MIXED_SCHEDULE" 900 --reference-timing --actor-kind \
+    > "$TEMP_MENU"
+if [[ -e "$MIXED_REPLAY" ]]; then
+    if ! cmp -s "$MIXED_REPLAY" "$TEMP_MENU"; then
+        printf 'Existing private W/E replay differs: %s\n' "$MIXED_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU" "$MIXED_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$MIXED_REPLAY" \
+    --menu "$MENU" 503
+MIXED_CONTACT="$ROOT/$PRIVATE/restart-ready-mixed-contact-900.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$MIXED_SCHEDULE" 900 \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    --require-first-injury-parity --require-menu-sequence \
+    > "$TEMP_MENU_CONTACT"
+if [[ -e "$MIXED_CONTACT" ]]; then
+    if ! cmp -s "$MIXED_CONTACT" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private W/E contact comparison differs: %s\n' "$MIXED_CONTACT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$MIXED_CONTACT"
+fi
+MIXED_SCREEN="$ROOT/$PRIVATE/restart-ready-mixed-background-900.json"
+"$ROOT/$PRIVATE/VerifyBackgroundScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
+    --schedule "$MIXED_SCHEDULE" 900 > "$TEMP_READY_SCREEN"
+if [[ -e "$MIXED_SCREEN" ]]; then
+    if ! cmp -s "$MIXED_SCREEN" "$TEMP_READY_SCREEN"; then
+        printf 'Existing private W/E screen comparison differs: %s\n' "$MIXED_SCREEN" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_READY_SCREEN" "$MIXED_SCREEN"
+fi
 printf 'Checking the native post-setup room, position and sprite ID against all four paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY_DIR="$ROOT/$PRIVATE" \
-    swift test --filter 'CapturedMovementTests/testPrivateObservedNewGameMovementWhenProvided' \
+    SABRE_PRIVATE_NEW_GAME_MIXED_REPLAY="$MIXED_REPLAY" \
+    swift test --filter 'CapturedMovementTests/testPrivate(ObservedNewGameMovementWhenProvided|MixedNewGamePathWhenProvided)' \
     > "$ROOT/$PRIVATE/new-game-movement-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-movement-test.log" >&2
     exit 1

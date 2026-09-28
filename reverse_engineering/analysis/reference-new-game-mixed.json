@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "schedule": "restart-ready-w-e-schedule.json",
+  "frames": 900,
+  "matchingRAMAndScreenFrames": 900,
+  "matchingContactCalls": 2661,
+  "firstExactMenuTextFrame": 503,
+  "nativeReadyAtFrame": 790,
+  "nativeSequence": "W for 18 frames (source 791..808), E for 42 (809..850), None for 50 (851..900)",
+  "matchingNativeRoomXYFrames": 110,
+  "matchingNativeSpriteIDFrames": 76,
+  "firstUnverifiedNativeSpriteFrame": 867,
+  "checkpoints": [
+    {"frame": 808, "roomID": 168, "x": 160, "y": 112, "kind": 20},
+    {"frame": 820, "roomID": 168, "x": 184, "y": 90, "kind": 22},
+    {"frame": 850, "roomID": 168, "x": 208, "y": 87, "kind": 20},
+    {"frame": 900, "roomID": 168, "x": 208, "y": 86, "kind": 25}
+  ],
+  "coveredRGBPixelsAt900": 29056,
+  "matchingCoveredRGBPixelsAt900": 29056,
+  "limits": "This is exactly one bounded W-to-E input transition after observed setup, not general input mixing. Position matches all source frames 791..900; source sprite kind changes at frame 867 during delayed motion without a held key, and its cause is unclassified. The native measured sprite ID becomes unavailable from frame 867 while the position marker remains usable. No enemy AI, contact-driven injury, score or quest state is modeled."
+}

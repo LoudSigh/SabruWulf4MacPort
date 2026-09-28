@@ -326,6 +326,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Q/W/E each match 110 checked room/X/Y and bitmap-ID frames, R matches 76 before a source disagreement of unclassified cause, and the captured-midgame origin remains unchanged. Importing the private sprite atlas adds a clearly labeled pink measured shape; it is not original palette or layering. The viewer does not imply that menu polling, initial actor state, enemies, damage or full new-game state are simulated.
 - **Edge Cases / Variants**: Shorter unrelated imported replay, reset/switch origins, app background/resume and first frame after release.
 
+### TC-029: Bounded W-then-E movement and animation uncertainty
+- **Priority**: P1
+- **Preconditions**: Private source world and atlas, and a 900-frame replay exported from [restart-ready-w-e-schedule.json](../reverse_engineering/analysis/restart-ready-w-e-schedule.json).
+- **Steps**:
+  1. Verify 900/900 source RAM/screen hashes, 2,661 contact returns and 29,056/29,056 covered RGB pixels at frame 900.
+  2. Initialize the native `.observedNewGameReady` origin; hold W for 18 measured frames, E for 42, then None for 50.
+  3. Require **110/110** room/X/Y matches and **76/76** bitmap ID matches through source frame 866. At 867 and later, verify native ID is unavailable (no falsely animated pink bitmap) while the position marker continues to X=208/Y=86 at frame 900.
+  4. Try switching to E one frame early or back to W afterwards; verify the unmeasured combination fails without advancing.
+- **Expected Result**: Only the published W→E input change is accepted. Later actor bitmap selection is explicitly unverified; no dynamic AI or general mixed-input capability is claimed.
+- **Edge Cases / Variants**: Input release during coasting, short imported replay, missing private sprite atlas, transition to other rooms.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

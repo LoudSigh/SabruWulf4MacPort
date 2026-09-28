@@ -104,6 +104,8 @@ struct WorldReferenceView: View {
                         if movementOrigin == .observedNewGameReady {
                             Text("Post-setup slice only: begins after source frame 790. Keep one Q/W/E direction for 60 frames, then None for 50 (frames 791–900). R/down is checked only through frame 866 and pauses before the unexplained next step. With a private sprite atlas, pink shapes show checked bitmap IDs in approximate color. Menu polling, enemies and most exits are not simulated.")
                                 .font(.caption)
+                            Text("One measured direction change is also supported: W for 18 frames, E for 42, then None for 50. Position matches through frame 900; the pink bitmap ID is hidden after frame 866 because its later phase is unverified.")
+                                .font(.caption)
                             if let replay, replay.frames.count < 900 {
                                 Text("This shorter replay cannot compare the full post-setup slice; import the private 900-frame late-W replay.")
                                     .font(.caption)

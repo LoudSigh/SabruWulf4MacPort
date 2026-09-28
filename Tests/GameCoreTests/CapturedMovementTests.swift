@@ -51,6 +51,53 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(moved.frame, 10)
     }
 
+    func testMixedNewGameInputOnlySwitchesAtMeasuredFrame18() throws {
+        var state = try CapturedMovementState(
+            world: world(), origin: .observedNewGameReady
+        )
+        for _ in 0..<17 { try state.advance(holding: [.right]) }
+        XCTAssertThrowsError(try state.advance(holding: [.up]))
+        XCTAssertEqual(state.frame, 17)
+        try state.advance(holding: [.right])
+        try state.advance(holding: [.up])
+        XCTAssertThrowsError(try state.advance(holding: [.right]))
+        XCTAssertEqual(state.frame, 19)
+    }
+
+    func testPrivateMixedNewGamePathWhenProvided() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let worldPath = environment["SABRE_PRIVATE_WORLD"],
+              let replayPath = environment["SABRE_PRIVATE_NEW_GAME_MIXED_REPLAY"] else {
+            throw XCTSkip("Set private world and W/E post-setup replay for mixed parity")
+        }
+        let source = try WorldReference.load(
+            from: Data(contentsOf: URL(fileURLWithPath: worldPath))
+        )
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: replayPath))
+        )
+        XCTAssertEqual(replay.frames.count, 900)
+        var state = try CapturedMovementState(
+            world: source, origin: .observedNewGameReady
+        )
+        for sourceIndex in 790..<900 {
+            let input: Set<OriginalAction> = sourceIndex < 808 ? [.right]
+                : sourceIndex < 850 ? [.up] : []
+            try state.advance(holding: input)
+            let expected = replay.frames[sourceIndex]
+            XCTAssertEqual(state.room.y * 16 + state.room.x, expected.playerRoomID)
+            XCTAssertEqual(
+                state.player, GridPoint(expected.playerX, expected.playerY),
+                "W/E position at frame \(expected.index)"
+            )
+            if expected.index <= 866 {
+                XCTAssertEqual(state.playerSpriteID, expected.playerKind)
+            } else {
+                XCTAssertNil(state.playerSpriteID)
+            }
+        }
+    }
+
     func testPrivateObservedNewGameMovementWhenProvided() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let worldPath = environment["SABRE_PRIVATE_WORLD"],
