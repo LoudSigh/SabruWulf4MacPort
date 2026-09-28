@@ -19,11 +19,12 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case enemyDirectionMismatch(frame: Int)
     case enemyStateMismatch(frame: Int, expected: [Int], actual: [Int])
     case enemyExpiryMismatch(frame: Int)
+    case rngStepMismatch(frame: Int)
 
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -54,6 +55,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "Slot-12 state differs at frame \(frame): predicted \(expected), source \(actual)"
         case .enemyExpiryMismatch(let frame):
             "The measured slot-12 timer-expiry result differs at source frame \(frame)"
+        case .rngStepMismatch(let frame):
+            "A supplied-operand RNG update differs at source frame \(frame)"
         }
     }
 }
@@ -175,6 +178,18 @@ private struct EnemyExpiryComparison: Encodable {
     let resumedFrames: [Int]
 }
 
+private struct RNGStepComparison: Encodable {
+    let refreshCalls: Int
+    let clockCalls: Int
+    let matchingWrites: Int
+}
+
+private struct PendingRNGStep {
+    let writer: UInt16
+    let predicted: UInt8
+    let frame: Int
+}
+
 private struct PendingEnemyExpiry {
     let frame: Int
     let kind: UInt8
@@ -251,6 +266,7 @@ private struct Report: Encodable {
     let enemyDirectionComparison: EnemyDirectionComparison?
     let activeEnemyComparison: ActiveEnemyComparison?
     let enemyExpiryComparison: EnemyExpiryComparison?
+    let rngStepComparison: RNGStepComparison?
     let codeCoverage: CodeCoverage?
 }
 
@@ -337,7 +353,7 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...17).contains(arguments.count),
+            guard (5...18).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--watch-entity-state",
                        "--reference-timing",
@@ -345,6 +361,7 @@ private struct SnapshotDivergence {
                        "--require-first-injury-parity", "--require-menu-sequence",
                        "--coverage", "--require-entity-phase-parity",
                        "--require-enemy-expiry-parity",
+                       "--require-rng-step-parity",
                        "--require-enemy-direction-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
@@ -370,6 +387,9 @@ private struct SnapshotDivergence {
                         && options.contains("--require-ram-parity")),
                   !options.contains("--require-enemy-expiry-parity")
                     || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--require-rng-step-parity")
+                    || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
@@ -383,6 +403,7 @@ private struct SnapshotDivergence {
             let includeCoverage = options.contains("--coverage")
             let requireEntityPhaseParity = options.contains("--require-entity-phase-parity")
             let requireEnemyExpiryParity = options.contains("--require-enemy-expiry-parity")
+            let requireRNGStepParity = options.contains("--require-rng-step-parity")
             let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
@@ -463,6 +484,9 @@ private struct SnapshotDivergence {
             var enemyExpiryCalls = 0
             var enemyStoppedFrames: [Int] = []
             var enemyResumedFrames: [Int] = []
+            var pendingRNGStep: PendingRNGStep?
+            var refreshCalls = 0
+            var clockCalls = 0
 
             for frame in 0..<count {
                 let pressed = try segments.first(where: {
@@ -484,6 +508,28 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    if requireRNGStepParity {
+                        if cpu.pc == 0x99D6 {
+                            pendingRNGStep = PendingRNGStep(
+                                writer: 0x99D7,
+                                predicted: CapturedRNGStep.refresh(
+                                    previous: memory.read(0x9695),
+                                    refreshOperand: cpu.c, carry: cpu.f & 1 != 0
+                                ),
+                                frame: frame + 1
+                            )
+                        } else if cpu.pc == 0x9A24 {
+                            pendingRNGStep = PendingRNGStep(
+                                writer: 0x9A2D,
+                                predicted: CapturedRNGStep.clock(
+                                    previous: memory.read(0x9695),
+                                    counterLowByte: cpu.l,
+                                    clockByte: memory.read(0x5C78)
+                                ),
+                                frame: frame + 1
+                            )
+                        }
+                    }
                     if requireEnemyExpiryParity, cpu.ix == 0x9792 {
                         if cpu.pc == 0xA56A, memory.read(0x9793) == 152,
                            memory.read(0x9794) == 1,
@@ -680,6 +726,20 @@ private struct SnapshotDivergence {
                     case .ok(let cost): cycles += cost
                     case .unimplemented: throw DivergenceError.unimplemented
                     }
+                    if requireRNGStepParity,
+                       instructionAddress == 0x99D7 || instructionAddress == 0x9A2D {
+                        guard let pending = pendingRNGStep,
+                              pending.writer == instructionAddress,
+                              memory.read(0x9695) == pending.predicted else {
+                            throw DivergenceError.rngStepMismatch(frame: frame + 1)
+                        }
+                        if instructionAddress == 0x99D7 {
+                            refreshCalls += 1
+                        } else {
+                            clockCalls += 1
+                        }
+                        pendingRNGStep = nil
+                    }
                     while cycles >= nextInterrupt {
                         cycles += cpu.acceptMaskableInterrupt(
                             read: { memory.read($0) },
@@ -792,6 +852,11 @@ private struct SnapshotDivergence {
                 guard pendingEnemyExpiry == nil else {
                     throw DivergenceError.unfinishedEnemyExpiry
                 }
+                if requireRNGStepParity {
+                    guard pendingRNGStep == nil, refreshCalls > 0, clockCalls > 0 else {
+                        throw DivergenceError.rngStepMismatch(frame: count)
+                    }
+                }
                 guard enemyExpiryCalls > 0 else {
                     throw DivergenceError.noEnemyExpiryEvents
                 }
@@ -877,6 +942,11 @@ private struct SnapshotDivergence {
                         calls: enemyExpiryCalls, matchingCalls: enemyExpiryCalls,
                         stoppedFrames: enemyStoppedFrames,
                         resumedFrames: enemyResumedFrames
+                    ) : nil,
+                rngStepComparison: requireRNGStepParity
+                    ? RNGStepComparison(
+                        refreshCalls: refreshCalls, clockCalls: clockCalls,
+                        matchingWrites: refreshCalls + clockCalls
                     ) : nil,
                 codeCoverage: coverage
             )

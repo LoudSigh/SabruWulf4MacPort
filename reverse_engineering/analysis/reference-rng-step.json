@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "rules": {
+    "refreshSite": "(previous RNG + supplied refresh-register operand + supplied carry bit) modulo 256",
+    "clockSite": "(previous RNG + supplied counter low byte + supplied clock byte) modulo 256"
+  },
+  "paths": [
+    {"schedule": "fire-before-contact-schedule.json", "frames": 190, "refreshCalls": 1955, "clockCalls": 74},
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 190, "refreshCalls": 2000, "clockCalls": 76},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 190, "refreshCalls": 1975, "clockCalls": 75},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 250, "refreshCalls": 2491, "clockCalls": 94}
+  ],
+  "totals": {"matchingWrites": 8740, "observedWrites": 8740, "refreshCalls": 8421, "clockCalls": 319, "matchingRAMFrames": 820},
+  "limits": "This verifies arithmetic only at the two executed source RNG write sites. The refresh register, carry, counter-low operand, clock and instruction-path-dependent call cadence are supplied by the reference runner. Native gameplay does not generate these inputs or reproduce source randomness autonomously."
+}

@@ -392,6 +392,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Both source outcomes match the bounded decision based on whether either prior velocity byte is nonzero. No autonomous scheduling, RNG generation or subsequent countdown wraparound is inferred.
 - **Edge Cases / Variants**: RNG-dependent second direction, countdown wraparound, actor removal and different room.
 
+### TC-035: Check both RNG write sites without inventing source timing
+- **Priority**: P1
+- **Preconditions**: Verified private 48K ROM and gameplay snapshot, three 190-frame encounter schedules and one 250-frame extended T schedule.
+- **Steps**:
+  1. Run `SnapshotDivergence --reference-timing --require-ram-parity --require-rng-step-parity` for each path.
+  2. Compare the frequent site's observed write with `(prior byte + supplied refresh operand + carry) modulo 256`, and the other with `(prior byte + supplied counter low byte + clock) modulo 256`.
+  3. Assert 8,421 refresh-site writes and 319 clock-site writes across 820 complete RAM-parity frames. Change a supplied operand in an isolated test and require the predicted byte to change.
+  4. Confirm no native code substitutes a guessed PRNG or describes this arithmetic as an autonomous source RNG.
+- **Expected Result**: **8,740/8,740** source writes match; source operands and update cadence remain explicitly external.
+- **Edge Cases / Variants**: Carry set/clear, modulo-256 wrap, unchanged write values and alternate keyboard timing.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

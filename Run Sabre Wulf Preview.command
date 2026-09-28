@@ -362,6 +362,18 @@ for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
     else
         mv "$TEMP_CONTACT" "$ENTITY_WRITES"
     fi
+    RNG_REPORT="$ROOT/$PRIVATE/rng-step-$scenario-190.json"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
+        --reference-timing --require-ram-parity --require-rng-step-parity \
+        > "$TEMP_CONTACT"
+    if [[ -e "$RNG_REPORT" ]]; then
+        if ! cmp -s "$RNG_REPORT" "$TEMP_CONTACT"; then
+            printf 'Existing private RNG comparison differs: %s\n' "$RNG_REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_CONTACT" "$RNG_REPORT"
+    fi
 done
 printf 'Checking a second RNG-selected enemy heading on the extended T route...\n'
 EXTENDED_FIRE="$ROOT/$PRIVATE/replay-fire-before-contact-250.json"
@@ -416,6 +428,19 @@ if [[ -e "$EXPIRY_REPORT" ]]; then
 else
     mv "$TEMP_COMBAT_ENTITY" "$EXPIRY_REPORT"
 fi
+EXTENDED_RNG="$ROOT/$PRIVATE/rng-step-fire-before-contact-250.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
+    --reference-timing --require-ram-parity --require-rng-step-parity \
+    > "$TEMP_COMBAT_ENTITY"
+if [[ -e "$EXTENDED_RNG" ]]; then
+    if ! cmp -s "$EXTENDED_RNG" "$TEMP_COMBAT_ENTITY"; then
+        printf 'Existing extended private RNG comparison differs: %s\n' "$EXTENDED_RNG" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_COMBAT_ENTITY" "$EXTENDED_RNG"
+fi
 printf 'Checking source enemy direction values and seventeen private motion steps...\n'
 if ! SABRE_PRIVATE_MENU_RAM="$ROOT/$PRIVATE/snapshot-${MENU_SHA:0:12}-48k.bin" \
     SABRE_PRIVATE_GAME_RAM="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-48k.bin" \
@@ -444,6 +469,12 @@ if ! SABRE_PRIVATE_ENEMY_EXPIRY_REPORT="$EXPIRY_REPORT" \
     swift test --filter CapturedEnemyExpiryTests \
     > "$ROOT/$PRIVATE/enemy-expiry-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/enemy-expiry-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedRNGStepTests \
+    > "$ROOT/$PRIVATE/rng-step-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/rng-step-test.log" >&2
     exit 1
 fi
 printf 'Preparing a private 600-frame injury and remaining-life observation...\n'
