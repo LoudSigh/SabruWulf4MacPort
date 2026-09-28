@@ -14,7 +14,7 @@ private enum ReplayError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space> [frames: 1...150] | --self-test"
+            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space> [frames: 1...150] [--hold] | --self-test"
         case .invalidROM:
             return "Expected exactly 16384 reference ROM bytes"
         case .invalidSnapshot:
@@ -42,6 +42,9 @@ private struct FrameReport: Encodable {
     let savedActorY: Int
     let savedRoom: Int
     let reportedLives: Int
+    let playerRoomID: Int
+    let playerX: Int
+    let playerY: Int
 }
 
 private struct ReplayReport: Encodable {
@@ -91,7 +94,10 @@ private struct SnapshotReplay {
                 print("SnapshotReplay self-test passed")
                 return
             }
-            guard (4...5).contains(CommandLine.arguments.count) else {
+            guard (4...6).contains(CommandLine.arguments.count),
+                  CommandLine.arguments.count != 6
+                    || CommandLine.arguments[5] == "--hold"
+            else {
                 throw ReplayError.usage
             }
             let maxFrames: Int
@@ -104,6 +110,7 @@ private struct SnapshotReplay {
             }
             let input = CommandLine.arguments[3]
             let heldKey = try key(input)
+            let holdToEnd = CommandLine.arguments.count == 6
             let rom = try [UInt8](Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
             guard rom.count == 16384 else { throw ReplayError.invalidROM }
             let source = try [UInt8](
@@ -136,7 +143,9 @@ private struct SnapshotReplay {
             var frames: [FrameReport] = []
             for frame in 0..<maxFrames {
                 if frame == 20, let heldKey { emulator.keyboard.press(heldKey) }
-                if frame == 40, let heldKey { emulator.keyboard.release(heldKey) }
+                if frame == 40 && !holdToEnd, let heldKey {
+                    emulator.keyboard.release(heldKey)
+                }
                 let boundary = (frame + 1) * 69_888
                 var steps = 0
                 var ramSteps = 0
@@ -178,6 +187,7 @@ private struct SnapshotReplay {
                     }
                 }
                 let ram = memory.exportRam48K()
+                let playerBase: UInt16 = 0x9702
                 frames.append(FrameReport(
                     index: frame + 1,
                     screenSHA256: sha256(Array(ram.prefix(6912))),
@@ -188,7 +198,10 @@ private struct SnapshotReplay {
                     savedActorX: Int(memory.read(38560)),
                     savedActorY: Int(memory.read(38561)),
                     savedRoom: Int(memory.read(38562)),
-                    reportedLives: Int(memory.read(38589))
+                    reportedLives: Int(memory.read(38589)),
+                    playerRoomID: Int(memory.read(playerBase &+ 1)),
+                    playerX: Int(memory.read(playerBase &+ 3)),
+                    playerY: Int(memory.read(playerBase &+ 4))
                 ))
             }
             guard let last = frames.last else { throw ReplayError.usage }
@@ -198,7 +211,7 @@ private struct SnapshotReplay {
                 romSHA256: sha256(rom),
                 input: input,
                 pressedAtFrame: heldKey == nil ? nil : 20,
-                releasedAtFrame: heldKey == nil ? nil : 40,
+                releasedAtFrame: heldKey == nil || holdToEnd ? nil : 40,
                 frames: frames,
                 finalScreenSHA256: last.screenSHA256,
                 finalRAMSHA256: last.ramSHA256

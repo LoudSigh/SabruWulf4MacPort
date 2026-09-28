@@ -12,7 +12,7 @@ private typealias WorldRaster = UIImage
 
 struct WorldReferenceView: View {
     @State private var world: WorldReference?
-    @State private var selected = RoomID(0, 0)
+    @State private var selected = WorldReference.capturedGameplayRoom
     @State private var importing = false
     @State private var importingArtwork = false
     @State private var importError: String?
@@ -122,6 +122,18 @@ struct WorldReferenceView: View {
                                     )
                             }
                         }
+                        if selected == WorldReference.capturedGameplayRoom {
+                            Circle()
+                                .stroke(.cyan, lineWidth: 2)
+                                .frame(width: 12, height: 12)
+                                .position(
+                                    x: CGFloat(WorldReference.capturedPlayerPosition.x)
+                                        * area.size.width / 256,
+                                    y: CGFloat(WorldReference.capturedPlayerPosition.y)
+                                        * area.size.height / 192
+                                )
+                                .accessibilityLabel("Captured player position")
+                        }
                     }
                 }
                 .frame(height: 180)
@@ -131,6 +143,8 @@ struct WorldReferenceView: View {
                         + (art.isEmpty
                             ? "Generic markers only."
                             : "Optional local image overlay, not verified original composition.")
+                        + (selected == WorldReference.capturedGameplayRoom
+                            ? " Cyan ring marks the captured player position." : "")
                 )
             }
         }
@@ -151,7 +165,7 @@ struct WorldReferenceView: View {
                 }
                 let imported = try WorldReference.load(from: Data(contentsOf: url))
                 world = imported
-                selected = RoomID(0, 0)
+                selected = WorldReference.capturedGameplayRoom
                 art = [:]
                 artStatus = nil
                 importError = nil

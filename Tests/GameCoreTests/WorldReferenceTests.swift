@@ -32,6 +32,8 @@ final class WorldReferenceTests: XCTestCase {
         XCTAssertEqual(world.adjacent(to: RoomID(14, 0), direction: .east), RoomID(15, 0))
         XCTAssertNil(world.adjacent(to: RoomID(15, 0), direction: .east))
         XCTAssertNil(world.adjacent(to: RoomID(0, 0), direction: .north))
+        XCTAssertEqual(WorldReference.capturedGameplayRoom, RoomID(8, 10))
+        XCTAssertEqual(WorldReference.capturedPlayerPosition, GridPoint(57, 112))
     }
 
     func testRejectsForeignSnapshotAndMalformedWorld() throws {

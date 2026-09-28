@@ -40,7 +40,7 @@
   },
   "limitations": [
     "Snapshots verify two 48K visual states and their RAM difference, not the path taken between them.",
-    "An earlier PC-at-frame-boundary sample misleadingly appeared to remain in ROM. A separate 100-frame probe executed thousands of game instructions per frame and produced input-dependent screen hashes, but does not yet prove cycle-accurate original behavior.",
+    "An earlier PC-at-frame-boundary sample misleadingly appeared to remain in ROM. A separate 100-frame probe executed thousands of game instructions per frame; its screen hashes and actor room/X/Y checkpoints at frames 40 and 100 now agree with unmodified Speccy48Emulator.stepFrame for six controlled schedules.",
     "No equivalence to original TZX loaded bytes, instruction/data coverage or publication rights established."
   ]
 }

@@ -30,6 +30,8 @@ public enum WorldReferenceError: Error, LocalizedError {
 public struct WorldReference: Decodable, Sendable {
     public static let supportedSnapshotSHA256 =
         "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c"
+    public static let capturedGameplayRoom = RoomID(8, 10)
+    public static let capturedPlayerPosition = GridPoint(57, 112)
 
     public let schemaVersion: Int
     public let snapshotSha256: String

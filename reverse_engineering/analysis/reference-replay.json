@@ -6,6 +6,11 @@
   "traceMode": "private isolated CPU with 69888-cycle IM1 frame boundaries and fresh keyboard FE reads; not yet a cycle-accurate original game oracle",
   "scenario": "100 frame replay; key down at frame index 20, key up at frame index 40; compare to no-input baseline",
   "reproducibleRunVerified": "q replay repeated with byte-for-byte identical JSON",
+  "fullReferenceFrameCrossCheck": {
+    "method": "Restore the same gameplay snapshot in the unmodified Speccy48Emulator and call stepFrame 100 times with the same frame-indexed keyboard schedule.",
+    "result": "For none, q, w, e, r and t, frame 40 and frame 100 screen hashes plus source actor room/X/Y exactly matched the isolated replay.",
+    "scope": "Specific snapshot/ROM and six bounded schedules only; does not establish full-game accuracy."
+  },
   "noInputFinalScreenSha256": "deeaf6de1b7d1c7eaafb45cdad718e6ee5e6753b1e2fc5672578d6ec26394bc4",
   "sourceControlRow": {
     "externalReference": "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/asm/45306.html",
@@ -18,6 +23,38 @@
       "r": "up",
       "t": "fire"
     }
+  },
+  "capturedActor": {
+    "evidence": "Under T input the CPU entered the independently documented PlayerMovement routine with IX=0x9702; entity fields at IX+1/3/4 and active lives buffer were read for every scenario.",
+    "entityAddress": "0x9702",
+    "snapshotRoomID": 168,
+    "snapshotWorldColumn": 8,
+    "snapshotWorldRow": 10,
+    "snapshotX": 57,
+    "snapshotY": 112,
+    "livesValue": 1,
+    "frame40Checkpoints": [
+      {"input": "none", "roomID": 168, "x": 57, "y": 112},
+      {"input": "q", "roomID": 168, "x": 56, "y": 112},
+      {"input": "w", "roomID": 168, "x": 103, "y": 112},
+      {"input": "e", "roomID": 168, "x": 57, "y": 87},
+      {"input": "r", "roomID": 168, "x": 57, "y": 134},
+      {"input": "t", "roomID": 168, "x": 57, "y": 112}
+    ]
+  },
+  "extendedHeldActionDiagnostic": {
+    "schedule": "150 frames; key pressed at zero-based frame index 20 and held through the end",
+    "startingRoomID": 168,
+    "atFrame150": [
+      {"key": "none", "roomID": 168, "x": 57, "y": 112, "lives": 1},
+      {"key": "q", "roomID": 168, "x": 56, "y": 112, "lives": 1},
+      {"key": "w", "roomID": 168, "x": 193, "y": 112, "lives": 1},
+      {"key": "e", "roomID": 168, "x": 57, "y": 87, "lives": 1},
+      {"key": "r", "roomID": 168, "x": 57, "y": 134, "lives": 1},
+      {"key": "t", "roomID": 168, "x": 57, "y": 112, "lives": 1}
+    ],
+    "roomTransitionsObserved": 0,
+    "interpretation": "The verified player entity stays in room 168 for these isolated directions; do not assume other rooms or no collisions from this one starting location."
   },
   "inputs": [
     {"key": "q", "firstScreenDifferenceFrame": 23, "finalScreenSha256": "3e93dc3bd4e8f4b8bcd62b22ddba1b97e0a0ca1cf4354fe94714e0395b334c9a"},
@@ -32,6 +69,7 @@
   ],
   "limits": [
     "The external control mapping and independently matching keyboard-row routine identify expected action keys; changed frame hashes do not alone establish movement, combat or item outcomes.",
+    "The bounded replay's actor coordinates and screen hashes match the unmodified reference emulator at frame 40 and 100 for these six schedules; neither source validates every screen, room or rule.",
     "ROM keyboard, ULA timing and audio are simplified outside the main CPU; verify against the user's working emulator before using as faithful-game golden tests.",
     "No raw frames, artwork, disassembly or snapshot bytes are committed."
   ]
