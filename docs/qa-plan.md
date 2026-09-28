@@ -1,6 +1,6 @@
 # Release test plan
 
-Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; an iOS simulator visibly launched the app, while a Vision Pro simulator launched its process but headless window visibility and interaction remain unverified. User-captured 48K `.z80` snapshots provide verified **menu and in-game screen/RAM images**; bounded, independently checked replays cross a few room boundaries. **Full original-game parity and cross-platform control-interaction UI tests remain unverified.** XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
+Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; an iOS simulator visibly launched the app, and a Vision Pro simulator screenshot now confirms its **window and placeholder controls are visible**. Spatial control interaction remains unverified. User-captured 48K `.z80` snapshots provide verified **menu and in-game screen/RAM images**; bounded, independently checked replays cross a few room boundaries. **Full original-game parity and cross-platform control-interaction UI tests remain unverified.** XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
 
 ## Functional and integration cases
 
@@ -523,6 +523,18 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. Supply the two observed phase-exit events to `CapturedIntermediateInjuryTick`; reject other lives, positions and timers.
 - **Expected Result**: **2/2** stationary transitions match; no general injury duration is inferred.
 - **Edge Cases / Variants**: Collision-free motion, final-life reverse knockback and interrupted source actor updates.
+
+### TC-047: Verify candidate quest and scoring mechanics
+- **Priority**: P0
+- **Preconditions**: Authorized, verified 48K gameplay source and source-controlled saves before an item and guarded exit.
+- **Steps**:
+  1. Cross an item with and without attack input; check whether pickup is automatic and measure its actual contact boundary.
+  2. Record each of the four visible amulet indicators and revisit collected sites; do not assume fixed locations across fresh games.
+  3. Compare otherwise equivalent exit approaches with three versus four pieces, including the Keeper response and ensuing screen.
+  4. Measure each distinct pickup's actual 1UP score effect; repeat a bounded interaction in 2-player mode and check score ownership.
+  5. Compare successful completion screen/state with the separately verified zero-life menu return.
+- **Expected Result**: Only rules reproducible on the user's hashed source edition enter `GameCore`; unobserved locations, item values, bonuses and win timing remain explicitly unknown.
+- **Edge Cases / Variants**: Attack held during pickup, duplicate pickup, player switch, random placement, other Spectrum revision and restored save with three pieces.
 
 ## Regression cadence and coverage
 

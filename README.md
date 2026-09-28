@@ -10,6 +10,8 @@
 4. Keep the user-supplied TZX, snapshots, AY tune and Spectrum ROM outside the repository. Their hashes, format metadata and unresolved edition/rights status are listed in the [input manifest](reverse_engineering/input-manifest.json). The [menu baseline](reverse_engineering/analysis/menu-reference.json), [in-game baseline](reverse_engineering/analysis/gameplay-reference.json) and [initial RAM map](reverse_engineering/analysis/memory-map.md) enable static comparison. The [tape investigation](docs/tape-analysis.md) gives a repeatable, metadata-only snapshot comparison command and explains why continuous gameplay replay remains unverified.
 5. Follow the [release QA plan](docs/qa-plan.md). Public CI uses only synthetic tape fixtures and original placeholder UI; no source game media is uploaded.
 
+The Vision Pro simulator now visibly renders the native placeholder window and controls in a private smoke capture; controller/gaze/tap interaction remains a release test, not a verified result.
+
 For local-only source recovery, use the [private snapshot analysis workflow](docs/local-reverse-engineering.md). It records bounded executable-address/write metadata and can generate RAM/disassembly **only in ignored private paths**; its exploratory trace is not a complete game implementation.
 
 The user-supplied [SkoolKit reference cross-check](docs/external-reference.md) now confirms a 16×16 room layout, 48 reusable room templates and their bounded RAM range against **both** local snapshots. Its optional private world-map viewer is structural, not original game artwork; the native prototype remains a separate 2×2 placeholder.
