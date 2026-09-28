@@ -3,8 +3,8 @@ import XCTest
 @testable import GameCore
 
 final class ReferenceEntityTraceTests: XCTestCase {
-    private func replayFixture(x: Int) throws -> Data {
-        try JSONSerialization.data(withJSONObject: [
+    private func replayFixture(x: Int, mode: String? = nil) throws -> Data {
+        var value: [String: Any] = [
             "schemaVersion": 1,
             "snapshotSHA256": WorldReference.supportedSnapshotSHA256,
             "input": "q",
@@ -12,10 +12,14 @@ final class ReferenceEntityTraceTests: XCTestCase {
                 "index": 1, "playerRoomID": 0, "playerX": x,
                 "playerY": 11, "reportedLives": 1,
             ]],
-        ])
+        ]
+        if let mode { value["frameBoundaryMode"] = mode }
+        return try JSONSerialization.data(withJSONObject: value)
     }
 
-    private func fixture(frameCount: Int = 1, manualX: Int = 3) throws -> Data {
+    private func fixture(
+        frameCount: Int = 1, manualX: Int = 3, mode: String? = nil
+    ) throws -> Data {
         let frames: [[String: Any]] = (1...max(frameCount, 1)).map { index in
             [
                 "index": index,
@@ -29,12 +33,14 @@ final class ReferenceEntityTraceTests: XCTestCase {
                 "fullEmulatorPlayer": ["roomID": 0, "x": 10, "y": 11],
             ]
         }
-        return try JSONSerialization.data(withJSONObject: [
+        var value: [String: Any] = [
             "schemaVersion": 1,
             "snapshotSHA256": WorldReference.supportedSnapshotSHA256,
             "framesCompared": frameCount,
             "trace": frames,
-        ])
+        ]
+        if let mode { value["frameBoundaryMode"] = mode }
+        return try JSONSerialization.data(withJSONObject: value)
     }
 
     func testImportsAndValidatesSyntheticEntityComparison() throws {
@@ -45,6 +51,16 @@ final class ReferenceEntityTraceTests: XCTestCase {
         XCTAssertNoThrow(try trace.validate(replay: matching))
         let mismatched = try ReferenceReplay.load(from: replayFixture(x: 12))
         XCTAssertThrowsError(try trace.validate(replay: mismatched))
+        let timed = try ReferenceEntityTrace.load(
+            from: fixture(mode: "reference-relative")
+        )
+        XCTAssertThrowsError(try timed.validate(replay: matching))
+        let matchingTiming = try ReferenceReplay.load(
+            from: replayFixture(x: 10, mode: "reference-relative")
+        )
+        XCTAssertNoThrow(try timed.validate(replay: matchingTiming))
+        XCTAssertThrowsError(try ReferenceEntityTrace.load(from: fixture(mode: "invalid")))
+        XCTAssertThrowsError(try ReferenceReplay.load(from: replayFixture(x: 10, mode: "invalid")))
         XCTAssertThrowsError(try ReferenceEntityTrace.load(from: fixture(frameCount: 0)))
         XCTAssertThrowsError(try ReferenceEntityTrace.load(from: fixture(manualX: 256)))
         XCTAssertThrowsError(try ReferenceEntityTrace.load(
@@ -70,6 +86,19 @@ final class ReferenceEntityTraceTests: XCTestCase {
                 from: Data(contentsOf: URL(fileURLWithPath: replayPath))
             )
             XCTAssertNoThrow(try trace.validate(replay: replay))
+        }
+        let environment = ProcessInfo.processInfo.environment
+        if let relativeTrace = environment["SABRE_PRIVATE_ENTITY_TRACE_REFERENCE"],
+           let relativeReplay = environment["SABRE_PRIVATE_WEST_REFERENCE"] {
+            let restored = try ReferenceEntityTrace.load(
+                from: Data(contentsOf: URL(fileURLWithPath: relativeTrace))
+            )
+            let replay = try ReferenceReplay.load(
+                from: Data(contentsOf: URL(fileURLWithPath: relativeReplay))
+            )
+            XCTAssertEqual(restored.frameBoundaryMode, "reference-relative")
+            XCTAssertNoThrow(try restored.validate(replay: replay))
+            XCTAssertThrowsError(try trace.validate(replay: replay))
         }
     }
 }

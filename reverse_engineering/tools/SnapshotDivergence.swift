@@ -8,11 +8,12 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case invalidInput
     case stepBudget
     case unimplemented
+    case ramMismatch(matching: Int, total: Int)
 
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] [--reference-timing] [--require-ram-parity] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -21,6 +22,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "Manual CPU run exceeded 100000 instructions in one frame"
         case .unimplemented:
             "The reference CPU did not implement an instruction in this replay"
+        case .ramMismatch(let matching, let total):
+            "Only \(matching) of \(total) RAM frames match the unmodified emulator"
         }
     }
 }
@@ -78,6 +81,8 @@ private struct Report: Encodable {
     let snapshotSHA256: String
     let romSHA256: String
     let framesCompared: Int
+    let frameBoundaryMode: String
+    let matchingRAMFrames: Int
     let firstRNGDifference: Difference?
     let firstMovingEntityDifference: Difference?
     let firstPlayerStateDifference: Difference?
@@ -131,6 +136,10 @@ private func movingEntity(_ memory: Memory) -> [Int] {
     return [0, 1, 3, 4].map { Int(memory.read(base &+ UInt16($0))) }
 }
 
+private func frameBoundary(currentCycle: Int, frame: Int, referenceTiming: Bool) -> Int {
+    referenceTiming ? currentCycle + 69_888 : (frame + 1) * 69_888
+}
+
 @main
 private struct SnapshotDivergence {
     static func main() {
@@ -148,15 +157,26 @@ private struct SnapshotDivergence {
                     _ = try schedule(valid, frames: 99)
                     throw DivergenceError.invalidSchedule
                 } catch DivergenceError.invalidSchedule {}
+                guard frameBoundary(currentCycle: 69_900, frame: 1, referenceTiming: true)
+                        == 139_788,
+                      frameBoundary(currentCycle: 69_900, frame: 1, referenceTiming: false)
+                        == 139_776 else {
+                    throw DivergenceError.invalidInput
+                }
                 print("SnapshotDivergence self-test passed")
                 return
             }
-            guard (5...6).contains(arguments.count),
-                  arguments.count == 5 || arguments[5] == "--trace",
+            let options = Array(arguments.dropFirst(5))
+            guard (5...8).contains(arguments.count),
+                  options.allSatisfy({
+                      ["--trace", "--reference-timing", "--require-ram-parity"].contains($0)
+                  }),
+                  Set(options).count == options.count,
                   let count = Int(arguments[4]), (1...600).contains(count) else {
                 throw DivergenceError.usage
             }
-            let includeTrace = arguments.count == 6
+            let includeTrace = options.contains("--trace")
+            let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
             let segments = try schedule(
@@ -197,6 +217,7 @@ private struct SnapshotDivergence {
             var firstState: Difference?
             var firstPosition: Difference?
             var trace: [TraceFrame] = []
+            var matchingRAMFrames = 0
 
             for frame in 0..<count {
                 let pressed = try segments.first(where: {
@@ -213,7 +234,9 @@ private struct SnapshotDivergence {
                     }
                     active = pressed
                 }
-                let boundary = (frame + 1) * 69_888
+                let boundary = frameBoundary(
+                    currentCycle: cycles, frame: frame, referenceTiming: referenceTiming
+                )
                 var steps = 0
                 while cycles < boundary {
                     let result = cpu.step(
@@ -246,6 +269,9 @@ private struct SnapshotDivergence {
                 }
                 let index = frame + 1
                 let reference = full.mem
+                if memory.exportRam48K() == reference.exportRam48K() {
+                    matchingRAMFrames += 1
+                }
                 let manualRNG = [Int(memory.read(0x9695))]
                 let fullRNG = [Int(reference.read(0x9695))]
                 if firstRNG == nil && manualRNG != fullRNG {
@@ -282,10 +308,15 @@ private struct SnapshotDivergence {
                     ))
                 }
             }
+            if options.contains("--require-ram-parity"), matchingRAMFrames != count {
+                throw DivergenceError.ramMismatch(matching: matchingRAMFrames, total: count)
+            }
             let report = Report(
                 snapshotSHA256: hash(source),
                 romSHA256: hash(rom),
                 framesCompared: count,
+                frameBoundaryMode: referenceTiming ? "reference-relative" : "absolute",
+                matchingRAMFrames: matchingRAMFrames,
                 firstRNGDifference: firstRNG,
                 firstMovingEntityDifference: firstEntity,
                 firstPlayerStateDifference: firstState,

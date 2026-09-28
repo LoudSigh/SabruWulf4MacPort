@@ -104,6 +104,10 @@ struct WorldReferenceView: View {
                     let input = replay.schedule?.first {
                         $0.startFrame <= frame.index - 1 && frame.index - 1 < $0.endFrame
                     }.map(\.key) ?? (replay.schedule == nil ? replay.input : "none")
+                    Text(replay.frameBoundaryMode == "reference-relative"
+                        ? "Reference-relative frame timing (verify source provenance separately)"
+                        : "Legacy absolute-frame timing (dynamic actors may diverge)")
+                        .font(.caption)
                     Text(
                         "Recorded \(input.uppercased()) · frame \(frame.index) "
                             + "· room \(frame.playerRoomID) · X \(frame.playerX), Y \(frame.playerY)"

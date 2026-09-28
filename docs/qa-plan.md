@@ -140,7 +140,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   2. Scrub between frame 67 (room 168) and frame 68 (room 152); compare reported X=121/Y=42.
   3. Confirm the selected grid cell follows the new room, the cyan marker stays visible, and the input label changes from W to E or NONE as appropriate.
   4. Attempt import of overlapping intervals, an invalid key, or an interval extending beyond the last frame.
-- **Expected Result**: The actor path crosses the room boundary at frame 68 without changing the separately playable placeholder. Core tests reject invalid scheduled metadata. Manual CPU stepping and the unmodified emulator agree on room/X/Y for all 180 frames, but six transient redraw screen hashes differ; do not demand pixel identity for frames 68–73.
+- **Expected Result**: The actor path crosses the room boundary at frame 68 without changing the separately playable placeholder. Core tests reject invalid scheduled metadata. The absolute-boundary replay agrees on room/X/Y for all 180 frames but differs on six screen hashes; the reference-relative diagnostic agrees on **all 180 RAM frames**. Do not treat the absolute replay's redraw frames as pixel-exact goldens.
 - **Edge Cases / Variants**: Scrub backward across the boundary; import old single-key schema-1 replay; missing bounds in a version-1 world.
 
 ### TC-012: Run the captured native movement slice
@@ -162,17 +162,18 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   2. Observe room 152 -> 151 at frame 226 and actor X rebasing to 239 at frame 233.
   3. Compare the same schedule to the unmodified `stepFrame()` reference path; record the earliest input-dependent mismatch.
   4. Probe beyond frame 256 privately; diagnose moving-actor collisions before extending the native implementation.
-- **Expected Result**: Native state matches all 256 manual reference frames. Independent `stepFrame()` first diverges in gameplay RNG state at frame 101, in a moving entity at frame 102, then has an encounter at frame 163 and changes player mode at frame 164; its actor room/X/Y agrees only through frame 182. **Do not certify the west branch** as independently validated until RNG and dynamic-actor routes are reconciled. No moving-actor pause is hard-coded into native gameplay.
+- **Expected Result**: Native static state matches all 256 *legacy absolute-boundary* frames. In that mode the full emulator first diverges in RNG at frame 101 and enemy placement at 102; the enemy encounters the player at frame 163. In **reference-relative mode**, verify **256/256 complete RAM-frame matches** instead, including the encounter. The native static-only west branch does **not** match that gameplay after damage; no moving-actor pause should be hard-coded.
 - **Edge Cases / Variants**: Fresh keyboard-port reads, reference timing/cache differences, moving entities blocking X=27 in room 152 or X=170 in room 151.
 
 ### TC-014: Compare private moving-entity paths without simulating them
 - **Priority**: P1
-- **Preconditions**: Import private version-2 world, matching `replay-west-exit-256.json`, and `west-entity-trace.json` from the preview launcher.
+- **Preconditions**: Import private version-2 world, matching `replay-west-exit-256.json` and `west-entity-trace-v2.json`, or the reference-timed `replay-west-reference-256.json` and `west-entity-reference.json` pair from the preview launcher.
 - **Steps**:
   1. Scrub to frames 101–102; inspect the first RNG and moving-entity divergence in the private diagnostic.
   2. Scrub to frame 163; confirm orange manual entity position X=161/Y=130 and purple unmodified-emulator entity position X=104/Y=135 in room 152 near the cyan player X=121/Y=126.
-  3. Import the entity trace alongside a replay with a different frame count or player trajectory.
-- **Expected Result**: Matching traces render generic markers only while the entity is active and show numeric positions even if inactive. Mismatched replay/trace pairs show an explicit error instead of misleading markers. No enemy AI, collision or original sprite pixels are bundled.
+  3. Switch to the reference-timed pair; at frame 163 verify both entity markers agree at X=104/Y=135. Run the private `--require-ram-parity` diagnostic to require all 256 RAM frames.
+  4. Import either trace alongside a replay with a different frame count, timing mode or player trajectory.
+- **Expected Result**: Matching traces render generic markers only while the entity is active and show numeric positions even if inactive. The reference-timed trace reports 256/256 matching RAM frames. Mismatched replay/trace pairs show an explicit error instead of misleading markers. No enemy AI, collision or original sprite pixels are bundled.
 - **Edge Cases / Variants**: Imported file truncated/oversized, inactive entity kind, switching replay after a trace import, VoiceOver marker labels.
 
 ### TC-015: Provisional east return stops before damage
@@ -182,7 +183,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   1. Follow W frames 20–29, E 30–99, Q 180–225, W 233–278, with no input in the gaps.
   2. Confirm room 151 -> 152 at frame 246 and X=0/Y=126 at frame 253.
   3. Compare source/manual and native room/X/Y through frame 279; inspect frame 280 privately without extending native parity.
-- **Expected Result**: Native actor matches the manual reference for 279 frames. At frame 280 a moving entity near X=85/Y=130 triggers source player damage; native enemy logic is still absent. The route is **not independently certified** because its earlier westward portion has a different RNG/enemy path in the full emulator.
+- **Expected Result**: Native actor matches the legacy absolute-boundary reference for 279 frames. At frame 280 a moving entity near X=85/Y=130 triggers source player damage; native enemy logic is still absent. This route remains provisional native behavior and has **not** been checked frame-by-frame in reference-relative mode.
 - **Edge Cases / Variants**: East edge threshold, seven-frame redraw pause, missing room geometry, early action changes and damage-state timing.
 
 ### TC-016: Private sprite silhouette preview

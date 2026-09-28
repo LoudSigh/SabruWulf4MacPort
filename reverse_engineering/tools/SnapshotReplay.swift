@@ -15,7 +15,7 @@ private enum ReplayError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space> [frames: 1...150] [--hold] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...600> | --self-test"
+            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space> [frames: 1...150] [--hold] [--reference-timing] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...600> [--reference-timing] | --self-test"
         case .invalidROM:
             return "Expected exactly 16384 reference ROM bytes"
         case .invalidSnapshot:
@@ -75,6 +75,7 @@ private struct ReplayReport: Encodable {
     let schemaVersion: Int
     let snapshotSHA256: String
     let romSHA256: String
+    let frameBoundaryMode: String?
     let input: String
     let schedule: [ScheduledInput]?
     let pressedAtFrame: Int?
@@ -104,6 +105,10 @@ private func key(_ input: String) throws -> KeyboardMatrix.Key? {
     }
 }
 
+private func frameBoundary(currentCycle: Int, frame: Int, referenceTiming: Bool) -> Int {
+    referenceTiming ? currentCycle + 69_888 : (frame + 1) * 69_888
+}
+
 @main
 private struct SnapshotReplay {
     static func main() {
@@ -127,36 +132,47 @@ private struct SnapshotReplay {
                     _ = try validatedSchedule(sample, frames: 100)
                     throw ReplayError.invalidSchedule
                 } catch ReplayError.invalidSchedule {}
+                guard frameBoundary(currentCycle: 69_900, frame: 1, referenceTiming: true)
+                        == 139_788,
+                      frameBoundary(currentCycle: 69_900, frame: 1, referenceTiming: false)
+                        == 139_776 else { throw ReplayError.usage }
                 print("SnapshotReplay self-test passed")
                 return
             }
             let arguments = CommandLine.arguments
             let isSchedule = arguments.count > 3 && arguments[3] == "--schedule"
-            guard (4...6).contains(arguments.count),
-                  isSchedule
-                    ? arguments.count == 6
-                    : arguments.count != 6 || arguments[5] == "--hold"
-            else {
-                throw ReplayError.usage
-            }
             let maxFrames: Int
+            let options: [String]
             if isSchedule {
+                guard (6...7).contains(arguments.count) else { throw ReplayError.usage }
                 guard let count = Int(arguments[5]), (1...600).contains(count)
                 else { throw ReplayError.usage }
                 maxFrames = count
-            } else if arguments.count >= 5 {
-                guard let count = Int(arguments[4]), (1...150).contains(count)
-                else { throw ReplayError.usage }
-                maxFrames = count
+                options = Array(arguments.dropFirst(6))
             } else {
-                maxFrames = 100
+                guard (4...7).contains(arguments.count) else { throw ReplayError.usage }
+                let trailing = Array(arguments.dropFirst(4))
+                if let first = trailing.first, let count = Int(first) {
+                    guard (1...150).contains(count) else { throw ReplayError.usage }
+                    maxFrames = count
+                    options = Array(trailing.dropFirst())
+                } else {
+                    maxFrames = 100
+                    options = trailing
+                }
             }
+            guard Set(options).count == options.count,
+                  options.allSatisfy({
+                      isSchedule ? $0 == "--reference-timing"
+                          : ["--hold", "--reference-timing"].contains($0)
+                  }) else { throw ReplayError.usage }
+            let referenceTiming = options.contains("--reference-timing")
             let input = isSchedule ? "schedule" : arguments[3]
             let heldKey = isSchedule ? nil : try key(input)
             let schedule = isSchedule
                 ? try validatedSchedule(Data(contentsOf: URL(fileURLWithPath: arguments[4])), frames: maxFrames)
                 : []
-            let holdToEnd = !isSchedule && arguments.count == 6
+            let holdToEnd = options.contains("--hold")
             let rom = try [UInt8](Data(contentsOf: URL(fileURLWithPath: arguments[1])))
             guard rom.count == 16384 else { throw ReplayError.invalidROM }
             let source = try [UInt8](
@@ -202,7 +218,9 @@ private struct SnapshotReplay {
                     if let frameKey { emulator.keyboard.press(frameKey) }
                     previousKey = frameKey
                 }
-                let boundary = (frame + 1) * 69_888
+                let boundary = frameBoundary(
+                    currentCycle: cycles, frame: frame, referenceTiming: referenceTiming
+                )
                 var steps = 0
                 var ramSteps = 0
                 var feReads = 0
@@ -265,6 +283,7 @@ private struct SnapshotReplay {
                 schemaVersion: isSchedule ? 2 : 1,
                 snapshotSHA256: sha256(source),
                 romSHA256: sha256(rom),
+                frameBoundaryMode: referenceTiming ? "reference-relative" : nil,
                 input: input,
                 schedule: isSchedule ? schedule : nil,
                 pressedAtFrame: heldKey == nil ? nil : 20,

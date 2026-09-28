@@ -42,6 +42,7 @@ public struct ReferenceEntityFrame: Decodable, Sendable {
 public struct ReferenceEntityTrace: Decodable, Sendable {
     public let schemaVersion: Int
     public let snapshotSHA256: String
+    public let frameBoundaryMode: String?
     public let framesCompared: Int
     public let trace: [ReferenceEntityFrame]
 
@@ -51,7 +52,10 @@ public struct ReferenceEntityTrace: Decodable, Sendable {
         }
         let result = try JSONDecoder().decode(Self.self, from: data)
         guard result.schemaVersion == 1,
-              result.snapshotSHA256 == WorldReference.supportedSnapshotSHA256 else {
+              result.snapshotSHA256 == WorldReference.supportedSnapshotSHA256,
+              (result.frameBoundaryMode.map {
+                  ["absolute", "reference-relative"].contains($0)
+              } ?? true) else {
             throw ReferenceEntityTraceError.unsupportedFormat
         }
         guard (1...600).contains(result.framesCompared),
@@ -70,6 +74,8 @@ public struct ReferenceEntityTrace: Decodable, Sendable {
 
     public func validate(replay: ReferenceReplay) throws {
         guard replay.snapshotSHA256 == snapshotSHA256,
+              (replay.frameBoundaryMode ?? "absolute")
+                == (frameBoundaryMode ?? "absolute"),
               replay.frames.count == framesCompared,
               zip(replay.frames, trace).allSatisfy({ pair in
                   let (frame, entityFrame) = pair

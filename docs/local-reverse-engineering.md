@@ -80,10 +80,21 @@ swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift \
   > reverse_engineering/private/west-divergence.json
 "$OUT/SnapshotDivergence" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
   reverse_engineering/analysis/west-exit-schedule.json 256 --trace \
-  > reverse_engineering/private/west-entity-trace.json
+  > reverse_engineering/private/west-entity-trace-v2.json
+"$OUT/SnapshotDivergence" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+  reverse_engineering/analysis/west-exit-schedule.json 256 \
+  --trace --reference-timing --require-ram-parity \
+  > reverse_engineering/private/west-entity-reference.json
+"$OUT/SnapshotReplay" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 --schedule \
+  reverse_engineering/analysis/west-exit-schedule.json 256 --reference-timing \
+  > reverse_engineering/private/replay-west-reference-256.json
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift \
+  reverse_engineering/tools/VerifyReferenceReplay.swift -o "$OUT/VerifyReferenceReplay"
+"$OUT/VerifyReferenceReplay" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+  reverse_engineering/private/replay-west-reference-256.json
 jq '{firstRNGDifference,firstMovingEntityDifference,firstPlayerStateDifference,firstPlayerPositionDifference}' \
   reverse_engineering/private/west-divergence.json
 ```
 
-The divergence tool compares fresh-FE CPU stepping with the unmodified emulator's `stepFrame()` under the same inputs; it emits only hashes and selected numeric state, not RAM or instructions. For the west schedule it measures the first RNG difference at frame 101, moving-entity placement difference at 102, player state change at 163, and player coordinate difference at 183. The unmodified emulator's moving entity reaches the player before the late Q press; this is **not** evidence of a faulty keyboard. The earlier RNG split may depend on CPU refresh-register phase, but that link is still unproven. Never publish the full private replays or original game bytes.
-The optional `--trace` also records two numeric positions for one moving-entity slot and both player positions per frame. It is only for the ignored private viewer: import the matching `replay-west-exit-256.json` first, then this trace. The app rejects frame-count or player-path mismatches; it does not simulate enemies.
+The divergence tool compares fresh-FE CPU stepping with the unmodified emulator's `stepFrame()` under the same inputs; it emits hashes and selected numeric state, not RAM or instructions. With the original **absolute** frame boundaries, the first RNG, moving-entity, player-state and position differences are frames 101, 102, 163 and 183. The unmodified emulator's `stepFrame()` instead advances 69,888 cycles **from its current cycle count per call**, retaining overshoot between frames. `--reference-timing` matches that boundary and reproduces **256/256 RAM frames** for the west schedule, **200/200** for the round trip and **180/180** for the north exit. `--require-ram-parity` exits nonzero if even one RAM frame differs. `VerifyReferenceReplay` additionally verifies the **actual JSON replay's 256 individual RAM and screen hashes** against the unmodified emulator; it rejects corrupted hashes and legacy absolute-timing reports. The legacy replay output is unchanged unless the new flag is supplied. The old RNG/enemy split was due to frame timing, **not** a keyboard or missing player-action rule. Neither mode establishes tape-boot equivalence or full native enemy simulation. Never publish private replays or original game bytes.
+The optional `--trace` records numeric positions for one moving-entity slot and both player positions per frame. Import `replay-west-exit-256.json` with `west-entity-trace-v2.json` to examine the old timing drift; import `replay-west-reference-256.json` with `west-entity-reference.json` to examine aligned positions. The app rejects frame-count, timing-mode and player-path mismatches. Both pairs remain ignored local data and do not simulate enemies.

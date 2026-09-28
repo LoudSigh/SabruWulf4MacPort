@@ -7,6 +7,17 @@
   "independentScreenMatches": 174,
   "screenMismatchFrames": [68, 69, 70, 71, 72, 73],
   "unimplementedReferenceInstructions": 0,
+  "frameTimingReconciliation": {
+    "mode": "reference-relative",
+    "westMatchingRAMFrames": 256,
+    "westFramesCompared": 256,
+    "northMatchingRAMFrames": 180,
+    "northFramesCompared": 180,
+    "roundTripMatchingRAMFrames": 200,
+    "roundTripFramesCompared": 200,
+    "absoluteWestMatchingRAMFrames": 3,
+    "rootCause": "Absolute frame boundaries drift from the unmodified emulator's frame-relative 69888-cycle windows. Matching the per-call frame boundary reproduces every RAM frame and the previously divergent RNG, moving entity and player state without modifying the emulator."
+  },
   "heldDirectionParity": {
     "directions": ["q", "w", "e", "r"],
     "framesPerDirection": 150,

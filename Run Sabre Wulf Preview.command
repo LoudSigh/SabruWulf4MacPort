@@ -80,7 +80,9 @@ TEMP_ROUND="$(mktemp "$ROOT/$PRIVATE/.round-XXXXXXXX.json")"
 TEMP_WEST="$(mktemp "$ROOT/$PRIVATE/.west-XXXXXXXX.json")"
 TEMP_ENTITY="$(mktemp "$ROOT/$PRIVATE/.entity-XXXXXXXX.json")"
 TEMP_EAST="$(mktemp "$ROOT/$PRIVATE/.east-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST"' EXIT
+TEMP_WEST_REFERENCE="$(mktemp "$ROOT/$PRIVATE/.west-reference-XXXXXXXX.json")"
+TEMP_ENTITY_REFERENCE="$(mktemp "$ROOT/$PRIVATE/.entity-reference-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -130,6 +132,27 @@ else
     mv "$TEMP_WEST" "$WEST_EXIT"
 fi
 
+printf 'Preparing the frame-aligned west replay for independent reference comparison...\n'
+WEST_REFERENCE="$ROOT/$PRIVATE/replay-west-reference-256.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/west-exit-schedule.json 256 \
+    --reference-timing > "$TEMP_WEST_REFERENCE"
+if [[ -e "$WEST_REFERENCE" ]]; then
+    if ! cmp -s "$WEST_REFERENCE" "$TEMP_WEST_REFERENCE"; then
+        printf 'Existing private frame-aligned replay differs; refusing to overwrite %s\n' "$WEST_REFERENCE" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_WEST_REFERENCE" "$WEST_REFERENCE"
+fi
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift reverse_engineering/tools/VerifyReferenceReplay.swift \
+    -o "$ROOT/$PRIVATE/VerifyReferenceReplay" > "$ROOT/$PRIVATE/replay-verify-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/replay-verify-build.log" >&2
+    exit 1
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$WEST_REFERENCE"
+
 printf 'Preparing a private provisional east-return reference...\n'
 EAST_RETURN="$ROOT/$PRIVATE/replay-east-return-279.json"
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
@@ -150,7 +173,7 @@ if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache
     cat "$ROOT/$PRIVATE/divergence-build.log" >&2
     exit 1
 fi
-ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace.json"
+ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace-v2.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
     reverse_engineering/analysis/west-exit-schedule.json 256 --trace > "$TEMP_ENTITY"
 if [[ -e "$ENTITY_TRACE" ]]; then
@@ -162,6 +185,18 @@ else
     mv "$TEMP_ENTITY" "$ENTITY_TRACE"
 fi
 
+ENTITY_REFERENCE="$ROOT/$PRIVATE/west-entity-reference.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/west-exit-schedule.json 256 \
+    --trace --reference-timing --require-ram-parity > "$TEMP_ENTITY_REFERENCE"
+if [[ -e "$ENTITY_REFERENCE" ]]; then
+    if ! cmp -s "$ENTITY_REFERENCE" "$TEMP_ENTITY_REFERENCE"; then
+        printf 'Existing private frame-aligned entity trace differs; refusing to overwrite %s\n' "$ENTITY_REFERENCE" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_ENTITY_REFERENCE" "$ENTITY_REFERENCE"
+fi
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"
@@ -203,7 +238,8 @@ printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REP
 printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TRANSITION"
 printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"
 printf 'Import %s for a provisional west exit; an enemy changes the independent emulator actor state before late Q.\n' "$WEST_EXIT"
+printf 'Import %s for the same schedule aligned to the full emulator (enemy contact included in the recorded state).\n' "$WEST_REFERENCE"
 printf 'Import %s for a provisional east return; a moving enemy blocks the source at frame 280.\n' "$EAST_RETURN"
-printf 'After importing the west replay, import %s to compare its private moving-entity paths.\n' "$ENTITY_TRACE"
+printf 'Import %s with the legacy west replay to compare different enemy paths, or %s with the aligned replay to inspect matching paths.\n' "$ENTITY_TRACE" "$ENTITY_REFERENCE"
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
 printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'

@@ -32,6 +32,7 @@ public struct ReferenceInputInterval: Decodable, Sendable {
 public struct ReferenceReplay: Decodable, Sendable {
     public let schemaVersion: Int
     public let snapshotSHA256: String
+    public let frameBoundaryMode: String?
     public let input: String
     public let schedule: [ReferenceInputInterval]?
     public let frames: [ReferenceFrame]
@@ -41,6 +42,10 @@ public struct ReferenceReplay: Decodable, Sendable {
         let replay = try JSONDecoder().decode(Self.self, from: data)
         guard replay.snapshotSHA256 == WorldReference.supportedSnapshotSHA256
         else {
+            throw ReferenceReplayError.unsupportedFormat
+        }
+        guard replay.frameBoundaryMode == nil
+                || replay.frameBoundaryMode == "reference-relative" else {
             throw ReferenceReplayError.unsupportedFormat
         }
         let keys = ["q", "w", "e", "r", "t", "a", "o", "p", "space"]
