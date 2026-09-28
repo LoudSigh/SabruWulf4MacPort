@@ -572,6 +572,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Pure source-backed arithmetic matches; no claim that the score calls during injury paths represent item pickups.
 - **Edge Cases / Variants**: Active player switch, leading zeros, low/middle carry, maximum score, non-BCD input and score update after zero lives.
 
+### TC-050: Collision bounds and entry poses must match the source
+- **Priority**: P1
+- **Preconditions**: Verified version-2 private room data and a source-timed replay near a measured wall/gap or room edge.
+- **Steps**:
+  1. Compare source actor-update attempts across a one-pixel clearance with the 14×22 rectangle-bounds resolver; record accept/reject X/Y and full RAM parity.
+  2. Test a proposed transparent-looking portion of a graphic *by source replay*, not by screenshot alone; a source move through it would falsify the all-rectangle-solid assumption.
+  3. On two world positions using one room template, compare natural entry pose and actual directed exits independently, including three-frame stable velocity after rebase.
+  4. Keep a negative static graph reachability result provisional until all relevant source collision and pose assumptions are checked.
+- **Expected Result**: Only source-verified collision/entry semantics are used for route finding; a local static dead end is not misreported as an inaccessible quest object.
+- **Edge Cases / Variants**: Inertia-two-pixel overshoot, reused room templates, alternate south rebase, dynamic actor obstruction and final-life movement.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

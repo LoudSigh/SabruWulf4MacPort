@@ -123,6 +123,12 @@ final class WorldReferenceTests: XCTestCase {
         )
         XCTAssertEqual(
             try world.resolveBackgroundBounds(
+                in: room, from: GridPoint(57, 112), to: GridPoint(56, 112),
+                width: 14, height: 22
+            ), GridPoint(56, 112)
+        )
+        XCTAssertEqual(
+            try world.resolveBackgroundBounds(
                 in: room, from: GridPoint(57, 87), to: GridPoint(57, 85),
                 width: 14, height: 22
             ), GridPoint(57, 87)
