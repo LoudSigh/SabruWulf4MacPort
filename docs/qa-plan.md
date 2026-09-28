@@ -248,6 +248,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Input-dependent trajectories match the recorded evidence; the first T-specific enemy-state change is traced to RNG bit 7 at frame 156, after T's RNG diverged at frame 146. An unrelated key changes RNG and encounter timing but takes the no-T direction branch and does not prevent damage through frame 190. The preview stays read-only and native combat is still explicitly unsupported.
 - **Edge Cases / Variants**: Same key held different frame counts, RNG phase changes, different enemy direction, missing private trace and damage-state timing.
 
+### TC-022: Bottom-anchored player sprite preview
+- **Priority**: P1
+- **Preconditions**: SHA-verified private sprite atlas, world data and `VerifyActorScreen` built with the user's local emulator; native macOS/iOS/visionOS apps available.
+- **Steps**:
+  1. Run `VerifyActorScreen` for Q/W/E/R/T and require the exact frame and pixel counts in [actor-screen.json](../reverse_engineering/analysis/actor-screen.json).
+  2. Import world and private sprite atlas in the app; without a replay, inspect actor-state 21 at X=57/Y=112 in room 168. Hide and show the recorded-player overlay.
+  3. Import a replay with actor-state IDs, scrub T at frame 21 (kind 42), then movement and W frames 43–53. Resize the room and exercise VoiceOver's silhouette label.
+  4. Replace the private world, then import a replay without actor-state IDs; verify the old atlas clears and no fabricated animated sprite appears.
+- **Expected Result**: Source mask rows are reversed for screen orientation and bottom-aligned at actor Y; the verifier finds 489/500 exact frame rectangles and 173,348/173,472 matching white/off pixels. W frames 43–53 remain explicitly qualified because other runtime graphics/attributes change 124 pixels. The white overlay shows a recorded silhouette only when the matching private atlas and state exist; it never becomes native animation or combat.
+- **Edge Cases / Variants**: Empty pointer sentinel, invalid actor ID, missing private atlas, recorded room different from selected room, small windows and other platforms' file providers.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

@@ -55,6 +55,20 @@ git check-ignore reverse_engineering/private/snapshot-803e4197989c-sprite-atlas-
 
 The numeric result is summarized in [sprite-index.json](../reverse_engineering/analysis/sprite-index.json). Without `--private-atlas`, the tool emits no original bytes. With the flag, it checks both captures agree before writing the 196-pointer table and 153 bounded records **only** to the ignored private JSON file. One 0×0 record is an explicit empty sentinel reused by 14 IDs; the other 152 records contain bitmap shapes. Never stage or distribute the atlas. Its raw bitmap format was verified for two examples; palette, compositor and animation remain unverified.
 
+After local atlas extraction, check the player's screen placement across five independent 100-frame source replays:
+
+```sh
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift Sources/GameCore/*.swift \
+  reverse_engineering/tools/VerifyActorScreen.swift -o "$OUT/VerifyActorScreen"
+for key in q w e r t; do
+  "$OUT/VerifyActorScreen" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+    reverse_engineering/private/snapshot-803e4197989c-sprite-atlas-v1.json \
+    "$key" > "reverse_engineering/private/actor-screen-$key.json"
+done
+```
+
+The verifier reads the unmodified emulator screen and compares every projected player-mask pixel, including blank pixels. Source X is the mask's left edge; source Y is its **bottom**, and bitmap record rows are reversed for top-down display. [Source-free counts](../reverse_engineering/analysis/actor-screen.json) show **489/500 exact frame rectangles** and **173,348/173,472 agreeing pixels**: Q/E/R/T match all 100 frames each, while W has 124 mismatches during frames 43–53 where other runtime graphics/attributes affect the player rectangle. The native viewer offers a hideable, locally imported white actor silhouette with this placement, **not** verified sprite-overlap rules or an attack simulation. No original sprite or screen pixels enter the report or Git.
+
 The room exporter has a similar local output:
 
 ```sh

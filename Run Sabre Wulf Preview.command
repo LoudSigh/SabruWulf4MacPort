@@ -75,6 +75,33 @@ fi
 "$ROOT/$PRIVATE/SnapshotSpriteIndex" "$MENU" "$GAME" --private-atlas \
     > "$ROOT/$PRIVATE/sprite-index-report.json"
 
+printf 'Checking bottom-anchored player sprite pixels in five private 100-frame runs...\n'
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift Sources/GameCore/*.swift \
+    reverse_engineering/tools/VerifyActorScreen.swift \
+    -o "$ROOT/$PRIVATE/VerifyActorScreen" \
+    > "$ROOT/$PRIVATE/actor-screen-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/actor-screen-build.log" >&2
+    exit 1
+fi
+ACTOR_TEMP="$(mktemp "$ROOT/$PRIVATE/.actor-screen-XXXXXXXX.json")"
+trap 'rm -f "$ACTOR_TEMP"' EXIT
+for key in q w e r t; do
+    REPORT="$ROOT/$PRIVATE/actor-screen-$key.json"
+    "$ROOT/$PRIVATE/VerifyActorScreen" "$ROM" "$GAME" \
+        "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-sprite-atlas-v1.json" \
+        "$key" > "$ACTOR_TEMP"
+    if [[ -e "$REPORT" ]]; then
+        if ! cmp -s "$REPORT" "$ACTOR_TEMP"; then
+            printf 'Existing private actor-screen comparison differs: %s\n' "$REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$ACTOR_TEMP" "$REPORT"
+    fi
+done
+rm -f "$ACTOR_TEMP"
+
 printf 'Checking the captured room against source background pixels...\n'
 if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
     "$CORE"/*.swift Sources/GameCore/*.swift \

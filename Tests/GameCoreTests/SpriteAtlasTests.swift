@@ -45,6 +45,18 @@ final class SpriteAtlasTests: XCTestCase {
         XCTAssertThrowsError(try atlas.mask(at: 196))
     }
 
+    func testPlacesPlayerMaskWithBottomAnchoredSourceY() throws {
+        let mask = try SpriteMask(record: Data([1, 3, 0x80, 0x24, 0x01]))
+        let placed = CapturedActorSprite(mask: mask, actorAt: GridPoint(57, 112))
+        XCTAssertEqual(placed.topLeft, GridPoint(57, 110))
+        XCTAssertEqual(placed.screenPixels().count, 24)
+        XCTAssertTrue(placed.screenPixels()[7])
+        XCTAssertTrue(placed.screenPixels()[8 + 2])
+        XCTAssertTrue(placed.screenPixels()[8 + 5])
+        XCTAssertTrue(placed.screenPixels()[16])
+        XCTAssertFalse(placed.screenPixels()[0])
+    }
+
     func testRejectsModifiedPayloadAndMalformedPointerTable() throws {
         let source = try fixture()
         XCTAssertThrowsError(try SpriteAtlas.load(

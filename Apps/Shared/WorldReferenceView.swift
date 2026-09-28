@@ -45,6 +45,7 @@ struct WorldReferenceView: View {
     @State private var spriteSamples: [Int: WorldRaster] = [:]
     @State private var importingAtlas = false
     @State private var spriteAtlas: SpriteAtlas?
+    @State private var showActorSprite = true
     @State private var spriteID = 16.0
     @State private var importingReplay = false
     @State private var replay: ReferenceReplay?
@@ -230,6 +231,9 @@ struct WorldReferenceView: View {
                 }
                 .buttonStyle(.bordered)
                 if let spriteAtlas {
+                    Toggle("Show recorded player silhouette in room", isOn: $showActorSprite)
+                    Text("White player bitmap uses recorded X and bottom Y. Nearby actors and color attributes can overwrite it; this is a reference overlay, not native combat.")
+                        .font(.caption)
                     Slider(value: $spriteID, in: 0...195, step: 1)
                         .accessibilityLabel("Original sprite pointer ID")
                     let id = Int(spriteID)
@@ -326,6 +330,7 @@ struct WorldReferenceView: View {
                                     )
                             }
                         }
+                        recordedPlayerSprite(in: area.size)
                         if let position = markerPosition {
                             Circle()
                                 .stroke(.cyan, lineWidth: 2)
@@ -666,6 +671,37 @@ struct WorldReferenceView: View {
         return entityTrace.trace[min(Int(replayFrameValue), entityTrace.trace.count - 1)]
     }
 
+    @ViewBuilder
+    private func recordedPlayerSprite(in size: CGSize) -> some View {
+        if showActorSprite, let spriteAtlas, let point = markerPosition {
+            let kind = replay.map {
+                $0.frames[min(Int(replayFrameValue), $0.frames.count - 1)].playerKind
+            } ?? 21
+            if let kind {
+                switch Result(catching: { try spriteAtlas.mask(at: kind) }) {
+                case .success(let mask?):
+                    let sprite = CapturedActorSprite(mask: mask, actorAt: point)
+                    NativeSpritePixels(mask: mask, color: .white)
+                        .frame(
+                            width: CGFloat(mask.width) * size.width / 256,
+                            height: CGFloat(mask.height) * size.height / 192
+                        )
+                        .position(
+                            x: (CGFloat(sprite.topLeft.x) + CGFloat(mask.width) / 2)
+                                * size.width / 256,
+                            y: (CGFloat(sprite.topLeft.y) + CGFloat(mask.height) / 2)
+                                * size.height / 192
+                        )
+                        .accessibilityLabel("Recorded player bitmap at X \(point.x), Y \(point.y)")
+                case .success(nil):
+                    EmptyView()
+                case .failure(let error):
+                    Text(error.localizedDescription).foregroundStyle(.red)
+                }
+            }
+        }
+    }
+
     private func entitySummary(_ frame: ReferenceEntityFrame) -> String {
         let manual = frame.manualEntity
         let full = frame.fullEmulatorEntity
@@ -793,7 +829,20 @@ private struct NativeSpritePreview: View {
     let mask: SpriteMask
 
     var body: some View {
-        let pixels = mask.pixels()
+        NativeSpritePixels(mask: mask, color: .cyan)
+            .frame(width: CGFloat(mask.width * 4), height: CGFloat(mask.height * 4))
+            .accessibilityLabel("Private source silhouette, \(mask.width) by \(mask.height) pixels")
+    }
+}
+
+private struct NativeSpritePixels: View {
+    let mask: SpriteMask
+    let color: Color
+
+    var body: some View {
+        let pixels = CapturedActorSprite(
+            mask: mask, actorAt: GridPoint(0, mask.height - 1)
+        ).screenPixels()
         Canvas { context, size in
             let scaleX = size.width / CGFloat(mask.width)
             let scaleY = size.height / CGFloat(mask.height)
@@ -802,13 +851,10 @@ private struct NativeSpritePreview: View {
                 let y = CGFloat(index / mask.width) * scaleY
                 context.fill(
                     Path(CGRect(x: x, y: y, width: scaleX, height: scaleY)),
-                    with: .color(.cyan)
+                    with: .color(color)
                 )
             }
         }
-
-        .frame(width: CGFloat(mask.width * 4), height: CGFloat(mask.height * 4))
-        .accessibilityLabel("Private source silhouette, \(mask.width) by \(mask.height) pixels")
     }
 }
 
