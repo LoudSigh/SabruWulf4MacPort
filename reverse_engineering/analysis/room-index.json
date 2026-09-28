@@ -41,7 +41,10 @@
       "maximumBackgroundReference": "0x9673",
       "minimumPlacementsPerTemplate": 13,
       "maximumPlacementsPerTemplate": 26,
-      "placementsOff8PixelGrid": 4
+      "placementsOff8PixelGrid": 4,
+      "placementBoundsByteCount": 6433,
+      "placementBoundsEncoding": "Per placement: 16-bit graphic address, X, Y, 16-bit bitmap width in pixels, 8-bit bitmap height",
+      "placementBoundsSHA256": "d3aae958c56e8e1dd8f62e45a27ab8ddd320ed31a36f078ce87f8b792301334f"
     }
   },
   "crossSnapshotComparison": {

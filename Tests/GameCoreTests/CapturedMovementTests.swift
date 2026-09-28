@@ -17,7 +17,7 @@ final class CapturedMovementTests: XCTestCase {
             "layout": Array(repeating: 0, count: 256),
             "rooms": rooms,
         ])
-        return try WorldReference.load(from: data)
+        return try WorldReference.load(from: data, verifySource: false)
     }
 
     func testCapturedVelocityAndFrictionAreDeterministic() throws {

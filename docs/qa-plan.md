@@ -88,7 +88,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   1. Expand the read-only world disclosure and import the JSON through the platform file picker.
   2. Visit a corner and a far-edge room using the grid and North/West/East/South selection buttons.
   3. Import a truncated file, an invalid 49th room type and a file claiming another snapshot hash.
-- **Expected Result**: The grid shows 256 selectable positions and the selected template's placement count/markers; version-2 imports also show measured orange bounds. Navigation stops at world bounds. Invalid files show an error. The separate placeholder gameplay state is unchanged.
+- **Expected Result**: The grid shows 256 selectable positions and the selected template's placement count/markers; version-2 imports also show measured orange bounds after **layout, pointer table, room-record and placement-bound hashes** agree. Navigation stops at world bounds. Altering one otherwise valid-looking version-2 X/Y or width causes a visible import error; version-1 data is labeled legacy topology only. The separate placeholder gameplay state is unchanged.
 - **Edge Cases / Variants**: Move the private file to iOS/visionOS through an authorized Files provider; verify keyboard/VoiceOver focus and labels. This is source structure, not verified original movement or collision.
 
 ### TC-007: Optional private background overlay

@@ -71,7 +71,16 @@ final class WorldReferenceTests: XCTestCase {
                 "widthPixels": 16, "heightPixels": 24,
             ]]]
         }
-        let world = try WorldReference.load(from: fixture(rooms: rooms, version: 2))
+        let world = try WorldReference.load(
+            from: fixture(rooms: rooms, version: 2), verifySource: false
+        )
+        XCTAssertThrowsError(try WorldReference.load(
+            from: fixture(rooms: rooms, version: 2)
+        )) { error in
+            guard case WorldReferenceError.sourceMismatch = error else {
+                return XCTFail("Expected forged version-2 world data to fail integrity")
+            }
+        }
         let room = WorldReference.capturedGameplayRoom
         XCTAssertFalse(try world.overlapsBackgroundBounds(
             in: room, actorAt: GridPoint(57, 112), width: 14, height: 22
@@ -167,12 +176,39 @@ final class WorldReferenceTests: XCTestCase {
                 "widthPixels": 72, "heightPixels": 24,
             ]]]
         }
-        let world = try WorldReference.load(from: fixture(rooms: rooms, version: 2))
+        let world = try WorldReference.load(
+            from: fixture(rooms: rooms, version: 2), verifySource: false
+        )
         XCTAssertTrue(try world.overlapsBackgroundBounds(
             in: RoomID(8, 10), actorAt: GridPoint(0, 112), width: 14, height: 22
         ))
         XCTAssertFalse(try world.overlapsBackgroundBounds(
             in: RoomID(8, 10), actorAt: GridPoint(0, 87), width: 14, height: 22
         ))
+    }
+
+    func testPrivateVersion2WorldMatchesAllSourceHashesWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_WORLD"] else {
+            throw XCTSkip("Set SABRE_PRIVATE_WORLD to check the captured world integrity")
+        }
+        let data = try Data(contentsOf: URL(fileURLWithPath: path))
+        let world = try WorldReference.load(from: data)
+        XCTAssertEqual(world.schemaVersion, 2)
+        XCTAssertEqual(world.roomType(at: RoomID(8, 10)), 8)
+        var object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        var rooms = try XCTUnwrap(object["rooms"] as? [[String: Any]])
+        var first = try XCTUnwrap(rooms[0]["placements"] as? [[String: Any]])
+        first[0]["widthPixels"] = 8
+        rooms[0]["placements"] = first
+        object["rooms"] = rooms
+        XCTAssertThrowsError(try WorldReference.load(
+            from: JSONSerialization.data(withJSONObject: object)
+        )) { error in
+            guard case WorldReferenceError.sourceMismatch = error else {
+                return XCTFail("Expected a changed source width to fail integrity")
+            }
+        }
     }
 }

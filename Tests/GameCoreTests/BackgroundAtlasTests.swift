@@ -52,7 +52,7 @@ final class BackgroundAtlasTests: XCTestCase {
             "layout": Array(repeating: 0, count: 256),
             "rooms": rooms,
         ])
-        let world = try WorldReference.load(from: worldData)
+        let world = try WorldReference.load(from: worldData, verifySource: false)
         XCTAssertThrowsError(try atlas.validate(world: world))
     }
 

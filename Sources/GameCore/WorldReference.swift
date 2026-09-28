@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public struct WorldPlacement: Decodable, Sendable, Equatable {
@@ -21,6 +22,7 @@ public enum WorldReferenceError: Error, LocalizedError {
     case invalidPosition
     case invalidActorSize
     case invalidActorCoordinates
+    case sourceMismatch
 
     public var errorDescription: String? {
         switch self {
@@ -32,6 +34,7 @@ public enum WorldReferenceError: Error, LocalizedError {
         case .invalidPosition: "The requested world position is outside the 16 by 16 layout."
         case .invalidActorSize: "The actor bounding box must have a positive width and height."
         case .invalidActorCoordinates: "The actor coordinates must fit in unsigned bytes."
+        case .sourceMismatch: "The imported world does not match the verified 48K snapshot."
         }
     }
 }
@@ -51,6 +54,10 @@ public struct WorldReference: Decodable, Sendable {
     public let rooms: [WorldRoom]
 
     public static func load(from data: Data) throws -> WorldReference {
+        try load(from: data, verifySource: true)
+    }
+
+    static func load(from data: Data, verifySource: Bool) throws -> WorldReference {
         guard data.count <= 2_000_000 else {
             throw WorldReferenceError.unsupportedFormat
         }
@@ -82,7 +89,49 @@ public struct WorldReference: Decodable, Sendable {
                 throw WorldReferenceError.invalidPlacement(room: index)
             }
         }
+        if world.schemaVersion == 2 && verifySource {
+            try world.verifySource()
+        }
         return world
+    }
+
+    private func verifySource() throws {
+        func digest(_ bytes: Data) -> String {
+            SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+        }
+        var table = Data()
+        var records = Data()
+        var geometry = Data()
+        var address = 0x6200
+        for room in rooms {
+            table.append(UInt8(truncatingIfNeeded: address))
+            table.append(UInt8(truncatingIfNeeded: address >> 8))
+            for placement in room.placements {
+                guard let width = placement.widthPixels,
+                      let height = placement.heightPixels else {
+                    throw WorldReferenceError.sourceMismatch
+                }
+                let entry: [UInt8] = [
+                    UInt8(truncatingIfNeeded: placement.graphicAddress),
+                    UInt8(truncatingIfNeeded: placement.graphicAddress >> 8),
+                    UInt8(placement.x), UInt8(placement.y),
+                ]
+                records.append(contentsOf: entry)
+                geometry.append(contentsOf: entry)
+                geometry.append(UInt8(truncatingIfNeeded: width))
+                geometry.append(UInt8(truncatingIfNeeded: width >> 8))
+                geometry.append(UInt8(height))
+            }
+            records.append(contentsOf: [0, 0])
+            address += room.placements.count * 4 + 2
+        }
+        guard address == 0x70BC,
+              digest(Data(layout)) == "bffb2402d1c3c3e514e885955e34c62845bb22e137a75de7df24367e5dcbf060",
+              digest(table) == "8bbd9a59bef165c8270f3eab3330be9229c6c951142f35f345621fcef6a15290",
+              digest(records) == "43aaa6d34d78b25c451f40933f1c81c2c62946b2b12147f7892df9b1e995498a",
+              digest(geometry) == "d3aae958c56e8e1dd8f62e45a27ab8ddd320ed31a36f078ce87f8b792301334f" else {
+            throw WorldReferenceError.sourceMismatch
+        }
     }
 
     public func roomType(at position: RoomID) -> Int? {

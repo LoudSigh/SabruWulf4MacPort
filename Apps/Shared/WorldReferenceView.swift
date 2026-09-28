@@ -100,6 +100,9 @@ struct WorldReferenceView: View {
                         Button("Start measured movement (partial)") { resetMovement() }
                             .buttonStyle(.bordered)
                     }
+                } else {
+                    Text("Legacy world export: topology only, without source integrity or measured bounds. Regenerate from the verified snapshots for movement and artwork.")
+                        .font(.caption)
                 }
                 Button("Import a private gameplay replay (optional)") {
                     importingReplay = true

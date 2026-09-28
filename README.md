@@ -25,6 +25,7 @@ The preview launcher can export a **private 196-ID sprite atlas** from the two m
 
 A second ignored atlas recovers **41 distinct background bitmaps** and their attribute-grid structure from the supplied snapshots, covering all 919 imported placements. The native explorer can draw recovered monochrome shapes without downloaded PNGs, with an optional **approximate 48K ink/paper color preview**. FLASH timing, transparency and whole-room compositing remain unverified. This is inspectable progress toward faithful presentation, not completed gameplay or a distributable original-art build.
 Those 41 records are contiguous from `0x70BC` through `0x9691`; the [RAM coverage inventory](reverse_engineering/analysis/byte-coverage.json) now classifies **29,178/49,152 bytes** as data and keeps **19,974** unknown, rather than misidentifying graphics as executable code.
+The version-2 [private world import](docs/build.md) now checks four reconstructed source hashes, including every placement's measured bitmap bounds. Editing a room's gameplay geometry is rejected instead of masquerading as the captured game; modern presentation can still change independently.
 
 To inspect the 160 images linked from its graphics page—or make an **authorized local copy** under ignored `SNAPSHOTS/graphics/downloaded/`—use the [private graphics downloader](docs/download-skoolkit-assets.md). No third-party images are included in this repository.
 
