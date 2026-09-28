@@ -88,9 +88,35 @@
         "recordDistanceAfterExit": 6
       }
     },
+    "northRoomContinuations": {
+      "checkpointFrame": 827,
+      "attempts": 2,
+      "matchingFullRAMFramesPerAttempt": 900,
+      "nextRoomTransitionsByFrame900": 0,
+      "bestRecordDistanceBeforeAndAfter": [6, 6],
+      "positiveContactOrInjuryByFrame900": false,
+      "lifeByteAtFrame900": 4,
+      "selectedRecordStayedActive": true,
+      "staticEastEdgeProposalPixelSteps": 177,
+      "proposalTurns": 2,
+      "requiredNorthwardClearancePixels": 58,
+      "observedNorthwardProgressPixels": 38,
+      "postCheckpointActorUpdateEntries": 66,
+      "maxObservedPixelsPerUpdate": 2
+    },
+    "extendedNorthRoomContinuation": {
+      "matchingFullRAMFramesThroughExit": 915,
+      "achievedNorthwardClearancePixels": 58,
+      "eastProbeClearAtTurn": true,
+      "nextRoomTransitionFrame": 915,
+      "recordWorldGridDistanceBeforeAndAfter": [6, 5],
+      "selectedRecordStayedActive": true,
+      "positiveContactOrInjuryBeforeExit": false,
+      "lifeByteAtExit": 4
+    },
     "fullRAMParityFramesPerAttempt": 900,
     "lifeByteStayedFour": true,
     "interventionPerformed": false
   },
-  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. An eastward source plateau is consistent with a two-pixel step blocked by one-pixel clearance, not missing actor ticks. Removing a prior east offset produced a safe north exit, but increased target distance. No item room/contact or sword hit is established. No actor teleport, record values, instruction bytes, images or disassembly are published."
+  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. An eastward source plateau is consistent with a two-pixel step blocked by one-pixel clearance, not missing actor ticks. Removing a prior east offset produced a safe north exit but increased target distance; a longer corrected continuation subsequently crossed another edge at frame 915 and restored the five-room distance without injury. The prior frame-900 horizon and sampled update count were not a general movement limit. No item room/contact or sword hit is established. No actor teleport, record values, instruction bytes, images or disassembly are published."
 }

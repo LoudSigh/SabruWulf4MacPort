@@ -548,6 +548,8 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   6. Treat a static east-edge route as a proposal only: compare two source input variants through first injury (855/855 and 846/846 RAM frames) and ensure other-actor contact occurs before any claimed room transition or item pickup.
   7. Repeat two bounded routes with simultaneous T/movement keyboard states and full reference RAM parity; distinguish delayed actor contact from crossing a room edge or collecting an item.
   8. Reproduce the 42/42 two-pixel east collisions at one-pixel clearance, then remove the initial east offset and verify a T-assisted north transition with 827/827 RAM frames and no injury.
+  9. Continue from the exact frame-827 north-room checkpoint with unchanged CPU/RAM/interrupt state; compare two 900/900 RAM-parity routes and withhold an east-edge claim until 58 northward clearance pixels are actually achieved.
+  10. Extend one corrected source continuation to frame 915; require 915/915 RAM frames, full 58-pixel clearance, a second room transition, no injury and one-room improvement in target distance—still no pickup claim.
 - **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown. A two-pixel east step stalls at one-pixel clearance; correcting an initial offset permits a source-verified north exit, not a collectible contact.
 - **Edge Cases / Variants**: Different key timing, player count, repeated restart, item disappearance and renderer overlap.
 
