@@ -64,14 +64,19 @@ public struct BackgroundMask: Sendable {
         decodedPixels
     }
 
-    public func paletteIndices(flashOn: Bool = false) -> [UInt8] {
-        if !flashOn { return decodedPaletteIndices }
+    public func paletteIndices(
+        flashOn: Bool = false, invertBitmap: Bool = false
+    ) -> [UInt8] {
+        if !flashOn && !invertBitmap { return decodedPaletteIndices }
         let bytesPerRow = width / 8
         return decodedPixels.indices.map { index in
             let attributeOffset = (index / width / 8) * bytesPerRow
                 + (index % width) / 8
             return SpectrumAttribute(sourceAttributes[attributeOffset])
-                .paletteIndex(pixelOn: decodedPixels[index], flashOn: flashOn)
+                .paletteIndex(
+                    pixelOn: decodedPixels[index] != invertBitmap,
+                    flashOn: flashOn
+                )
         }
     }
 }

@@ -776,7 +776,7 @@ private struct NativeBackgroundPreview: View {
 
     var body: some View {
         let pixels = mask.pixels()
-        let indices = useAttributes ? mask.paletteIndices() : []
+        let indices = useAttributes ? mask.paletteIndices(invertBitmap: true) : []
         let palette = SpectrumPalette.colors.map { rgb in
             Color(
                 red: Double(rgb.red) / 255,

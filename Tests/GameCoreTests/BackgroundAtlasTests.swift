@@ -38,6 +38,8 @@ final class BackgroundAtlasTests: XCTestCase {
         XCTAssertFalse(mask.pixels()[1])
         XCTAssertEqual(mask.paletteIndices()[0], 7)
         XCTAssertEqual(mask.paletteIndices()[1], 0)
+        XCTAssertEqual(mask.paletteIndices(invertBitmap: true)[0], 0)
+        XCTAssertEqual(mask.paletteIndices(invertBitmap: true)[1], 7)
         XCTAssertThrowsError(try atlas.mask(at: 0))
         let rooms: [[String: Any]] = (0..<48).map { _ in
             ["placements": [[
