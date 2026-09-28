@@ -19,6 +19,8 @@ Use `--live --download --confirm-rights` if you prefer the current online HTML r
 
 This command downloads images referenced **directly on the Graphics page**, not images on the separate [Backgrounds page](https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/graphics/backgrounds.html). It does not import images into the native app.
 
+For the **40 images on the Backgrounds page**, use `python3 reverse_engineering/tools/download_skoolkit_backgrounds.py --download --confirm-rights`. Those images and their manifest go directly into ignored `SNAPSHOTS/backgrounds/`, alongside your saved `Backgrounds.html`; the graphics-page images remain in `SNAPSHOTS/graphics/downloaded/`.
+
 ### TC-Assets-001: Preview source list without copying artwork
 - **Priority**: P0
 - **Preconditions**: The user-supplied `Graphics.html` is present.

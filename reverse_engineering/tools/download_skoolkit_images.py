@@ -48,12 +48,12 @@ class ImageSources(HTMLParser):
                 self.sources.append(value)
 
 
-def asset_urls(html: str) -> list[tuple[str, str]]:
+def asset_urls(html: str, page_url: str = PAGE_URL) -> list[tuple[str, str]]:
     parser = ImageSources()
     parser.feed(html)
     found: dict[str, tuple[str, str]] = {}
     for source in parser.sources:
-        url = urljoin(PAGE_URL, source)
+        url = urljoin(page_url, source)
         parsed = urlsplit(url)
         if parsed.scheme != "https" or parsed.netloc != HOST:
             continue
@@ -127,10 +127,18 @@ def validate_png(data: bytes) -> tuple[int, int]:
     raise DownloadError("PNG is missing its final IEND chunk")
 
 
-def private_destination(root: Path) -> Path:
+def private_destination(
+    root: Path, relative: Path = Path("SNAPSHOTS/graphics/downloaded")
+) -> Path:
     if "SNAPSHOTS/" not in (root / ".gitignore").read_text(encoding="utf-8").splitlines():
         raise DownloadError("SNAPSHOTS/ must be in .gitignore before downloading")
-    relative = Path("SNAPSHOTS/graphics/downloaded")
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or relative.parts[0] != "SNAPSHOTS"
+        or any(part in ("..", ".") for part in relative.parts)
+    ):
+        raise DownloadError("Output must be under SNAPSHOTS/")
     result = subprocess.run(
         ["git", "check-ignore", "-q", str(relative / "probe.png")],
         cwd=root,
@@ -218,16 +226,21 @@ def download_one(
     }
 
 
-def main() -> int:
+def main(
+    page_url: str = PAGE_URL,
+    default_html: Path | None = None,
+    output_relative: Path = Path("SNAPSHOTS/graphics/downloaded"),
+) -> int:
     root = Path(__file__).resolve().parents[2]
-    default_html = root / "SNAPSHOTS/graphics/Graphics.html"
+    if default_html is None:
+        default_html = root / "SNAPSHOTS/graphics/Graphics.html"
     options = argparse.ArgumentParser(description=__doc__)
     source = options.add_mutually_exclusive_group()
     source.add_argument("--html", type=Path, default=default_html)
     source.add_argument("--live", action="store_true", help="Fetch the current page instead of using Graphics.html")
     action = options.add_mutually_exclusive_group()
     action.add_argument("--list", action="store_true", help="Print all asset filenames and URLs")
-    action.add_argument("--download", action="store_true", help="Fetch assets into ignored SNAPSHOTS/graphics/downloaded/")
+    action.add_argument("--download", action="store_true", help=f"Fetch assets into ignored {output_relative}/")
     options.add_argument(
         "--confirm-rights",
         action="store_true",
@@ -240,7 +253,7 @@ def main() -> int:
         raise DownloadError("--confirm-rights is only valid with --download")
 
     if args.live:
-        html_bytes = verified_response(urlopen, PAGE_URL, "text/html", MAX_HTML_BYTES)
+        html_bytes = verified_response(urlopen, page_url, "text/html", MAX_HTML_BYTES)
         html = html_bytes.decode("utf-8")
     else:
         html_file: Path = args.html
@@ -249,7 +262,7 @@ def main() -> int:
         if html_file.stat().st_size > MAX_HTML_BYTES:
             raise DownloadError("HTML input exceeds safety limit")
         html = html_file.read_text(encoding="utf-8")
-    images = asset_urls(html)
+    images = asset_urls(html, page_url)
     print(f"Found {len(images)} distinct UDG PNG assets; the site logo is excluded.")
     if args.list:
         for name, url in images:
@@ -263,7 +276,7 @@ def main() -> int:
     for _, url in images:
         if not robots.can_fetch(USER_AGENT, url):
             raise DownloadError(f"robots.txt forbids this URL: {url}")
-    output = private_destination(root)
+    output = private_destination(root, output_relative)
     delay = max(0.4, robots.crawl_delay(USER_AGENT) or 0)
     records: list[dict[str, str | int]] = []
     total = 0
@@ -280,7 +293,7 @@ def main() -> int:
             time.sleep(delay)
 
     manifest = {
-        "source": PAGE_URL,
+        "source": page_url,
         "copyrightNotice": "The source site credits Ultimate Play the Game and ArcadeGeek; no redistribution permission is assumed.",
         "files": records,
     }

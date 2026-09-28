@@ -7,12 +7,14 @@ import stat
 import struct
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 import download_skoolkit_images as images
+import download_skoolkit_backgrounds as backgrounds
 
 
 def png_chunk(kind: bytes, data: bytes) -> bytes:
@@ -58,6 +60,52 @@ class AssetDownloadTests(unittest.TestCase):
         assets = images.asset_urls(html)
         self.assertEqual([name for name, _ in assets], ["01.png", "02.png"])
         self.assertTrue(all(url.startswith(f"https://{images.HOST}/") for _, url in assets))
+
+    def test_background_page_resolves_assets_and_excludes_logo(self) -> None:
+        page = "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/graphics/backgrounds.html"
+        assets = images.asset_urls(
+            '<img src="../images/logo.png">'
+            '<img src="../../images/udgs/background-28860.png">'
+            '<img src="../../images/udgs/background-28860.png">',
+            page,
+        )
+        self.assertEqual(
+            assets,
+            [(
+                "background-28860.png",
+                "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/images/udgs/background-28860.png",
+            )],
+        )
+
+    def test_background_wrapper_targets_saved_html_and_requested_folder(self) -> None:
+        with patch.object(backgrounds, "main", return_value=0) as launch:
+            self.assertEqual(backgrounds.run(), 0)
+        self.assertEqual(
+            launch.call_args.kwargs["output_relative"], Path("SNAPSHOTS/backgrounds")
+        )
+        self.assertEqual(
+            launch.call_args.kwargs["default_html"].name, "Backgrounds.html"
+        )
+        self.assertTrue(launch.call_args.kwargs["page_url"].endswith("/backgrounds.html"))
+
+    def test_background_destination_preserves_saved_page(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".gitignore").write_text("SNAPSHOTS/\n", encoding="utf-8")
+            backgrounds_dir = root / "SNAPSHOTS/backgrounds"
+            backgrounds_dir.mkdir(parents=True)
+            saved_page = backgrounds_dir / "Backgrounds.html"
+            saved_page.write_text("source page", encoding="utf-8")
+            with patch.object(
+                images.subprocess, "run", return_value=SimpleNamespace(returncode=0)
+            ):
+                output = images.private_destination(
+                    root, Path("SNAPSHOTS/backgrounds")
+                )
+            self.assertEqual(output, backgrounds_dir)
+            self.assertEqual(saved_page.read_text(encoding="utf-8"), "source page")
+            with self.assertRaisesRegex(images.DownloadError, "under SNAPSHOTS"):
+                images.private_destination(root, Path("../unsafe"))
 
     def test_rejects_unsafe_asset_url(self) -> None:
         with self.assertRaisesRegex(images.DownloadError, "Unsafe asset URL"):
