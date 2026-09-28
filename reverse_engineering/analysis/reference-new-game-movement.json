@@ -11,6 +11,7 @@
   "nativeSliceFirstFrame": 791,
   "nativeSliceLastFrame": 900,
   "nativeActorRoomXYMatches": 110,
+  "nativeSpriteKindMatches": 110,
   "sourceKeyIntervalZeroBased": [788, 850],
   "nativeActions": "W for source frames 791..850, then None for 851..900",
   "firstActorXMoveFrame": 793,
@@ -28,6 +29,7 @@
       "matchingRAMAndScreenFrames": 900,
       "matchingContactCalls": 2661,
       "nativeActorRoomXYMatches": 110,
+      "nativeSpriteKindMatches": 110,
       "finalRoomID": 168,
       "finalX": 56,
       "finalY": 112,
@@ -39,6 +41,7 @@
       "matchingRAMAndScreenFrames": 900,
       "matchingContactCalls": 2690,
       "nativeActorRoomXYMatches": 110,
+      "nativeSpriteKindMatches": 110,
       "northExitFrame": 819,
       "northRebaseFrame": 825,
       "finalRoomID": 152,
@@ -52,6 +55,7 @@
       "matchingRAMAndScreenFrames": 900,
       "matchingContactCalls": 2645,
       "nativeActorRoomXYMatches": 76,
+      "nativeSpriteKindMatches": 76,
       "lastNativeParityFrame": 866,
       "firstUnresolvedNativeFrame": 867,
       "sourceYAt867": 134,
@@ -65,7 +69,8 @@
   "totals": {
     "referenceRAMAndScreenFrames": 3600,
     "nativeActorRoomXYMatches": 406,
+    "nativeSpriteKindMatches": 406,
     "matchingContactCalls": 10648
   },
-  "limits": "The native slices start only after observed actor readiness at source frame 790 with X=120/Y=112 and zero horizontal/vertical velocity. They do not reproduce menu polling, redraw delays or the first 790 frames. Q/W/E each verify a 60-direction/50-idle sequence through frame 900; R verifies only frames 791..866 because the source stays at Y=134 on 867 while static-only native motion would reach Y=135. Its cause is unclassified, not proof of an enemy block. All other input combinations, enemy behavior, injury, sprite animation and further play remain unsupported."
+  "limits": "The native slices start only after observed actor readiness at source frame 790 with X=120/Y=112 and zero horizontal/vertical velocity. They do not reproduce menu polling, redraw delays or the first 790 frames. Q/W/E each verify a 60-direction/50-idle sequence through frame 900; R verifies only frames 791..866 because the source stays at Y=134 on 867 while static-only native motion would reach Y=135. Its cause is unclassified, not proof of an enemy block. The 406 matching sprite IDs verify only bounded animation-state selection, not sprite colors or layering. All other input combinations, enemy behavior, injury and further play remain unsupported."
 }

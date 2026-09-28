@@ -37,6 +37,7 @@ public struct CapturedMovementState: Sendable {
     public private(set) var player = WorldReference.capturedPlayerPosition
     public private(set) var frame = 0
     public private(set) var transitioning = false
+    public private(set) var playerSpriteID: Int?
     public let referenceFrameOffset: Int
 
     private let world: WorldReference
@@ -49,6 +50,7 @@ public struct CapturedMovementState: Sendable {
     private var pendingEastFrames = 0
     private var settlingSouthFrames = 0
     private var observedReadyAction: OriginalAction?
+    private var observedSpritePhaseEpoch = 791
 
     public init(
         world: WorldReference, origin: CapturedMovementOrigin = .gameplayCapture
@@ -66,6 +68,7 @@ public struct CapturedMovementState: Sendable {
         player = start
         referenceFrameOffset = origin == .observedNewGameReady ? 790 : 0
         velocityX = origin == .observedNewGameReady ? 0 : -3
+        playerSpriteID = origin == .observedNewGameReady ? 16 : nil
     }
 
     private static let capturedRoom = WorldReference.capturedGameplayRoom
@@ -97,6 +100,10 @@ public struct CapturedMovementState: Sendable {
                 velocityY = decay(velocityY)
                 transitioning = false
                 settlingNorthFrames = referenceFrameOffset == 0 ? 0 : 1
+                if let playerSpriteID, referenceFrameOffset != 0 {
+                    self.playerSpriteID = 28 + (playerSpriteID % 4 + 1) % 4
+                    observedSpritePhaseEpoch -= 1
+                }
             }
             frame += 1
             return
@@ -147,6 +154,7 @@ public struct CapturedMovementState: Sendable {
             return
         }
 
+        let previous = player
         let horizontal = (actions.contains(.right) ? 7 : 0) - (actions.contains(.left) ? 7 : 0)
         let vertical = (actions.contains(.down) ? 7 : 0) - (actions.contains(.up) ? 7 : 0)
         let nextVX = min(48, max(-48, velocityX + horizontal))
@@ -203,6 +211,14 @@ public struct CapturedMovementState: Sendable {
             )
             velocityX = decay(nextVX)
             velocityY = decay(nextVY)
+        }
+        if referenceFrameOffset != 0, !actions.isEmpty, player != previous {
+            let dx = player.x - previous.x
+            let dy = player.y - previous.y
+            let base = dx != 0
+                ? (dx > 0 ? 20 : 16) : (dy > 0 ? 28 : 24)
+            let sourceFrame = referenceFrameOffset + frame + 1
+            playerSpriteID = base + ((sourceFrame - observedSpritePhaseEpoch) / 2) % 4
         }
         frame += 1
     }

@@ -38,11 +38,14 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(observed.room, RoomID(8, 10))
         XCTAssertEqual(observed.player, GridPoint(120, 112))
         XCTAssertEqual(observed.referenceFrameOffset, 790)
+        XCTAssertEqual(observed.playerSpriteID, 16)
         XCTAssertEqual(try CapturedMovementState(world: source).player, GridPoint(57, 112))
+        XCTAssertNil(try CapturedMovementState(world: source).playerSpriteID)
         var moved = observed
         for _ in 0..<10 { try moved.advance(holding: [.right]) }
         XCTAssertEqual(moved.player, GridPoint(136, 112))
         XCTAssertEqual(moved.frame + moved.referenceFrameOffset, 800)
+        XCTAssertEqual(moved.playerSpriteID, 20)
         XCTAssertThrowsError(try moved.advance(holding: [.up]))
         XCTAssertThrowsError(try moved.advance())
         XCTAssertEqual(moved.frame, 10)
@@ -85,6 +88,10 @@ final class CapturedMovementTests: XCTestCase {
                 XCTAssertEqual(
                     state.player, GridPoint(expected.playerX, expected.playerY),
                     "\(key) frame \(expected.index)"
+                )
+                XCTAssertEqual(
+                    state.playerSpriteID, expected.playerKind,
+                    "\(key) sprite at frame \(expected.index)"
                 )
             }
             XCTAssertThrowsError(try state.advance()) { error in
