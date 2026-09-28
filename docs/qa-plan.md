@@ -245,7 +245,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   1. Verify all 190 RAM and screen hashes of **each of the three** replays against the unmodified emulator.
   2. Import each replay/trace pair in turn; inspect actor state at frame 146, enemy state at 156, enemy X at 159 and actor/enemy at frames 163–164.
   3. Compare the A-key control at frames 156, 159, 164 and 170, then compare source-free [reference-fire-encounter.json](../reverse_engineering/analysis/reference-fire-encounter.json) checkpoints.
-- **Expected Result**: Input-dependent trajectories match the recorded evidence; an unrelated key changes the encounter timing but does not produce T's early enemy-state change or prevent damage through frame 190. The preview stays read-only and native combat is still explicitly unsupported.
+- **Expected Result**: Input-dependent trajectories match the recorded evidence; the first T-specific enemy-state change is traced to RNG bit 7 at frame 156, after T's RNG diverged at frame 146. An unrelated key changes RNG and encounter timing but takes the no-T direction branch and does not prevent damage through frame 190. The preview stays read-only and native combat is still explicitly unsupported.
 - **Edge Cases / Variants**: Same key held different frame counts, RNG phase changes, different enemy direction, missing private trace and damage-state timing.
 
 ## Regression cadence and coverage

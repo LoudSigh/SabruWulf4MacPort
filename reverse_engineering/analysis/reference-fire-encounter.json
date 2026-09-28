@@ -10,7 +10,20 @@
   "comparisonRAMAndScreenMatches": 190,
   "unrelatedKeyRAMAndScreenMatches": 190,
   "firstPlayerStateDifferenceFrame": 146,
+  "firstFireVsNoFireRNGDifferenceFrame": 146,
+  "firstUnrelatedAKeyVsNoFireRNGDifferenceFrame": 147,
   "firstEnemyStateDifferenceFrame": 156,
+  "firstEnemyStateChange": {
+    "frame": 156,
+    "initialKind": 108,
+    "fireRNG": 227,
+    "fireKind": 108,
+    "noFireRNG": 55,
+    "noFireKind": 110,
+    "unrelatedAKeyRNG": 28,
+    "unrelatedAKeyKind": 110,
+    "mechanism": "A reference-executed random-direction branch sets kind bit 1 only if the RNG value has bit 7 clear; fire altered the RNG earlier, before this branch."
+  },
   "firstEnemyPositionDifferenceFrame": 159,
   "unrelatedKeyFirstEnemyPositionDifferenceFrame": 159,
   "noFireDamageFrame": 164,
@@ -40,5 +53,5 @@
       "noFirePlayerKind": 65
     }
   ],
-  "limits": "An unrelated A-key press also shifts enemy timing and delays damage by six frames, but does not produce the T-specific early enemy state/direction change or prevent damage through frame 190. The contrast is not enough to infer a hitbox, enemy damage rule, score event or general native combat implementation."
+  "limits": "The first T-specific enemy state difference at frame 156 is explained by the already-divergent RNG input to a direction branch, not by evidence of a hit. A also shifts RNG and timing but not that bit-7 branch result, delaying damage six frames. Whether any later T action hits an enemy, damages it or changes score remains unverified; these runs do not establish a native combat rule."
 }

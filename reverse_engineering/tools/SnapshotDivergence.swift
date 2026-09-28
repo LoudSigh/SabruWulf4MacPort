@@ -13,7 +13,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] [--reference-timing] [--require-ram-parity] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -76,6 +76,15 @@ private struct TraceFrame: Encodable {
     let fullEmulatorPlayer: ActorMarker
 }
 
+private struct ActorStateWrite: Encodable {
+    let frame: Int
+    let instructionAddress: Int
+    let actorAddress: Int
+    let previous: Int
+    let value: Int
+    let rngValue: Int
+}
+
 private struct Report: Encodable {
     let schemaVersion = 1
     let snapshotSHA256: String
@@ -88,6 +97,8 @@ private struct Report: Encodable {
     let firstPlayerStateDifference: Difference?
     let firstPlayerPositionDifference: Difference?
     let trace: [TraceFrame]?
+    let actorStateWrites: [ActorStateWrite]?
+    let rngFrames: [Int]?
 }
 
 private func hash(_ data: Data) -> String {
@@ -171,15 +182,17 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...8).contains(arguments.count),
+            guard (5...9).contains(arguments.count),
                   options.allSatisfy({
-                      ["--trace", "--reference-timing", "--require-ram-parity"].contains($0)
+                      ["--trace", "--watch-actor-state", "--reference-timing",
+                       "--require-ram-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
                   let count = Int(arguments[4]), (1...600).contains(count) else {
                 throw DivergenceError.usage
             }
             let includeTrace = options.contains("--trace")
+            let watchActorState = options.contains("--watch-actor-state")
             let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
@@ -221,6 +234,8 @@ private struct SnapshotDivergence {
             var firstState: Difference?
             var firstPosition: Difference?
             var trace: [TraceFrame] = []
+            var actorStateWrites: [ActorStateWrite] = []
+            var rngFrames: [Int] = []
             var matchingRAMFrames = 0
 
             for frame in 0..<count {
@@ -243,9 +258,25 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    let instructionAddress = Int(cpu.pc)
                     let result = cpu.step(
                         read: { memory.read($0) },
-                        write: { memory.write($0, $1) },
+                        write: { address, value in
+                            if watchActorState && (address == 0x9702 || address == 0x9792) {
+                                let previous = memory.read(address)
+                                if previous != value {
+                                    actorStateWrites.append(ActorStateWrite(
+                                        frame: frame + 1,
+                                        instructionAddress: instructionAddress,
+                                        actorAddress: Int(address),
+                                        previous: Int(previous),
+                                        value: Int(value),
+                                        rngValue: Int(memory.read(0x9695))
+                                    ))
+                                }
+                            }
+                            memory.write(address, value)
+                        },
                         ioRead: { port in
                             port & 1 == 0
                                 ? manual.keyboard.readPortFE(highByte: UInt8(port >> 8))
@@ -275,6 +306,9 @@ private struct SnapshotDivergence {
                 let reference = full.mem
                 if memory.exportRam48K() == reference.exportRam48K() {
                     matchingRAMFrames += 1
+                }
+                if watchActorState {
+                    rngFrames.append(Int(reference.read(0x9695)))
                 }
                 let manualRNG = [Int(memory.read(0x9695))]
                 let fullRNG = [Int(reference.read(0x9695))]
@@ -325,7 +359,9 @@ private struct SnapshotDivergence {
                 firstMovingEntityDifference: firstEntity,
                 firstPlayerStateDifference: firstState,
                 firstPlayerPositionDifference: firstPosition,
-                trace: includeTrace ? trace : nil
+                trace: includeTrace ? trace : nil,
+                actorStateWrites: watchActorState ? actorStateWrites : nil,
+                rngFrames: watchActorState ? rngFrames : nil
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
