@@ -18,8 +18,9 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Preconditions**: Verified 48K ROM, exact TZX SHA-256 from the input manifest and a controlled input replay.
 - **Steps**:
   1. Boot the 48K emulator from the supplied TZX without assuming an instant CODE load.
-  2. Record loaded memory, first playable frame, game-state markers and frame-indexed controls.
-  3. Repeat with the same ROM, emulator version and inputs.
+  2. In an isolated CPU copy, check the Z80 `RRA` flag fix against a synthetic ROM header, then separately verify transient RAM matches for the two standard TZX blocks. Keep the backup and tape untouched.
+  3. Compare the first following pure-data block against an equal-duration steady-EAR control; distinguish interrupt keyboard scans from foreground tape reads by the FE port-row selectors.
+  4. Record loaded memory, first playable frame, game-state markers and frame-indexed controls; repeat with the same ROM, emulator version and inputs.
 - **Expected Result**: Repeated reference captures match; the dump identifies program intervals and loader state. If loading fails, document the blocking cause rather than invent a baseline.
 - **Edge Cases / Variants**: Pure-data pulses, BASIC autostart, loader timing and slow/fast emulation.
 
@@ -421,8 +422,9 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   1. Produce a 900-frame reference-relative source replay and require all 900 RAM/screen hashes to match the independent emulator.
   2. Run the native movement state from the frame-790 ready origin; hold W for 18 measured frames, Q for 42, then no input.
   3. Compare room/X/Y for frames 791–870 and sprite ID for 791–850; require unknown idle sprite IDs to be withheld.
-  4. Attempt the next frame and require an explicit unsupported-runtime-divergence error instead of extending the path by guesswork.
-- **Expected Result**: **80/80** positions and **60/60** sprite IDs match; source frame 871 remains unclassified.
+  4. Verify all 2,651 source contact returns, including positive frame 868 and player kind 19→64 at frame 870.
+  5. Attempt the next frame and require an explicit unsupported-runtime-divergence error instead of inventing injury-state movement.
+- **Expected Result**: **80/80** positions and **60/60** sprite IDs match; source frame 871 remains unsupported after measured contact and injury-state entry.
 - **Edge Cases / Variants**: Reverse earlier/later than frame 808, wall collision, source enemy contact and idle animation after releasing Q.
 
 ### TC-038: Keep observed instruction extents separate from permanent code
@@ -435,6 +437,28 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   4. Ensure [byte-coverage.json](../reverse_engineering/analysis/byte-coverage.json) retains its static unknown classification instead of treating three paths as complete program coverage.
 - **Expected Result**: 7,720/7,720 RAM frames pass, 15,059 originally unknown bytes remain outside the observed candidate-code union, and no immutable code/data partition is claimed.
 - **Edge Cases / Variants**: Self-modifying instructions, prefixed operands, unexecuted branches, ROM-only fetches and shared bytes used differently at another time.
+
+### TC-039: Source-driven four-life injury knockback
+- **Priority**: P1
+- **Preconditions**: Verified W/Q 900-frame replay, ignored private player-write report and life byte 4 from the captured new-game setup.
+- **Steps**:
+  1. Require 900/900 complete reference RAM frames and confirm the observed contact at 868 and kind-64 onset at 870.
+  2. Pair the source X writes with the subsequent timer writes by execution-cycle order, not display-frame number.
+  3. Supply each observed actor tick to `CapturedNewGameInjuryTick` and compare all 28 X results (56→140) and all 28 timer results (32→60).
+  4. Reject other lives, rooms, timers and a further tick after timer 60; do not schedule native injury from contact by guesswork.
+- **Expected Result**: **28/28** source X/timer tick pairs match; native gameplay remains explicitly bounded before injury-state movement.
+- **Edge Cases / Variants**: Frame boundary between writes, obstacle response after X=140, contact-to-injury latency and one-life kind-65 path.
+
+### TC-040: Control transfers are not a complete function inventory
+- **Priority**: P1
+- **Preconditions**: Isolated private exact-fetch/branch probe, twelve published source-free schedules and hashed 48K inputs.
+- **Steps**:
+  1. Verify synthetic call/return/jump recognition and 7,720/7,720 complete RAM frames.
+  2. Check 104 distinct reached RAM call entries, 232 jump targets and 617 return targets; keep address-level lists private.
+  3. Distinguish executed taken jumps from untaken conditional branches, interrupt entries and repeat instructions.
+  4. Audit at least one 190-frame path for ROM/RAM transitions; do not infer balanced stacks or function boundaries from aggregate event totals.
+- **Expected Result**: Numeric control-flow counts are reproducible, while unexecuted routines and exact routine extents remain unknown and no disassembly appears in Git.
+- **Edge Cases / Variants**: Jump-entered/return-terminated code, RST, extended return, interrupt entry, initial snapshot stack and path-end truncation.
 
 ## Regression cadence and coverage
 

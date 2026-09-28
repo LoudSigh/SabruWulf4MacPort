@@ -778,9 +778,10 @@ else
 fi
 "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$REVERSE_REPLAY" \
     --menu "$MENU" 503
-REVERSE_PARITY="$ROOT/$PRIVATE/restart-ready-reverse-ram-900.json"
+REVERSE_PARITY="$ROOT/$PRIVATE/restart-ready-reverse-contact-900.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 900 \
-    --reference-timing --require-ram-parity > "$TEMP_MENU_CONTACT"
+    --reference-timing --require-ram-parity --require-contact-parity \
+    --watch-actor-state > "$TEMP_MENU_CONTACT"
 if [[ -e "$REVERSE_PARITY" ]]; then
     if ! cmp -s "$REVERSE_PARITY" "$TEMP_MENU_CONTACT"; then
         printf 'Existing private W/Q RAM comparison differs: %s\n' "$REVERSE_PARITY" >&2
@@ -789,15 +790,34 @@ if [[ -e "$REVERSE_PARITY" ]]; then
 else
     mv "$TEMP_MENU_CONTACT" "$REVERSE_PARITY"
 fi
+REVERSE_PLAYER_WRITES="$ROOT/$PRIVATE/restart-ready-w-q-player-writes-900.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 900 \
+    --reference-timing --require-ram-parity --watch-player-state \
+    > "$TEMP_MENU_CONTACT"
+if [[ -e "$REVERSE_PLAYER_WRITES" ]]; then
+    if ! cmp -s "$REVERSE_PLAYER_WRITES" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private W/Q player-write trace differs: %s\n' "$REVERSE_PLAYER_WRITES" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$REVERSE_PLAYER_WRITES"
+fi
 printf 'Checking the native post-setup room, position and sprite ID against all four paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY_DIR="$ROOT/$PRIVATE" \
     SABRE_PRIVATE_NEW_GAME_MIXED_REPLAY="$MIXED_REPLAY" \
     SABRE_PRIVATE_NEW_GAME_REVERSE_REPLAY="$REVERSE_REPLAY" \
-    swift test --filter 'CapturedMovementTests/testPrivate(ObservedNewGameMovementWhenProvided|MixedNewGamePathWhenProvided|ReversedNewGamePathWhenProvided)' \
+    SABRE_PRIVATE_NEW_GAME_REVERSE_CONTACT="$REVERSE_PARITY" \
+    swift test --filter 'CapturedMovementTests/testPrivate(ObservedNewGameMovementWhenProvided|MixedNewGamePathWhenProvided|ReversedNewGamePathWhenProvided|ReverseContactBoundaryWhenProvided)' \
     > "$ROOT/$PRIVATE/new-game-movement-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-movement-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_NEW_GAME_INJURY_WRITES="$REVERSE_PLAYER_WRITES" \
+    swift test --filter CapturedNewGameInjuryTickTests \
+    > "$ROOT/$PRIVATE/new-game-injury-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/new-game-injury-test.log" >&2
     exit 1
 fi
 printf 'Preparing four private 150-frame held-direction references...\n'

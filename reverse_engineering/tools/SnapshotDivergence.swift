@@ -24,7 +24,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -258,6 +258,7 @@ private struct Report: Encodable {
     let trace: [TraceFrame]?
     let actorStateWrites: [ActorStateWrite]?
     let entityStateWrites: [EntityStateWrite]?
+    let playerStateWrites: [EntityStateWrite]?
     let rngFrames: [Int]?
     let rngWrites: [RNGWrite]?
     let contactComparison: ContactComparison?
@@ -353,9 +354,10 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...18).contains(arguments.count),
+            guard (5...19).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--watch-entity-state",
+                       "--watch-player-state",
                        "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
@@ -396,6 +398,7 @@ private struct SnapshotDivergence {
             let includeTrace = options.contains("--trace")
             let watchActorState = options.contains("--watch-actor-state")
             let watchEntityState = options.contains("--watch-entity-state")
+            let watchPlayerState = options.contains("--watch-player-state")
             let requireContactParity = options.contains("--require-contact-parity")
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
@@ -457,6 +460,7 @@ private struct SnapshotDivergence {
             var trace: [TraceFrame] = []
             var actorStateWrites: [ActorStateWrite] = []
             var entityStateWrites: [EntityStateWrite] = []
+            var playerStateWrites: [EntityStateWrite] = []
             var rngFrames: [Int] = []
             var rngWrites: [RNGWrite] = []
             var matchingRAMFrames = 0
@@ -711,6 +715,19 @@ private struct SnapshotDivergence {
                                     ))
                                 }
                             }
+                            if watchPlayerState && (0x9702...0x9709).contains(address) {
+                                let previous = memory.read(address)
+                                if previous != value {
+                                    playerStateWrites.append(EntityStateWrite(
+                                        frame: frame + 1,
+                                        instructionAddress: instructionAddress,
+                                        cycle: cycles,
+                                        address: Int(address),
+                                        previous: Int(previous),
+                                        value: Int(value)
+                                    ))
+                                }
+                            }
                             memory.write(address, value)
                         },
                         ioRead: { port in
@@ -906,6 +923,7 @@ private struct SnapshotDivergence {
                 trace: includeTrace ? trace : nil,
                 actorStateWrites: watchActorState ? actorStateWrites : nil,
                 entityStateWrites: watchEntityState ? entityStateWrites : nil,
+                playerStateWrites: watchPlayerState ? playerStateWrites : nil,
                 rngFrames: watchActorState ? rngFrames : nil,
                 rngWrites: watchActorState ? rngWrites : nil,
                 contactComparison: requireContactParity

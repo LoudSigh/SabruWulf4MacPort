@@ -153,6 +153,39 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(state.frame, 80)
     }
 
+    func testPrivateReverseContactBoundaryWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment[
+            "SABRE_PRIVATE_NEW_GAME_REVERSE_CONTACT"
+        ] else { throw XCTSkip("Set ignored W/Q contact report") }
+        struct Contact: Decodable {
+            let calls: Int
+            let matchingCalls: Int
+            let positiveFrames: [Int]
+        }
+        struct Write: Decodable {
+            let frame: Int
+            let actorAddress: Int
+            let previous: Int
+            let value: Int
+        }
+        struct Report: Decodable {
+            let matchingRAMFrames: Int
+            let contactComparison: Contact
+            let actorStateWrites: [Write]
+        }
+        let report = try JSONDecoder().decode(
+            Report.self, from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(report.matchingRAMFrames, 900)
+        XCTAssertEqual(report.contactComparison.calls, 2651)
+        XCTAssertEqual(report.contactComparison.matchingCalls, 2651)
+        XCTAssertEqual(report.contactComparison.positiveFrames, [162, 298, 868])
+        XCTAssertTrue(report.actorStateWrites.contains {
+            $0.frame == 870 && $0.actorAddress == 38658
+                && $0.previous == 19 && $0.value == 64
+        })
+    }
+
     func testPrivateObservedNewGameMovementWhenProvided() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let worldPath = environment["SABRE_PRIVATE_WORLD"],

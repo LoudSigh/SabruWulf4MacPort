@@ -21,7 +21,7 @@ public enum CapturedMovementError: Error, LocalizedError {
         case .unsupportedTimeRange:
             "The observed new-game movement slice ends after 110 source-checked frames."
         case .unsupportedRuntimeDivergence:
-            "The measured path stops before an unclassified divergence (R after source frame 866, W/Q after frame 870)."
+            "The measured path stops after source frame 866 on R (unclassified), or frame 870 on W/Q (source contact and injury-state motion are not modeled)."
         }
     }
 }

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "schedule": "restart-ready-w-q-schedule.json",
+  "sourceFramesCompared": 900,
+  "matchingFullRAMFrames": 900,
+  "positiveContactFrame": 868,
+  "injuryKind64EntryFrame": 870,
+  "boundedFourLifeKnockback": {
+    "roomID": 168,
+    "sourceTickCount": 28,
+    "matchingXTicks": 28,
+    "matchingTimerTicks": 28,
+    "firstX": 56,
+    "lastX": 140,
+    "firstTimer": 32,
+    "lastTimer": 60,
+    "sourceXVelocity": 3,
+    "kind": 64,
+    "lifeByte": 4
+  },
+  "limits": "The source X and timer writes may straddle displayed frames. The pure native helper accepts an externally scheduled actor-update event only for these 28 observed ticks. It does not infer contact-to-injury timing, apply life loss, implement other lives/rooms, select knockback direction or continue after timer 60."
+}

@@ -10,7 +10,10 @@
     "matchingRoomAndPositionFrames": 80,
     "lastMatchingSpriteFrame": 850,
     "matchingSpriteFrames": 60,
-    "firstUnclassifiedPositionFrame": 871
+    "firstUnsupportedPositionFrame": 871,
+    "positiveContactFrame": 868,
+    "injuryKind64FirstFrame": 870,
+    "matchingContactRoutineReturns": 2651
   },
-  "limits": "The source path holds W for 18 measured post-setup frames, Q for 42 and then neither. Native movement stops before the unclassified source position difference at frame 871 and withholds its sprite ID after frame 850; this does not establish autonomous enemy interactions or general input reversal."
+  "limits": "The source path holds W for 18 measured post-setup frames, Q for 42 and then neither. A source contact at frame 868 and kind-64 injury state by frame 870 precede the first native position difference at frame 871; the native path stops before unmodeled injury-state movement. Its sprite ID is withheld after frame 850. Temporal ordering does not itself prove a general contact-to-injury delay or autonomous enemy rule."
 }

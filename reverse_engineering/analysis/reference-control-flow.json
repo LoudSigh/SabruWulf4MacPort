@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "measuredRuns": 12,
+  "matchingFullRAMFrames": 7720,
+  "observedEvents": {
+    "executedCalls": 749479,
+    "executedReturns": 819812,
+    "executedTakenJumps": 16660663,
+    "untakenConditionalTransfersExcluded": 2667191,
+    "repeatIterationsExcluded": 1430,
+    "hardwareInterruptEntriesSeparate": 5464
+  },
+  "distinctReachedRAMTargets": {
+    "callEntries": 104,
+    "jumpTargets": 232,
+    "returnTargets": 617
+  },
+  "fetchChecks": {
+    "periodicExtentSamples": 15275,
+    "validatedControlTransferFetchExtents": 20902301
+  },
+  "candidateCallEntryPageBuckets": [
+    {"range": "0xBB00-0xBC00", "observedEntries": 7},
+    {"range": "0xB500-0xB600", "observedEntries": 6},
+    {"range": "0xB800-0xBA00", "observedEntries": 12}
+  ],
+  "single190FrameAudit": {
+    "matchingFullRAMFrames": 190,
+    "ramToRamCalls": 27433,
+    "ramToRamReturns": 29388,
+    "indirectJumps": 1955,
+    "romToRamReturns": 182,
+    "hardwareInterruptEntries": 183,
+    "romToRomCalls": 551,
+    "romToRomReturns": 550,
+    "relativeJumps": 123224,
+    "allTakenJumps": 147232
+  },
+  "limits": "Executed calls, returns and taken jumps are not paired call-stack transitions or complete function counts. Jump-entered code, interrupts and path boundaries may produce unmatched returns; the single-path audit does not prove the cause of the entire twelve-run surplus. The private address-level target inventory, instruction bytes and any disassembly are not published."
+}
