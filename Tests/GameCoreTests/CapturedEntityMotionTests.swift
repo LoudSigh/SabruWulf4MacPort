@@ -6,8 +6,8 @@ final class CapturedEntityMotionTests: XCTestCase {
     private func world() throws -> WorldReference {
         let rooms: [[String: Any]] = (0..<48).map { _ in
             ["placements": [[
-                "graphicAddress": 0x70BC, "x": 80, "y": 136,
-                "widthPixels": 80, "heightPixels": 8,
+                "graphicAddress": 0x70BC, "x": 40, "y": 136,
+                "widthPixels": 120, "heightPixels": 8,
             ]]]
         }
         let data = try JSONSerialization.data(withJSONObject: [
@@ -37,6 +37,11 @@ final class CapturedEntityMotionTests: XCTestCase {
             )
             XCTAssertEqual(second, GridPoint(expectedX + velocity / 16, 135))
         }
+        let late = try CapturedEntityMotion.advanceOnSourceUpdate(
+            kind: 108, room: RoomID(8, 9), from: GridPoint(68, 135),
+            velocityX: -80, velocityY: 80, world: world
+        )
+        XCTAssertEqual(late, GridPoint(63, 135))
     }
 
     func testRejectsUnobservedEntityMotion() throws {
@@ -102,6 +107,37 @@ final class CapturedEntityMotionTests: XCTestCase {
                 checked += 1
             }
         }
-        XCTAssertEqual(checked, 14)
+        if let tracePath = environment["SABRE_PRIVATE_FIRE_EXTENDED_TRACE"],
+           let replayPath = environment["SABRE_PRIVATE_FIRE_EXTENDED_REPLAY"] {
+            let trace = try ReferenceEntityTrace.load(
+                from: Data(contentsOf: URL(fileURLWithPath: tracePath))
+            )
+            let replay = try ReferenceReplay.load(
+                from: Data(contentsOf: URL(fileURLWithPath: replayPath))
+            )
+            try trace.validate(replay: replay)
+            for pair in zip(trace.trace, trace.trace.dropFirst()) {
+                let old = pair.0.fullEmulatorEntity
+                let current = pair.1.fullEmulatorEntity
+                guard pair.1.index >= 220, (108...111).contains(old.kind),
+                      (108...111).contains(current.kind),
+                      old.x != current.x || old.y != current.y else {
+                    continue
+                }
+                let next = try CapturedEntityMotion.advanceOnSourceUpdate(
+                    kind: UInt8(old.kind), room: RoomID(8, 9),
+                    from: GridPoint(old.x, old.y),
+                    velocityX: -80, velocityY: 80, world: source
+                )
+                XCTAssertEqual(
+                    next, GridPoint(current.x, current.y),
+                    "Extended T enemy at frame \(pair.1.index)"
+                )
+                checked += 1
+            }
+            XCTAssertEqual(checked, 17)
+        } else {
+            XCTAssertEqual(checked, 14)
+        }
     }
 }

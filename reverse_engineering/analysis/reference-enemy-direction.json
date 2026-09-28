@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "menuSnapshotSHA256": "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+  "frameBoundaryMode": "reference-relative",
+  "roomID": 152,
+  "entitySlot": 12,
+  "kindRange": [108, 111],
+  "indexRule": "Use source RNG byte low three bits for horizontal direction and source clock byte low three bits for vertical direction. Index 0..3 yields negative velocity -96 + 16*index; 4..7 yields positive velocity 48 + 16*(index-4). A positive X sets kind bit 1, negative X clears it.",
+  "choiceVelocities": [-96, -80, -64, -48, 48, 64, 80, 96],
+  "boundedChoices": [
+    {"schedule": "no-fire-encounter-schedule.json", "frame": 156, "rngByte": 55, "clockByte": 230, "selectedKind": 110, "velocityX": 96, "velocityY": 80, "matchingRAMFrames": 190},
+    {"schedule": "unrelated-a-control-schedule.json", "frame": 156, "rngByte": 28, "clockByte": 230, "selectedKind": 110, "velocityX": 48, "velocityY": 80, "matchingRAMFrames": 190},
+    {"schedule": "fire-before-contact-schedule.json", "frame": 156, "rngByte": 227, "clockByte": 230, "selectedKind": 108, "velocityX": -48, "velocityY": 80, "matchingRAMFrames": 250},
+    {"schedule": "fire-before-contact-schedule.json", "frame": 220, "rngByte": 153, "clockByte": 38, "selectedKind": 108, "velocityX": -80, "velocityY": 80, "matchingRAMFrames": 250}
+  ],
+  "matchingRoutineChoices": 4,
+  "limits": "The eight source direction values match hash-checked private RAM in both user snapshots; only the four listed choices have been observed at the executing slot-12 routine in these bounded replays. The Z80 refresh-register RNG input, system-clock phase, enemy update cadence and autonomous game behavior remain unported. No original table bytes, instructions or private replay frames are committed."
+}

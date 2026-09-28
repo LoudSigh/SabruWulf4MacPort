@@ -16,7 +16,7 @@ public enum CapturedEntityMotion {
     ) throws -> GridPoint {
         guard (108...111).contains(Int(kind)),
               room == RoomID(8, 9),
-              [-48, 48, 96].contains(velocityX),
+              [-80, -48, 48, 96].contains(velocityX),
               velocityY == 80 else {
             throw CapturedEntityMotionError.unsupportedState
         }

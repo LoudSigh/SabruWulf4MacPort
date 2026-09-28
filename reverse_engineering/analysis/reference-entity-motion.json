@@ -12,6 +12,15 @@
     {"schedule": "unrelated-a-control-schedule.json", "inputVelocityX": 48, "inputVelocityY": 80, "firstMove": [92, 130, 95, 135], "matchingMovingUpdates": 4, "observedMovingUpdates": 4},
     {"schedule": "fire-before-contact-schedule.json", "inputVelocityX": -48, "inputVelocityY": 80, "firstMove": [92, 130, 89, 135], "matchingMovingUpdates": 8, "observedMovingUpdates": 8}
   ],
-  "totals": {"matchingMovingUpdates": 14, "observedMovingUpdates": 14},
-  "limits": "This models one *supplied* source enemy-update event, only for the measured kind range, room and three velocities. It does not choose random velocity, decide when to update, move other enemies, apply player contact/damage or generate an autonomous native enemy."
+  "extendedFire": {
+    "schedule": "fire-before-contact-schedule.json",
+    "matchingRAMAndScreenFrames": 250,
+    "secondDirectionFrame": 220,
+    "inputVelocityX": -80,
+    "inputVelocityY": 80,
+    "matchingAdditionalMovingUpdates": 3,
+    "observedAdditionalMovingUpdates": 3
+  },
+  "totals": {"matchingMovingUpdates": 17, "observedMovingUpdates": 17},
+  "limits": "This models one *supplied* source enemy-update event, only for the measured kind range, room and four observed velocities. Direction choice is separately verified for four supplied RNG/clock inputs, but native code still does not create source randomness, decide when to update, move other enemies, apply player contact/damage or generate an autonomous enemy."
 }

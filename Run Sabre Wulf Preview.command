@@ -325,10 +325,58 @@ for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
     else
         mv "$TEMP_CONTACT" "$CONTACT_REPORT"
     fi
+    DIRECTION_REPORT="$ROOT/$PRIVATE/direction-check-$scenario-190.json"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
+        --reference-timing --require-ram-parity --require-enemy-direction-parity \
+        > "$TEMP_CONTACT"
+    if [[ -e "$DIRECTION_REPORT" ]]; then
+        if ! cmp -s "$DIRECTION_REPORT" "$TEMP_CONTACT"; then
+            printf 'Existing private direction comparison differs: %s\n' "$DIRECTION_REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_CONTACT" "$DIRECTION_REPORT"
+    fi
 done
-printf 'Checking a narrow source enemy motion step against three private encounter paths...\n'
+printf 'Checking a second RNG-selected enemy heading on the extended T route...\n'
+EXTENDED_FIRE="$ROOT/$PRIVATE/replay-fire-before-contact-250.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
+    --reference-timing --actor-kind > "$TEMP_COMBAT"
+if [[ -e "$EXTENDED_FIRE" ]]; then
+    if ! cmp -s "$EXTENDED_FIRE" "$TEMP_COMBAT"; then
+        printf 'Existing extended private fire replay differs: %s\n' "$EXTENDED_FIRE" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_COMBAT" "$EXTENDED_FIRE"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$EXTENDED_FIRE"
+EXTENDED_ENTITY="$ROOT/$PRIVATE/trace-fire-before-contact-250.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
+    --trace --reference-timing --require-ram-parity \
+    --require-enemy-direction-parity > "$TEMP_COMBAT_ENTITY"
+if [[ -e "$EXTENDED_ENTITY" ]]; then
+    if ! cmp -s "$EXTENDED_ENTITY" "$TEMP_COMBAT_ENTITY"; then
+        printf 'Existing extended private entity trace differs: %s\n' "$EXTENDED_ENTITY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_COMBAT_ENTITY" "$EXTENDED_ENTITY"
+fi
+printf 'Checking source enemy direction values and seventeen private motion steps...\n'
+if ! SABRE_PRIVATE_MENU_RAM="$ROOT/$PRIVATE/snapshot-${MENU_SHA:0:12}-48k.bin" \
+    SABRE_PRIVATE_GAME_RAM="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-48k.bin" \
+    swift test --filter CapturedEnemyDirectionTests \
+    > "$ROOT/$PRIVATE/enemy-direction-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/enemy-direction-test.log" >&2
+    exit 1
+fi
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
+    SABRE_PRIVATE_FIRE_EXTENDED_TRACE="$EXTENDED_ENTITY" \
+    SABRE_PRIVATE_FIRE_EXTENDED_REPLAY="$EXTENDED_FIRE" \
     swift test --filter 'CapturedEntityMotionTests/testPrivateEnemyMovesAgainstReferenceWhenProvided' \
     > "$ROOT/$PRIVATE/entity-motion-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/entity-motion-test.log" >&2

@@ -12,11 +12,12 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case contactMismatch(frame: Int, predicted: Bool, actual: Bool)
     case injuryMismatch(frame: Int)
     case menuSequenceMismatch
+    case enemyDirectionMismatch(frame: Int)
 
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] | --self-test (source parity flags require reference timing and RAM parity)"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] | --self-test (source parity flags require reference timing and RAM parity)"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -33,6 +34,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "Captured one-life injury transition differs from the source at frame \(frame)"
         case .menuSequenceMismatch:
             "The bounded zero-life menu setup did not follow the verified second-contact timing"
+        case .enemyDirectionMismatch(let frame):
+            "The measured slot-12 RNG direction choice differs from source frame \(frame)"
         }
     }
 }
@@ -125,6 +128,19 @@ private struct MenuSequenceComparison: Encodable {
     let menuReturnRoutineFrame: Int
 }
 
+private struct EnemyDirectionComparison: Encodable {
+    let calls: Int
+    let matchingCalls: Int
+    let frames: [Int]
+}
+
+private struct PendingEnemyDirection {
+    let frame: Int
+    let kind: UInt8
+    let rng: UInt8
+    let clock: UInt8
+}
+
 private struct PendingInjury {
     let expected: CapturedInjuryStep
     let frame: Int
@@ -150,6 +166,7 @@ private struct Report: Encodable {
     let contactComparison: ContactComparison?
     let injuryComparison: InjuryComparison?
     let menuSequence: MenuSequenceComparison?
+    let enemyDirectionComparison: EnemyDirectionComparison?
 }
 
 private func hash(_ data: Data) -> String {
@@ -235,11 +252,12 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...12).contains(arguments.count),
+            guard (5...13).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
-                       "--require-first-injury-parity", "--require-menu-sequence"].contains($0)
+                       "--require-first-injury-parity", "--require-menu-sequence",
+                       "--require-enemy-direction-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
                   let count = Int(arguments[4]), (1...900).contains(count),
@@ -252,7 +270,10 @@ private struct SnapshotDivergence {
                   !options.contains("--require-menu-sequence")
                     || (count >= 800 && options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")
-                        && options.contains("--require-contact-parity")) else {
+                        && options.contains("--require-contact-parity")),
+                  !options.contains("--require-enemy-direction-parity")
+                    || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
             let includeTrace = options.contains("--trace")
@@ -260,6 +281,7 @@ private struct SnapshotDivergence {
             let requireContactParity = options.contains("--require-contact-parity")
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
+            let requireEnemyDirectionParity = options.contains("--require-enemy-direction-parity")
             let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
@@ -315,6 +337,9 @@ private struct SnapshotDivergence {
             var lifeDecrementFrames: [Int] = []
             var menuSetupFrames: [Int] = []
             var menuReturnFrames: [Int] = []
+            var pendingEnemyDirection: PendingEnemyDirection?
+            var enemyDirectionCalls = 0
+            var enemyDirectionFrames: [Int] = []
 
             for frame in 0..<count {
                 let pressed = try segments.first(where: {
@@ -336,6 +361,34 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    if requireEnemyDirectionParity {
+                        if cpu.pc == 0xA5D5, cpu.ix == 0x9792,
+                           memory.read(0x9793) == 152,
+                           (108...111).contains(Int(memory.read(0x9792))) {
+                            pendingEnemyDirection = PendingEnemyDirection(
+                                frame: frame + 1, kind: memory.read(0x9792),
+                                rng: memory.read(0x9695), clock: memory.read(0x5C78)
+                            )
+                        } else if cpu.pc == 0xA5FA, cpu.ix == 0x9792,
+                                  let observed = pendingEnemyDirection {
+                            pendingEnemyDirection = nil
+                            let predicted = try CapturedEnemyDirection.choose(
+                                kind: observed.kind, rngByte: observed.rng,
+                                clockByte: observed.clock
+                            )
+                            enemyDirectionCalls += 1
+                            guard memory.read(0x9792) == predicted.kind,
+                                  Int(Int8(bitPattern: memory.read(0x9798)))
+                                    == predicted.velocityX,
+                                  Int(Int8(bitPattern: memory.read(0x9799)))
+                                    == predicted.velocityY else {
+                                throw DivergenceError.enemyDirectionMismatch(
+                                    frame: observed.frame
+                                )
+                            }
+                            enemyDirectionFrames.append(observed.frame)
+                        }
+                    }
                     if requireMenuSequence {
                         if cpu.pc == 0xAA6A { menuSetupFrames.append(frame + 1) }
                         if cpu.pc == 0xAAAD { menuReturnFrames.append(frame + 1) }
@@ -507,7 +560,8 @@ private struct SnapshotDivergence {
                 throw DivergenceError.ramMismatch(matching: matchingRAMFrames, total: count)
             }
             guard (!requireContactParity || pendingContacts.isEmpty),
-                  (!requireInjuryParity || pendingInjury == nil) else {
+                  (!requireInjuryParity || pendingInjury == nil),
+                  (!requireEnemyDirectionParity || pendingEnemyDirection == nil) else {
                 throw DivergenceError.invalidInput
             }
             if requireMenuSequence {
@@ -547,6 +601,11 @@ private struct SnapshotDivergence {
                         secondContactFrame: positiveContactFrames[1],
                         menuSetupFrame: menuSetupFrames[0],
                         menuReturnRoutineFrame: menuReturnFrames[0]
+                    ) : nil,
+                enemyDirectionComparison: requireEnemyDirectionParity
+                    ? EnemyDirectionComparison(
+                        calls: enemyDirectionCalls, matchingCalls: enemyDirectionCalls,
+                        frames: enemyDirectionFrames
                     ) : nil
             )
             let encoder = JSONEncoder()

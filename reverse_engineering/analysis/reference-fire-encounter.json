@@ -25,12 +25,18 @@
     "frame": 156,
     "initialKind": 108,
     "fireRNG": 227,
+    "fireRNGIndex": 3,
+    "fireSelectedVelocityX": -48,
     "fireKind": 108,
     "noFireRNG": 55,
+    "noFireRNGIndex": 7,
+    "noFireSelectedVelocityX": 96,
     "noFireKind": 110,
     "unrelatedAKeyRNG": 28,
+    "unrelatedAKeyRNGIndex": 4,
+    "unrelatedAKeySelectedVelocityX": 48,
     "unrelatedAKeyKind": 110,
-    "mechanism": "A reference-executed random-direction branch sets kind bit 1 only if the RNG value has bit 7 clear; fire altered the RNG earlier, before this branch."
+    "mechanism": "The source uses the low three RNG bits to choose signed horizontal velocity, then sets enemy-kind bit 1 only for a positive chosen velocity. The T path selects -48 while no-T/A select +96/+48. This is not a branch on bit 7 of the RNG byte itself."
   },
   "firstEnemyPositionDifferenceFrame": 159,
   "unrelatedKeyFirstEnemyPositionDifferenceFrame": 159,
@@ -61,5 +67,5 @@
       "noFirePlayerKind": 65
     }
   ],
-  "limits": "The first T-specific enemy state difference at frame 156 is explained by the already-divergent RNG input to a direction branch, not by evidence of a hit. A also shifts RNG and timing but not that bit-7 branch result, delaying damage six frames. Whether any later T action hits an enemy, damages it or changes score remains unverified; these runs do not establish a native combat rule."
+  "limits": "The first T-specific enemy state difference at frame 156 follows an already-divergent RNG low-three-bit velocity selection, not evidence of a hit. A also shifts RNG and timing but selects a positive velocity like no-T, delaying damage six frames. Whether any later T action hits an enemy, damages it or changes score remains unverified; these runs do not establish a native combat rule."
 }

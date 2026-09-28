@@ -245,7 +245,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   1. Verify all 190 RAM and screen hashes of **each of the three** replays against the unmodified emulator.
   2. Import each replay/trace pair in turn; inspect actor state at frame 146, enemy state at 156, enemy X at 159 and actor/enemy at frames 163–164.
   3. Compare the A-key control at frames 156, 159, 164 and 170, then compare source-free [reference-fire-encounter.json](../reverse_engineering/analysis/reference-fire-encounter.json) checkpoints.
-- **Expected Result**: Input-dependent trajectories match the recorded evidence; the first T-specific enemy-state change is traced to RNG bit 7 at frame 156, after T's RNG diverged at frame 146. An unrelated key changes RNG and encounter timing but takes the no-T direction branch and does not prevent damage through frame 190. The preview stays read-only and native combat is still explicitly unsupported.
+- **Expected Result**: Input-dependent trajectories match the recorded evidence; the first T-specific enemy-state change follows the low-three-bit RNG choice of **signed X velocity** at frame 156, after T's RNG diverged at frame 146. The source tests the chosen velocity sign, **not RNG bit 7**. An unrelated key changes RNG and encounter timing but also chooses positive X like no-T and does not prevent damage through frame 190. The preview stays read-only and native combat is still explicitly unsupported.
 - **Edge Cases / Variants**: Same key held different frame counts, RNG phase changes, different enemy direction, missing private trace and damage-state timing.
 
 ### TC-022: Bottom-anchored player sprite preview
@@ -341,12 +341,23 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Priority**: P1
 - **Preconditions**: Verified version-2 private world and three 190-frame T/no-T/A replay/entity-trace pairs; source `CapturedEntityMotion` available.
 - **Steps**:
-  1. For slot 12 in room 152, feed the observed signed X velocities −48/+48/+96 and Y velocity +80 to the pure source-update helper only on frames when the verified reference entity changes position.
-  2. Compare all changed X/Y values with the full emulator trace: require 8/8 T, 2/2 no-T and 4/4 A updates.
+  1. For slot 12 in room 152, feed observed signed X velocities −48/+48/+96 and Y +80 to the pure source-update helper only on frames when the verified reference entity changes position. Extend T to frame 250 with a second source-selected X velocity of −80.
+  2. Compare all changed X/Y values with the full emulator trace: require 8/8 early T, 3/3 extended T, 2/2 no-T and 4/4 A updates.
   3. Confirm Y moves from 130 to 135 once, then static room collision holds it at 135; reject unsupported kinds, rooms and velocities explicitly.
   4. Ensure the native measured preview still does **not** autonomously spawn entities, choose RNG directions or convert contact directly to damage.
-- **Expected Result**: **14/14** bounded, caller-driven source movement updates match. This proves a per-update motion rule, not enemy AI timing, RNG, all room collisions or a playable combat system.
+- **Expected Result**: **17/17** bounded, caller-driven source movement updates match. This proves a per-update motion rule, not enemy AI timing, RNG generation, all room collisions or a playable combat system.
 - **Edge Cases / Variants**: Unsigned wraparound, non-multiple-of-16 velocities, obstacle boundaries, killed entity kind and changed room.
+
+### TC-031: RNG-supplied enemy direction without a Z80 runtime
+- **Priority**: P1
+- **Preconditions**: SHA-checked private menu/gameplay RAM exports, 48K ROM, and T/no-T/A source encounter schedules.
+- **Steps**:
+  1. Test all eight derived signed velocity values against the bounded, identical direction data in both user captures, without committing source bytes.
+  2. Run `SnapshotDivergence --reference-timing --require-ram-parity --require-enemy-direction-parity` for all three 190-frame paths and extended T to 250.
+  3. Check low-three-bit RNG values 55/28/227/153 and clock values 230/38 yield +96/+48/−48/−80 horizontally and +80 vertically; the horizontal velocity's sign sets or clears enemy-kind bit 1.
+  4. Verify unsupported entity kinds fail and that the native preview does not fabricate RNG data or schedule enemy updates.
+- **Expected Result**: Four observed routine calls and all 250 extended-fire RAM/screen hashes agree with the source. The choice rule is correct for **supplied** values, but source randomness, update cadence and autonomous enemy behavior remain unimplemented.
+- **Edge Cases / Variants**: High RNG bits, signed minimum, source clock offset, zero-life actor state and different entity slot.
 
 ## Regression cadence and coverage
 
