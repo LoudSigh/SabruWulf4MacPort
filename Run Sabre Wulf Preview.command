@@ -168,6 +168,6 @@ printf '\nOpened the native placeholder app, two original static captures, and a
 printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REPLAY"
 printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TRANSITION"
 printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"
-printf 'Import %s for a provisional west exit; independent emulator input diverges after a long idle interval.\n' "$WEST_EXIT"
+printf 'Import %s for a provisional west exit; an enemy changes the independent emulator actor state before late Q.\n' "$WEST_EXIT"
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
 printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'

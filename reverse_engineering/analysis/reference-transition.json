@@ -33,8 +33,9 @@
     "framesCompared": 256,
     "nativeMatchesManualCPUReplay": 256,
     "unmodifiedStepFrameActorMatches": 182,
+    "firstActorStateDivergenceFrame": 163,
     "firstStepFrameActorMismatch": 183,
-    "independentDifference": "After a long no-input interval, the unmodified stepFrame emulator stops responding to Q while fresh-FE manual CPU stepping continues. This path is provisional until the divergence is diagnosed.",
+    "independentDifference": "A moving entity reaches the player in the unmodified emulator at frame 163 but takes a different route in manual CPU stepping. The unmodified player enters damage mode at frame 164, before late Q. Dynamic actor timing remains unported.",
     "checkpoints": [
       {"frame": 225, "roomID": 152, "x": 0, "y": 126},
       {"frame": 226, "roomID": 151, "x": 0, "y": 126},
