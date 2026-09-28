@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "routine": "0xAB36 player/entity contact carry result (not the subsequent damage action)",
+  "frameBoundaryMode": "reference-relative",
+  "scenarios": [
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 190, "matchingRAMFrames": 190, "contactCalls": 608, "matchingContactCalls": 608, "positiveFrames": [162]},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 190, "matchingRAMFrames": 190, "contactCalls": 610, "matchingContactCalls": 610, "positiveFrames": []},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 190, "matchingRAMFrames": 190, "contactCalls": 603, "matchingContactCalls": 603, "positiveFrames": [169]},
+    {"schedule": "upper-exit-schedule.json", "frames": 180, "matchingRAMFrames": 180, "contactCalls": 548, "matchingContactCalls": 548, "positiveFrames": []},
+    {"schedule": "round-trip-schedule.json", "frames": 200, "matchingRAMFrames": 200, "contactCalls": 590, "matchingContactCalls": 590, "positiveFrames": []},
+    {"schedule": "west-exit-schedule.json", "frames": 256, "matchingRAMFrames": 256, "contactCalls": 922, "matchingContactCalls": 922, "positiveFrames": [162]}
+  ],
+  "totals": {"frames": 1206, "matchingRAMFrames": 1206, "contactCalls": 3881, "matchingContactCalls": 3881, "positiveCalls": 3},
+  "predicate": "Uninterpreted player byte 5 must be 0x47, global gate byte zero, room IDs equal and player kind in 16..47. If player X is right of entity X, absolute delta must be strictly less than caller C; if left, strictly less than 12 for kinds below 32 or 28 for kinds 32..47. If player Y is below entity Y, absolute delta must be strictly less than 15; if above, strictly less than caller B.",
+  "limits": "Verified only for calls entering 0xAB36 in these six bounded reference-timed paths. The three positive calls were from entity slot 12; no native entity movement, random decisions, damage delay, life loss, later invulnerability, score or quest progression are implemented by this pure predicate. No original instructions or private RAM/frame data are included."
+}

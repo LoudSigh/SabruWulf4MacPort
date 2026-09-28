@@ -9,11 +9,12 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case stepBudget
     case unimplemented
     case ramMismatch(matching: Int, total: Int)
+    case contactMismatch(frame: Int, predicted: Bool, actual: Bool)
 
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity (requires reference timing and RAM parity)] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -24,6 +25,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "The reference CPU did not implement an instruction in this replay"
         case .ramMismatch(let matching, let total):
             "Only \(matching) of \(total) RAM frames match the unmodified emulator"
+        case .contactMismatch(let frame, let predicted, let actual):
+            "Source contact return at frame \(frame): predicted \(predicted), observed \(actual)"
         }
     }
 }
@@ -92,6 +95,18 @@ private struct RNGWrite: Encodable {
     let value: Int
 }
 
+private struct ContactComparison: Encodable {
+    let calls: Int
+    let matchingCalls: Int
+    let positiveFrames: [Int]
+}
+
+private struct PendingContact {
+    let returnAddress: UInt16
+    let frame: Int
+    let predicted: Bool
+}
+
 private struct Report: Encodable {
     let schemaVersion = 1
     let snapshotSHA256: String
@@ -107,6 +122,7 @@ private struct Report: Encodable {
     let actorStateWrites: [ActorStateWrite]?
     let rngFrames: [Int]?
     let rngWrites: [RNGWrite]?
+    let contactComparison: ContactComparison?
 }
 
 private func hash(_ data: Data) -> String {
@@ -190,17 +206,21 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...9).contains(arguments.count),
+            guard (5...10).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--reference-timing",
-                       "--require-ram-parity"].contains($0)
+                       "--require-ram-parity", "--require-contact-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
-                  let count = Int(arguments[4]), (1...600).contains(count) else {
+                  let count = Int(arguments[4]), (1...600).contains(count),
+                  !options.contains("--require-contact-parity")
+                    || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
             let includeTrace = options.contains("--trace")
             let watchActorState = options.contains("--watch-actor-state")
+            let requireContactParity = options.contains("--require-contact-parity")
             let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
@@ -246,6 +266,10 @@ private struct SnapshotDivergence {
             var rngFrames: [Int] = []
             var rngWrites: [RNGWrite] = []
             var matchingRAMFrames = 0
+            var pendingContacts: [PendingContact] = []
+            var contactCalls = 0
+            var matchingContactCalls = 0
+            var positiveContactFrames: [Int] = []
 
             for frame in 0..<count {
                 let pressed = try segments.first(where: {
@@ -267,6 +291,43 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    if requireContactParity {
+                        if cpu.pc == 0xAB36 {
+                            let other = cpu.ix
+                            let returnAddress = UInt16(memory.read(cpu.sp))
+                                | (UInt16(memory.read(cpu.sp &+ 1)) << 8)
+                            let predicted = CapturedActorContact.overlaps(
+                                playerKind: memory.read(0x9702),
+                                playerRoom: memory.read(0x9703),
+                                playerX: memory.read(0x9705),
+                                playerY: memory.read(0x9706),
+                                playerByte5: memory.read(0x9707),
+                                suppressionFlag: memory.read(0x96B5),
+                                otherRoom: memory.read(other &+ 1),
+                                otherX: memory.read(other &+ 3),
+                                otherY: memory.read(other &+ 4),
+                                playerRightReach: cpu.c,
+                                playerAboveReach: cpu.b
+                            )
+                            pendingContacts.append(PendingContact(
+                                returnAddress: returnAddress,
+                                frame: frame + 1, predicted: predicted
+                            ))
+                        } else if let contact = pendingContacts.last,
+                                  cpu.pc == contact.returnAddress {
+                            pendingContacts.removeLast()
+                            let actual = cpu.f & 1 != 0
+                            contactCalls += 1
+                            guard contact.predicted == actual else {
+                                throw DivergenceError.contactMismatch(
+                                    frame: contact.frame, predicted: contact.predicted,
+                                    actual: actual
+                                )
+                            }
+                            matchingContactCalls += 1
+                            if actual { positiveContactFrames.append(contact.frame) }
+                        }
+                    }
                     let instructionAddress = Int(cpu.pc)
                     let result = cpu.step(
                         read: { memory.read($0) },
@@ -369,6 +430,9 @@ private struct SnapshotDivergence {
             if options.contains("--require-ram-parity"), matchingRAMFrames != count {
                 throw DivergenceError.ramMismatch(matching: matchingRAMFrames, total: count)
             }
+            guard !requireContactParity || pendingContacts.isEmpty else {
+                throw DivergenceError.invalidInput
+            }
             let report = Report(
                 snapshotSHA256: hash(source),
                 romSHA256: hash(rom),
@@ -382,7 +446,12 @@ private struct SnapshotDivergence {
                 trace: includeTrace ? trace : nil,
                 actorStateWrites: watchActorState ? actorStateWrites : nil,
                 rngFrames: watchActorState ? rngFrames : nil,
-                rngWrites: watchActorState ? rngWrites : nil
+                rngWrites: watchActorState ? rngWrites : nil,
+                contactComparison: requireContactParity
+                    ? ContactComparison(
+                        calls: contactCalls, matchingCalls: matchingContactCalls,
+                        positiveFrames: positiveContactFrames
+                    ) : nil
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

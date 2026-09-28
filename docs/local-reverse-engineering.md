@@ -129,7 +129,7 @@ For bounded multi-key schedules, use a source-free JSON file containing sorted, 
 "$OUT/SnapshotReplay" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 --schedule \
   reverse_engineering/analysis/west-exit-schedule.json 256 \
   > reverse_engineering/private/replay-west-exit-256.json
-swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift \
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift Sources/GameCore/*.swift \
   reverse_engineering/tools/SnapshotDivergence.swift -o "$OUT/SnapshotDivergence"
 "$OUT/SnapshotDivergence" --self-test
 "$OUT/SnapshotDivergence" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
@@ -154,6 +154,22 @@ jq '{firstRNGDifference,firstMovingEntityDifference,firstPlayerStateDifference,f
 ```
 
 The divergence tool compares fresh-FE CPU stepping with the unmodified emulator's `stepFrame()` under the same inputs; it emits hashes and selected numeric state, not RAM or instructions. With the original **absolute** frame boundaries, the first RNG, moving-entity, player-state and position differences are frames 101, 102, 163 and 183. The unmodified emulator's `stepFrame()` instead advances 69,888 cycles **from its current cycle count per call**, retaining overshoot between frames. `--reference-timing` matches that boundary and reproduces **256/256 RAM frames** for the west schedule, **200/200** for the round trip and **180/180** for the north exit. `--require-ram-parity` exits nonzero if even one RAM frame differs. `VerifyReferenceReplay` additionally verifies the **actual JSON replay's 256 individual RAM and screen hashes** against the unmodified emulator; it rejects corrupted hashes and legacy absolute-timing reports. The legacy replay output is unchanged unless the new flag is supplied. The old RNG/enemy split was due to frame timing, **not** a keyboard or missing player-action rule. Neither mode establishes tape-boot equivalence or full native enemy simulation. Never publish private replays or original game bytes.
+
+`--require-contact-parity` additionally checks the pure shared `CapturedActorContact` predicate against the source routine's carry result for every call it reaches. It requires both `--reference-timing` and `--require-ram-parity`, and writes its numeric JSON only to ignored private storage:
+
+```sh
+for spec in 'no-fire-encounter 190' 'fire-before-contact 190' \
+            'unrelated-a-control 190' 'upper-exit 180' \
+            'round-trip 200' 'west-exit 256'; do
+  set -- $spec
+  "$OUT/SnapshotDivergence" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+    "reverse_engineering/analysis/$1-schedule.json" "$2" \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    > "reverse_engineering/private/contact-check-$1.json"
+done
+```
+
+The [source-free contact summary](../reverse_engineering/analysis/reference-contact.json) has **3,881/3,881 matching routine returns** and **1,206/1,206 matching complete RAM frames** across six paths. The no-T and west paths produce a positive slot-12 contact at frame 162; unrelated A at frame 169; T produces no positive contact through frame 190. These are earlier than the observed damage-state changes, **not** proof that a simple overlap immediately changes health. The predicate takes the source caller's two radii as inputs, has an asymmetric X bound for player kinds 16–31 versus 32–47, and leaves the meaning of player byte 5 otherwise unclassified. Do not apply damage, score or combat outcomes in the native core based solely on this geometry.
 The optional `--trace` records numeric positions for one moving-entity slot and both player positions per frame. Import `replay-west-exit-256.json` with `west-entity-trace-v2.json` to examine the old timing drift; import `replay-west-reference-256.json` with `west-entity-reference.json` to examine aligned positions. The app rejects frame-count, timing-mode and player-path mismatches. Both pairs remain ignored local data and do not simulate enemies.
 
 For a bounded, source-only actor-state/RNG comparison, add `--watch-actor-state` alongside `--reference-timing --require-ram-parity` for each of the three [pre-contact schedules](../reverse_engineering/analysis/reference-fire-encounter.json), writing the JSON reports **only under `reverse_engineering/private/`**. The diagnostic records changed player and slot-12 kind bytes with the executing instruction address, previous/new numeric value and RNG at that write; it also reports each frame's RNG and the numeric addresses and values of changed RNG writes. It never exports the instruction bytes, disassembly, graphics or complete RAM. The three verified paths first diverge in RNG at frame 146 (T) and frame 147 (A) relative to no fire. A private source check shows the frequent RNG update at `0x99D7` mixes in the Z80 refresh register: in frame 146, the same previous RNG value 177 becomes 235 with T and 212 without T. Replicating source RNG parity in an independent high-level core therefore needs a verified replacement for this instruction-path-sensitive input, not just a byte-state formula. At frame 156 the enemy enters kind 108 in all paths, then the random-direction branch changes it to 110 only in the no-fire/A paths (RNG 55/28); T's RNG is 227 with bit 7 set, so it stays 108. Thus the first enemy-state difference is **not evidence of a sword hit**. This alone does not rule out a later hit; trace collisions, enemy damage and scoring independently before promoting combat behavior into `GameCore`.

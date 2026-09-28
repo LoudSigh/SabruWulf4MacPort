@@ -259,6 +259,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Source mask rows are reversed for screen orientation and bottom-aligned at actor Y; the verifier finds 489/500 exact frame rectangles and 173,348/173,472 matching white/off pixels. W frames 43–53 remain explicitly qualified: 48 bit-and-white, 76 white-only and 16 additional bit-only disagreements have an unresolved cause. The white overlay shows a recorded silhouette only when the matching private atlas and state exist; it never becomes native animation or combat.
 - **Edge Cases / Variants**: Empty pointer sentinel, invalid actor ID, missing private atlas, recorded room different from selected room, small windows and other platforms' file providers.
 
+### TC-023: Source contact carry versus native predicate
+- **Priority**: P0
+- **Preconditions**: Verified 48K gameplay snapshot and ROM, `SnapshotDivergence` compiled with `SpeccyCore` and `GameCore`, six published source-free input schedules.
+- **Steps**:
+  1. Run each schedule with `--reference-timing --require-ram-parity --require-contact-parity`; keep detailed JSON only in the ignored private directory.
+  2. Check [reference-contact.json](../reverse_engineering/analysis/reference-contact.json) counts and positive-call frames, including no-T/west 162, A 169 and no positives on the T path.
+  3. Exercise synthetic core tests for strict unequal thresholds, player kind 16/31 versus 32/47, room mismatch, byte-5 guard and nonzero suppression gate.
+  4. Compare contact frame 162 against damage state at 164 (and A contact 169 against damage 170); verify the native movement preview still does not invent life loss or enemy AI.
+- **Expected Result**: All **3,881** called contact returns match the pure predicate while all **1,206** RAM frames match the unmodified emulator. This is a contact check, not an implementation of enemy movement or delayed damage.
+- **Edge Cases / Variants**: Rejected timing modes, missing or corrupted ROM, an unsupported key schedule, next-room entity and active attack player kind.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |
