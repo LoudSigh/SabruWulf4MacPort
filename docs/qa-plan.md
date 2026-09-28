@@ -231,11 +231,11 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Preconditions**: `SnapshotRoomIndex --private-map` has generated the private world and background atlas from both verified captures.
 - **Steps**:
   1. Import the matching world, then `snapshot-803e4197989c-background-atlas-v1.json`.
-  2. Visit several world positions and confirm native mint 1-bit shapes align with orange measured bounds; compare the captured room's placement coordinates.
+  2. Visit several world positions and confirm native mint 1-bit shapes align with orange measured bounds; source Y=136/height=56 begins at the screen top, and E/down moves the actor marker toward the screen bottom.
   3. Toggle the approximate attribute-color preview; verify synthetic ink/paper/bright/FLASH-bit tests, but do not claim screen parity.
   4. Import local PNG backgrounds as well, then replace the world. Check that source atlas precedence is clear and stale art/atlas data is removed when world data changes.
   5. Attempt a modified bitmap byte, a malformed attribute header, an oversized file and an atlas missing one of 41 referenced records.
-- **Expected Result**: The importer verifies 41 unique background records, 9,686 source bytes and all 919 references. Invalid data reports an error, with no silent fallback to invented bitmaps. Optional standard 48K attribute colors are clearly approximate; FLASH timing, transparency and full-scene sprite compositing remain unimplemented. No original pixels are bundled or pushed.
+- **Expected Result**: The importer verifies 41 unique background records, 9,686 source bytes and all 919 references. Invalid data reports an error, with no silent fallback to invented bitmaps. Bitmap placement and actor markers convert source bottom-origin Y consistently. Optional standard 48K attribute colors are clearly approximate; FLASH timing, transparency and full-scene sprite compositing remain unimplemented. No original pixels are bundled or pushed.
 - **Edge Cases / Variants**: Multi-placement overlap, 4:3 resizing, VoiceOver room summary and iOS/visionOS private file access.
 
 ## Regression cadence and coverage

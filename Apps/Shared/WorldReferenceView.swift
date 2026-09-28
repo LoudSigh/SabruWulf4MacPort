@@ -299,7 +299,7 @@ struct WorldReferenceView: View {
                                     .position(
                                         x: (CGFloat(placement.x) + CGFloat(width) / 2)
                                             * area.size.width / 256,
-                                        y: (CGFloat(placement.y) + CGFloat(height) / 2)
+                                        y: (screenY(placement.y) - CGFloat(height) / 2)
                                             * area.size.height / 192
                                     )
                             }
@@ -311,7 +311,7 @@ struct WorldReferenceView: View {
                                 .position(
                                     x: CGFloat(position.x)
                                         * area.size.width / 256,
-                                    y: CGFloat(position.y)
+                                    y: screenY(position.y)
                                         * area.size.height / 192
                                 )
                                 .accessibilityLabel("Recorded player position")
@@ -322,7 +322,7 @@ struct WorldReferenceView: View {
                                 .frame(width: 16, height: 16)
                                 .position(
                                     x: CGFloat(position.x) * area.size.width / 256,
-                                    y: CGFloat(position.y) * area.size.height / 192
+                                    y: screenY(position.y) * area.size.height / 192
                                 )
                                 .accessibilityLabel("Measured movement position")
                         }
@@ -583,7 +583,8 @@ struct WorldReferenceView: View {
                     )
                     .position(
                         x: (CGFloat(placement.x) + CGFloat(mask.width) / 2) * size.width / 256,
-                        y: (CGFloat(placement.y) + CGFloat(mask.height) / 2) * size.height / 192
+                        y: (screenY(placement.y) - CGFloat(mask.height) / 2)
+                            * size.height / 192
                     )
             case .failure(let error):
                 Text(error.localizedDescription)
@@ -601,7 +602,8 @@ struct WorldReferenceView: View {
                 .blendMode(.screen)
                 .position(
                     x: (CGFloat(placement.x) + graphic.size.width / 8) * size.width / 256,
-                    y: (CGFloat(placement.y) + graphic.size.height / 8) * size.height / 192
+                    y: (screenY(placement.y) - graphic.size.height / 8)
+                        * size.height / 192
                 )
         } else {
             Circle()
@@ -609,7 +611,7 @@ struct WorldReferenceView: View {
                 .frame(width: 7, height: 7)
                 .position(
                     x: (CGFloat(placement.x) + 4) * size.width / 256,
-                    y: (CGFloat(placement.y) + 4) * size.height / 192
+                    y: (screenY(placement.y) - 4) * size.height / 192
                 )
         }
     }
@@ -638,10 +640,14 @@ struct WorldReferenceView: View {
                 .frame(width: 10, height: 10)
                 .position(
                     x: CGFloat(marker.x) * size.width / 256,
-                    y: CGFloat(marker.y) * size.height / 192
+                    y: screenY(marker.y) * size.height / 192
                 )
                 .accessibilityLabel(label)
         }
+    }
+
+    private func screenY(_ sourceY: Int) -> CGFloat {
+        CGFloat(SpectrumCoordinates.screenY(forSourceY: sourceY))
     }
 
     private func roomSummary(template: Int, placements: Int) -> String {
