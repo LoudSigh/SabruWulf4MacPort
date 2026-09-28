@@ -64,12 +64,25 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(state.frame, 19)
     }
 
+    func testReversalOnlySwitchesAtMeasuredFrame18() throws {
+        var state = try CapturedMovementState(
+            world: world(), origin: .observedNewGameReady
+        )
+        for _ in 0..<17 { try state.advance(holding: [.right]) }
+        XCTAssertThrowsError(try state.advance(holding: [.left]))
+        try state.advance(holding: [.right])
+        try state.advance(holding: [.left])
+        XCTAssertThrowsError(try state.advance(holding: [.right]))
+        XCTAssertEqual(state.frame, 19)
+    }
+
     func testPrivateMixedNewGamePathWhenProvided() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let worldPath = environment["SABRE_PRIVATE_WORLD"],
               let replayPath = environment["SABRE_PRIVATE_NEW_GAME_MIXED_REPLAY"] else {
             throw XCTSkip("Set private world and W/E post-setup replay for mixed parity")
         }
+
         let source = try WorldReference.load(
             from: Data(contentsOf: URL(fileURLWithPath: worldPath))
         )
@@ -96,6 +109,48 @@ final class CapturedMovementTests: XCTestCase {
                 XCTAssertNil(state.playerSpriteID)
             }
         }
+    }
+
+    func testPrivateReversedNewGamePathWhenProvided() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let worldPath = environment["SABRE_PRIVATE_WORLD"],
+              let replayPath = environment["SABRE_PRIVATE_NEW_GAME_REVERSE_REPLAY"] else {
+            throw XCTSkip("Set private world and W/Q post-setup replay")
+        }
+        let source = try WorldReference.load(
+            from: Data(contentsOf: URL(fileURLWithPath: worldPath))
+        )
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: replayPath))
+        )
+        XCTAssertEqual(replay.frames.count, 900)
+        var state = try CapturedMovementState(
+            world: source, origin: .observedNewGameReady
+        )
+        for sourceIndex in 790..<870 {
+            let input: Set<OriginalAction> = sourceIndex < 808 ? [.right]
+                : sourceIndex < 850 ? [.left] : []
+            try state.advance(holding: input)
+            let expected = replay.frames[sourceIndex]
+            guard state.room.y * 16 + state.room.x == expected.playerRoomID,
+                  state.player == GridPoint(expected.playerX, expected.playerY) else {
+                return XCTFail("W/Q position first diverges at frame \(expected.index)")
+            }
+            if expected.index <= 850 {
+                XCTAssertEqual(
+                    state.playerSpriteID, expected.playerKind,
+                    "W/Q sprite at frame \(expected.index)"
+                )
+            } else {
+                XCTAssertNil(state.playerSpriteID)
+            }
+        }
+        XCTAssertThrowsError(try state.advance()) { error in
+            guard case CapturedMovementError.unsupportedRuntimeDivergence = error else {
+                return XCTFail("Expected bounded W/Q divergence, got \(error)")
+            }
+        }
+        XCTAssertEqual(state.frame, 80)
     }
 
     func testPrivateObservedNewGameMovementWhenProvided() throws {

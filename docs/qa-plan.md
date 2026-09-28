@@ -414,6 +414,28 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: **74/74** consecutive source-backed states match without using an emulator in the core.
 - **Edge Cases / Variants**: Countdown/movement split across frames, same-frame countdown before movement, timer-expiry branch choice and stale actor bytes after removal.
 
+### TC-037: Bounded post-setup W/Q reversal
+- **Priority**: P1
+- **Preconditions**: Private version-2 world, 48K ROM/gameplay snapshot and source-free W/Q restart schedule.
+- **Steps**:
+  1. Produce a 900-frame reference-relative source replay and require all 900 RAM/screen hashes to match the independent emulator.
+  2. Run the native movement state from the frame-790 ready origin; hold W for 18 measured frames, Q for 42, then no input.
+  3. Compare room/X/Y for frames 791–870 and sprite ID for 791–850; require unknown idle sprite IDs to be withheld.
+  4. Attempt the next frame and require an explicit unsupported-runtime-divergence error instead of extending the path by guesswork.
+- **Expected Result**: **80/80** positions and **60/60** sprite IDs match; source frame 871 remains unclassified.
+- **Edge Cases / Variants**: Reverse earlier/later than frame 808, wall collision, source enemy contact and idle animation after releasing Q.
+
+### TC-038: Keep observed instruction extents separate from permanent code
+- **Priority**: P1
+- **Preconditions**: SHA-checked private gameplay snapshot/ROM, isolated CPU fetch probe and T/no-T/A 190-frame schedules.
+- **Steps**:
+  1. Check synthetic prefix/HALT fetch lengths; replay all three paths with reference-relative complete RAM parity.
+  2. Union fetched RAM byte extents and require 3,593 unique addresses with no overlap with validated immutable game data.
+  3. Confirm the two addresses whose fetched values changed stay marked as possible mutable code; do not publish bytes, address lists or disassembly.
+  4. Ensure [byte-coverage.json](../reverse_engineering/analysis/byte-coverage.json) retains its static unknown classification instead of treating three paths as complete program coverage.
+- **Expected Result**: 570/570 RAM frames pass, 16,381 originally unknown bytes remain outside the observed candidate-code union, and no immutable code/data partition is claimed.
+- **Edge Cases / Variants**: Self-modifying instructions, prefixed operands, unexecuted branches, ROM-only fetches and shared bytes used differently at another time.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

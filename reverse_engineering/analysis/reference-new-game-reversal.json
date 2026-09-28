@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "schedule": "restart-ready-w-q-schedule.json",
+  "matchingRAMAndScreenFrames": 900,
+  "nativeSlice": {
+    "startSourceFrame": 791,
+    "lastMatchingPositionFrame": 870,
+    "matchingRoomAndPositionFrames": 80,
+    "lastMatchingSpriteFrame": 850,
+    "matchingSpriteFrames": 60,
+    "firstUnclassifiedPositionFrame": 871
+  },
+  "limits": "The source path holds W for 18 measured post-setup frames, Q for 42 and then neither. Native movement stops before the unclassified source position difference at frame 871 and withholds its sprite ID after frame 850; this does not establish autonomous enemy interactions or general input reversal."
+}

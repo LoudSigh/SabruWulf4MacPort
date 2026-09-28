@@ -106,6 +106,8 @@ struct WorldReferenceView: View {
                                 .font(.caption)
                             Text("One measured direction change is also supported: W for 18 frames, E for 42, then None for 50. Position matches through frame 900; the pink bitmap ID is hidden after frame 866 because its later phase is unverified.")
                                 .font(.caption)
+                            Text("A bounded reversal is supported: W for 18 frames, Q for 42, then None for 20. Position matches through frame 870; the sprite ID is hidden after frame 850, and playback stops before the unexplained frame-871 difference.")
+                                .font(.caption)
                             if let replay, replay.frames.count < 900 {
                                 Text("This shorter replay cannot compare the full post-setup slice; import the private 900-frame late-W replay.")
                                     .font(.caption)

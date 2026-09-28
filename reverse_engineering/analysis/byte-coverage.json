@@ -37,5 +37,13 @@
   ],
   "candidateInstructionStartsInIsolatedGameplayTrace": 1422,
   "candidateInstructionStartsClassifiedAsCode": false,
+  "observedExecutedByteExtents": {
+    "scope": "Three reference-relative 190-frame encounter paths; candidate code within the static unknown category",
+    "distinctFetchedRAMBytes": 3593,
+    "unknownBytesNotObservedAsFetchedCode": 16381,
+    "fetchedAddressesWithMultipleValues": 2,
+    "immutableDataOverlaps": 0,
+    "evidence": "reference-fetched-code-extents.json"
+  },
   "note": "Display, world layout/rooms, all 41 contiguous background bitmap-plus-attribute records, the sprite pointer table and its 153 sprite targets are classified. Five gaps between sprite records and remaining RAM stay unknown. PC starts are not complete instruction boundaries. No source bytes, images or disassembly are included."
 }

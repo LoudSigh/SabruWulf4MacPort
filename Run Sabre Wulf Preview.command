@@ -762,12 +762,40 @@ if [[ -e "$MIXED_SCREEN" ]]; then
 else
     mv "$TEMP_READY_SCREEN" "$MIXED_SCREEN"
 fi
+printf 'Checking a bounded W-then-Q reversal after new-game setup...\n'
+REVERSE_SCHEDULE=reverse_engineering/analysis/restart-ready-w-q-schedule.json
+REVERSE_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-w-q-900.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule "$REVERSE_SCHEDULE" 900 --reference-timing --actor-kind \
+    > "$TEMP_MENU"
+if [[ -e "$REVERSE_REPLAY" ]]; then
+    if ! cmp -s "$REVERSE_REPLAY" "$TEMP_MENU"; then
+        printf 'Existing private W/Q replay differs: %s\n' "$REVERSE_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU" "$REVERSE_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$REVERSE_REPLAY" \
+    --menu "$MENU" 503
+REVERSE_PARITY="$ROOT/$PRIVATE/restart-ready-reverse-ram-900.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 900 \
+    --reference-timing --require-ram-parity > "$TEMP_MENU_CONTACT"
+if [[ -e "$REVERSE_PARITY" ]]; then
+    if ! cmp -s "$REVERSE_PARITY" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private W/Q RAM comparison differs: %s\n' "$REVERSE_PARITY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$REVERSE_PARITY"
+fi
 printf 'Checking the native post-setup room, position and sprite ID against all four paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY_DIR="$ROOT/$PRIVATE" \
     SABRE_PRIVATE_NEW_GAME_MIXED_REPLAY="$MIXED_REPLAY" \
-    swift test --filter 'CapturedMovementTests/testPrivate(ObservedNewGameMovementWhenProvided|MixedNewGamePathWhenProvided)' \
+    SABRE_PRIVATE_NEW_GAME_REVERSE_REPLAY="$REVERSE_REPLAY" \
+    swift test --filter 'CapturedMovementTests/testPrivate(ObservedNewGameMovementWhenProvided|MixedNewGamePathWhenProvided|ReversedNewGamePathWhenProvided)' \
     > "$ROOT/$PRIVATE/new-game-movement-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-movement-test.log" >&2
     exit 1

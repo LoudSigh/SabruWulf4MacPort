@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "method": "Isolated private CPU copy records exact instruction fetch byte extents, including prefixes; synthetic fetch checks and full emulator RAM parity are required.",
+  "paths": [
+    {"schedule": "fire-before-contact-schedule.json", "frames": 190, "distinctFetchedRAMBytes": 3245},
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 190, "distinctFetchedRAMBytes": 3383},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 190, "distinctFetchedRAMBytes": 3426}
+  ],
+  "threePathUnion": {
+    "distinctFetchedRAMBytes": 3593,
+    "overlapWithValidatedImmutableData": 0,
+    "addressesWithMultipleFetchedValuesPerPath": 2,
+    "addressesWithDifferentFetchedValueSetsByPath": 0,
+    "originallyUnknownBytesOutsideThisObservedUnion": 16381,
+    "matchingFullRAMFrames": 570
+  },
+  "limits": "These are executed candidate code extents in three paths, not a complete or immutable code classification. Two fetched byte positions vary during each replay. The instruction bytes, fetched addresses and any disassembly remain private; unexecuted paths, overlays and the 16,381 other unknown bytes are unclassified."
+}
