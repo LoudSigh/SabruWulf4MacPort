@@ -41,3 +41,16 @@ git check-ignore reverse_engineering/private/gameplay-9000-bfff-unverified.dis
 This **blind pass also interprets data as instructions**. Its labels and any self-modifying-code warnings are not proof of actual code or behavior. Confirm routines against the executed-PC trace, RAM writes and future controlled input captures before naming them. Neither private listing nor raw exported RAM belongs in a commit or pull request; public analysis should contain only derived hashes, numeric metadata and independently worded findings.
 
 The current local analysis exported the complete 49,152-byte RAM image into `reverse_engineering/private/` and produced two **private, unverified** passes: a `6000-FFFF` listing (33,343 lines) and a focused `9000-BFFF` listing (8,654 lines). Both remain ignored, and neither is being treated as proof that every byte is an instruction. A candidate ULA pulse/delay segment observed around the menu snapshot PC is described only at a high level in [functions.json](../reverse_engineering/analysis/functions.json), not reproduced as assembly.
+
+## Private, bounded input comparison
+
+`SnapshotReplay.swift` schedules one keyboard key at frame index 20 and releases it at index 40, with a 48K IM1 boundary at 69,888 cycles. It reads the FE keyboard matrix on **every** I/O read rather than relying on a frozen emulator time counter. It records numeric instruction/read/write counts and frame hashes, no screen pixels or original code:
+
+```sh
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift reverse_engineering/tools/SnapshotReplay.swift -o "$OUT/SnapshotReplay"
+"$OUT/SnapshotReplay" --self-test
+"$OUT/SnapshotReplay" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 none 100 > reverse_engineering/private/replay-none-100.json
+"$OUT/SnapshotReplay" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 q 100 > reverse_engineering/private/replay-q-100.json
+```
+
+Valid keys: `q`, `a`, `o`, `p`, `space`; `none` is the comparison baseline. A second Q run matched the first's output byte-for-byte. The [public summary](../reverse_engineering/analysis/reference-replay.json) only contains scenario hashes and first divergent frames. This is **not** a cycle-accurate emulator: peripheral I/O beyond the keyboard, ULA contention, tape and audio are incomplete. Do not infer definitive player controls, sword behavior or world transitions merely from changed hashes. Compare visually and with the user's working emulator before promoting any behavior to a faithful core test.

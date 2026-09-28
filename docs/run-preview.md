@@ -14,6 +14,7 @@ Allow the first build to finish. The launcher checks the hashes of your existing
 - **Browser:** a **private 16×16 world-type overview**, derived from the two matching snapshots. Repeated numbers/colors identify reusable room templates, not full original room art. It is structural and not playable.
 - **SabreWulfMac:** a **separately built, interactive prototype** with independently authored maze, movement, items and enemies. Use the on-screen arrows (or keyboard arrows/WASD), Pause and Reset. These mechanics and visuals are placeholders, **not** a finished recreation of the 1984 game.
 - **Inside SabreWulfMac:** expand “Explore source-backed 16 × 16 world (read-only)” below the prototype controls, click “Import your private world data”, and select `reverse_engineering/private/snapshot-803e4197989c-world.json`. You can browse all 256 original room positions and their placement markers independently of the placeholder maze. This is *not* original gameplay or original artwork.
+- If you have already made a permitted local copy of the backgrounds, choose “Preview private background images” and select `SNAPSHOTS/backgrounds/`. The preview is **optional**, partial and approximately blended; the app never bundles those PNGs.
 
 Use **Command-Tab** to switch between the app and Preview. The images, compiled local snapshot exporter, logs and build products remain under `reverse_engineering/private/`, which Git ignores. Never stage or distribute those outputs or the supplied media.
 

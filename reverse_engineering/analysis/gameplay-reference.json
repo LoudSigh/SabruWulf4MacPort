@@ -40,7 +40,7 @@
   },
   "limitations": [
     "Snapshots verify two 48K visual states and their RAM difference, not the path taken between them.",
-    "The tested reference emulator resumed into ROM by frame 1 and did not preserve gameplay after 50 frames; this is not a verified dynamic gameplay replay.",
+    "An earlier PC-at-frame-boundary sample misleadingly appeared to remain in ROM. A separate 100-frame probe executed thousands of game instructions per frame and produced input-dependent screen hashes, but does not yet prove cycle-accurate original behavior.",
     "No equivalence to original TZX loaded bytes, instruction/data coverage or publication rights established."
   ]
 }

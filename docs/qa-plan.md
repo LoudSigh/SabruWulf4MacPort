@@ -43,6 +43,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: The first two steps yield the baseline counts in `gameplay-reference.json`; otherwise the source revision has changed. The third step remains unresolved until gameplay actually advances under controlled inputs.
 - **Edge Cases / Variants**: Snapshot taken during interrupt, display FLASH and RAM self-modification.
 
+### TC-002C: Input-driven reference replay diagnostic
+- **Priority**: P0
+- **Preconditions**: SHA-verified in-game snapshot and 48K ROM; private `SnapshotReplay` built against the local backup.
+- **Steps**:
+  1. Run 100 frames without input and with Q held during frame indexes 20–39; repeat the Q run.
+  2. Compare per-frame hashes and count RAM CPU steps and FE reads, not only the PC at the frame boundary.
+  3. Repeat with A/O/P/Space, then validate observed effects against a functioning independent emulator.
+- **Expected Result**: Repeated Q run has identical JSON and diverges from no-input after the scheduled key press. Input-dependent hashes are not promoted to golden gameplay rules until the independently observed actions agree.
+- **Edge Cases / Variants**: Cached FE reads, incomplete port simulation, interrupt reentry, ROM timing and snapshot phase.
+
 ### TC-003: Native gameplay regression
 - **Priority**: P0
 - **Preconditions**: Source-backed room, entity and rule contracts from TC-002; authorized local imported assets where needed.
@@ -80,6 +90,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. Import a truncated file, an invalid 49th room type and a file claiming another snapshot hash.
 - **Expected Result**: The grid shows 256 selectable positions and the selected template's placement count/markers; navigation stops at world bounds. Invalid files show an error. The separate placeholder gameplay state is unchanged.
 - **Edge Cases / Variants**: Move the private file to iOS/visionOS through an authorized Files provider; verify keyboard/VoiceOver focus and labels. This is source structure, not verified original movement or collision.
+
+### TC-007: Optional private background overlay
+- **Priority**: P2
+- **Preconditions**: TC-006 source world imported; authorized local background PNG directory supplied outside the app bundle.
+- **Steps**:
+  1. Choose “Preview private background images” and select the directory.
+  2. Visit a room with several placements, then another room with missing artwork.
+  3. Try an empty folder and a folder with malformed or oversized files.
+- **Expected Result**: Available local images appear at source coordinates; missing addresses retain markers and the displayed count reports partial coverage. An empty folder reports an error, not success. Artwork is not copied into the app or repository and gameplay state remains unchanged.
+- **Edge Cases / Variants**: Files-provider access expiry, macOS Retina versus iOS image scaling, VoiceOver labels and performance with 41 images.
 
 ## Regression cadence and coverage
 
