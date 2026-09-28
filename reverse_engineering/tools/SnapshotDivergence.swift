@@ -24,7 +24,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1500> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -367,7 +367,7 @@ private struct SnapshotDivergence {
                        "--require-enemy-direction-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
-                  let count = Int(arguments[4]), (1...900).contains(count),
+                  let count = Int(arguments[4]), (1...1500).contains(count),
                   !options.contains("--require-contact-parity")
                     || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")),
@@ -604,17 +604,32 @@ private struct SnapshotDivergence {
                         if cpu.pc == 0xAAAD { menuReturnFrames.append(frame + 1) }
                     }
                     if requireInjuryParity {
-                        if cpu.pc == 0xAA10,
-                           memory.read(0x9702) == 65,
-                           memory.read(0x96BD) == 1 {
-                            let expected = try CapturedFirstInjuryTick.advance(
-                                kind: memory.read(0x9702),
-                                timer: memory.read(0x9704),
-                                lifeByte: memory.read(0x96BD)
-                            )
-                            pendingInjury = PendingInjury(
-                                expected: expected, frame: frame + 1
-                            )
+                        if cpu.pc == 0xAA10 {
+                            let kind = memory.read(0x9702)
+                            let life = memory.read(0x96BD)
+                            let expected: CapturedInjuryStep?
+                            if kind == 65, (1...4).contains(Int(life)) {
+                                expected = try CapturedFirstInjuryTick.advance(
+                                    kind: kind, timer: memory.read(0x9704),
+                                    lifeByte: life
+                                )
+                            } else if kind == 69, life == 1,
+                                      memory.read(0x9703) == 168,
+                                      memory.read(0x9705) == 56,
+                                      memory.read(0x9706) == 112 {
+                                expected = try CapturedFinalInjuryTick.advance(
+                                    kind: kind, timer: memory.read(0x9704),
+                                    lifeByte: life, room: RoomID(8, 10),
+                                    x: 56, y: 112
+                                )
+                            } else {
+                                expected = nil
+                            }
+                            if let expected {
+                                pendingInjury = PendingInjury(
+                                    expected: expected, frame: frame + 1
+                                )
+                            }
                         } else if let injury = pendingInjury,
                                   cpu.pc == (injury.isTerminal ? 0xAA45 : 0xAA57) {
                             pendingInjury = nil
@@ -715,7 +730,9 @@ private struct SnapshotDivergence {
                                     ))
                                 }
                             }
-                            if watchPlayerState && (0x9702...0x9709).contains(address) {
+                            if watchPlayerState
+                                && ((0x9702...0x9709).contains(address)
+                                    || address == 0x96BD) {
                                 let previous = memory.read(address)
                                 if previous != value {
                                     playerStateWrites.append(EntityStateWrite(

@@ -4,7 +4,7 @@
   "frameBoundaryMode": "reference-relative",
   "framesPerRun": 600,
   "firstInjuryRoutine": {
-    "scope": "Only source kind 65 with timer 1..63 and life byte exactly 1; one source actor-update tick, not one display frame",
+    "scope": "This file's three 600-frame paths verify source kind 65 with timer 1..63 and life byte 1. A separate 1500-frame restarted path also verifies life bytes 4, 3 and 2; see reference-new-game-injury.json. One source actor-update tick is not one display frame.",
     "timerAtKind65Entry": 63,
     "sourceUpdatesPerFirstInjury": 63,
     "matchingUpdatesAcrossThreeRuns": 189,

@@ -440,14 +440,14 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 
 ### TC-039: Source-driven four-life injury knockback
 - **Priority**: P1
-- **Preconditions**: Verified W/Q 900-frame replay, ignored private player-write report and life byte 4 from the captured new-game setup.
+- **Preconditions**: Verified W/Q 900-frame replay, extended 1,500-frame private player-write report and life byte 4 from the captured new-game setup.
 - **Steps**:
-  1. Require 900/900 complete reference RAM frames and confirm the observed contact at 868 and kind-64 onset at 870.
+  1. Require 1,500/1,500 complete reference RAM frames and confirm the observed contact at 868 and kind-64 onset at 870.
   2. Pair the source X writes with the subsequent timer writes by execution-cycle order, not display-frame number.
-  3. Supply each observed actor tick to `CapturedNewGameInjuryTick` and compare all 28 X results (56→140) and all 28 timer results (32→60).
-  4. Reject other lives, rooms, timers and a further tick after timer 60; do not schedule native injury from contact by guesswork.
-- **Expected Result**: **28/28** source X/timer tick pairs match; native gameplay remains explicitly bounded before injury-state movement.
-- **Edge Cases / Variants**: Frame boundary between writes, obstacle response after X=140, contact-to-injury latency and one-life kind-65 path.
+  3. Supply each observed actor tick to `CapturedNewGameInjuryTick` and compare all 45 X results (56→191) and all 45 timer results (32→77), then kind 64→65/timer 63.
+  4. Reject other lives, rooms, timers and a further unverified kind-64 tick after timer 77; do not schedule native injury from contact by guesswork.
+- **Expected Result**: **45/45** source X/timer tick pairs match; native gameplay remains explicitly bounded before injury-state movement.
+- **Edge Cases / Variants**: Frame boundary between writes, obstacle response after X=191, contact-to-injury latency and one-life kind-65 path.
 
 ### TC-040: Control transfers are not a complete function inventory
 - **Priority**: P1
@@ -481,6 +481,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   4. Reject contact false and all unsupported states. Keep polling cadence and subsequent kind-64 onset external.
 - **Expected Result**: **4/4** bounded source arming writes match without asserting a fixed display-frame damage delay.
 - **Edge Cases / Variants**: Contact at a display-frame boundary, repeat contact during injury, other life counts and a source contact predicate with no player damage.
+
+### TC-043: Multiple captured kind-65 life countdowns
+- **Priority**: P1
+- **Preconditions**: Verified 1,500-frame restarted W/Q source run, private player-write report and known-hash ROM/snapshot.
+- **Steps**:
+  1. Require 1,500/1,500 full RAM frames and source kind-65 entry at frame 918 after four-life knockback.
+  2. Check 252/252 source kind-65 actor updates at life-byte changes 231 (1→0 before restart), 983 (4→3), 1131 (3→2) and 1317 (2→1), plus 63/63 kind-69 updates through the final 1499 (1→0).
+  3. Assert kind-65/timer 1 yields kind 17/timer 0/life decremented for life bytes 1–4; reject timer outside 1–63 or life outside 1–4.
+  4. Check the separately gated `CapturedFinalInjuryTick` kind-69/timer-1 terminal transition to kind 21/timer 0/life 0 at frame 1499; do not infer a menu-return timer.
+- **Expected Result**: **315/315** bounded actor updates match without imposing display-frame cadence or claiming a complete game-over rule.
+- **Edge Cases / Variants**: Cross-frame terminal write ordering, preceding kind-64 duration, different starting life and kind-69 final defeat.
 
 ## Regression cadence and coverage
 

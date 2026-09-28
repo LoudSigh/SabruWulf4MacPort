@@ -817,7 +817,7 @@ if [[ -e "$REVERSE_PARITY" ]]; then
 else
     mv "$TEMP_MENU_CONTACT" "$REVERSE_PARITY"
 fi
-REVERSE_PLAYER_WRITES="$ROOT/$PRIVATE/restart-ready-w-q-player-writes-900.json"
+REVERSE_PLAYER_WRITES="$ROOT/$PRIVATE/restart-ready-w-q-player-writes-v2-900.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 900 \
     --reference-timing --require-ram-parity --watch-player-state \
     > "$TEMP_MENU_CONTACT"
@@ -828,6 +828,18 @@ if [[ -e "$REVERSE_PLAYER_WRITES" ]]; then
     fi
 else
     mv "$TEMP_MENU_CONTACT" "$REVERSE_PLAYER_WRITES"
+fi
+REVERSE_LONG_INJURY="$ROOT/$PRIVATE/restart-ready-w-q-full-injury-1500.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 1500 \
+    --reference-timing --require-ram-parity --require-first-injury-parity \
+    --watch-player-state > "$TEMP_MENU_CONTACT"
+if [[ -e "$REVERSE_LONG_INJURY" ]]; then
+    if ! cmp -s "$REVERSE_LONG_INJURY" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private four-life injury comparison differs: %s\n' "$REVERSE_LONG_INJURY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$REVERSE_LONG_INJURY"
 fi
 printf 'Checking the native post-setup room, position and sprite ID against all four paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
@@ -842,9 +854,16 @@ if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json
     exit 1
 fi
 if ! SABRE_PRIVATE_NEW_GAME_INJURY_WRITES="$REVERSE_PLAYER_WRITES" \
+    SABRE_PRIVATE_NEW_GAME_INJURY_COUNTDOWN="$REVERSE_LONG_INJURY" \
     swift test --filter CapturedNewGameInjuryTickTests \
     > "$ROOT/$PRIVATE/new-game-injury-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-injury-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_NEW_GAME_INJURY_COUNTDOWN="$REVERSE_LONG_INJURY" \
+    swift test --filter 'Captured(First|Final)InjuryTickTests' \
+    > "$ROOT/$PRIVATE/injury-countdown-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/injury-countdown-test.log" >&2
     exit 1
 fi
 if ! SABRE_PRIVATE_INJURY_START_DIR="$ROOT/$PRIVATE" \

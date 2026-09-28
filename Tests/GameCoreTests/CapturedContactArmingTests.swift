@@ -79,7 +79,7 @@ final class CapturedContactArmingTests: XCTestCase {
             ("menu-sequence-fire-before-contact-800.json",
              "player-onset-fire-before-contact-250.json", 228, 228, 16, 1, 152, 0),
             ("restart-ready-reverse-contact-900.json",
-             "restart-ready-w-q-player-writes-900.json", 868, 868, 19, 4, 168, -29),
+             "restart-ready-w-q-player-writes-v2-900.json", 868, 868, 19, 4, 168, -29),
         ] {
             let contacts = try JSONDecoder().decode(
                 ContactReport.self,

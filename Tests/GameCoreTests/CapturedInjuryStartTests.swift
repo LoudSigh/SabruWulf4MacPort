@@ -55,7 +55,7 @@ final class CapturedInjuryStartTests: XCTestCase {
             ("player-onset-no-fire-encounter-190.json", 190, 164, 27, 1, 152, 0),
             ("player-onset-unrelated-a-control-190.json", 190, 170, 27, 1, 152, 0),
             ("player-onset-fire-before-contact-250.json", 250, 229, 16, 1, 152, 0),
-            ("restart-ready-w-q-player-writes-900.json", 900, 870, 19, 4, 168, -29),
+            ("restart-ready-w-q-player-writes-v2-900.json", 900, 870, 19, 4, 168, -29),
         ] {
             let report = try JSONDecoder().decode(
                 Report.self,

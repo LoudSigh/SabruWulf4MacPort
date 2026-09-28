@@ -2,11 +2,25 @@ import Foundation
 import XCTest
 @testable import GameCore
 
+private struct PlayerWrite: Decodable {
+    let frame: Int
+    let instructionAddress: Int
+    let cycle: Int
+    let address: Int
+    let previous: Int
+    let value: Int
+}
+
+private struct PlayerWriteReport: Decodable {
+    let matchingRAMFrames: Int
+    let playerStateWrites: [PlayerWrite]
+}
+
 final class CapturedNewGameInjuryTickTests: XCTestCase {
     func testBoundedFourLifeKnockback() throws {
         var x = 56
         var timer: UInt8 = 32
-        for _ in 0..<28 {
+        for _ in 0..<45 {
             let next = try CapturedNewGameInjuryTick.advance(
                 kind: 64, room: RoomID(8, 10),
                 x: x, y: 112, timer: timer, lifeByte: 4, velocityX: 3
@@ -14,12 +28,16 @@ final class CapturedNewGameInjuryTickTests: XCTestCase {
             x = next.x
             timer = next.timer
         }
-        XCTAssertEqual(x, 140)
-        XCTAssertEqual(timer, 60)
+        XCTAssertEqual(x, 191)
+        XCTAssertEqual(timer, 77)
         XCTAssertThrowsError(try CapturedNewGameInjuryTick.advance(
             kind: 64, room: RoomID(8, 10),
             x: x, y: 112, timer: timer, lifeByte: 4, velocityX: 3
         ))
+        XCTAssertEqual(try CapturedNewGameInjuryTick.finishKnockback(
+            kind: 64, room: RoomID(8, 10),
+            x: x, y: 112, timer: timer, lifeByte: 4
+        ), CapturedNewGameInjuryPhase(kind: 65, timer: 63))
     }
 
     func testRejectsUnmeasuredInjuryStates() throws {
@@ -42,20 +60,8 @@ final class CapturedNewGameInjuryTickTests: XCTestCase {
         guard let path = ProcessInfo.processInfo.environment[
             "SABRE_PRIVATE_NEW_GAME_INJURY_WRITES"
         ] else { throw XCTSkip("Set ignored W/Q player-write report") }
-        struct Write: Decodable {
-            let frame: Int
-            let instructionAddress: Int
-            let cycle: Int
-            let address: Int
-            let previous: Int
-            let value: Int
-        }
-        struct Report: Decodable {
-            let matchingRAMFrames: Int
-            let playerStateWrites: [Write]
-        }
         let report = try JSONDecoder().decode(
-            Report.self, from: Data(contentsOf: URL(fileURLWithPath: path))
+            PlayerWriteReport.self, from: Data(contentsOf: URL(fileURLWithPath: path))
         )
         XCTAssertEqual(report.matchingRAMFrames, 900)
         XCTAssertTrue(report.playerStateWrites.contains {
@@ -82,5 +88,48 @@ final class CapturedNewGameInjuryTickTests: XCTestCase {
             XCTAssertEqual(predicted.x, position.value)
             XCTAssertEqual(Int(predicted.timer), timer.value)
         }
+    }
+
+    func testPrivateFullFourLifeKnockbackWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment[
+            "SABRE_PRIVATE_NEW_GAME_INJURY_COUNTDOWN"
+        ] else { throw XCTSkip("Set ignored 1500-frame W/Q player-write report") }
+        let report = try JSONDecoder().decode(
+            PlayerWriteReport.self, from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(report.matchingRAMFrames, 1500)
+        let xWrites = report.playerStateWrites.filter {
+            (871...917).contains($0.frame)
+                && $0.address == 38661 && $0.instructionAddress == 43500
+        }
+        let timerWrites = report.playerStateWrites.filter {
+            (871...917).contains($0.frame)
+                && $0.address == 38660 && $0.instructionAddress == 43509
+        }
+        XCTAssertEqual(xWrites.count, 45)
+        XCTAssertEqual(timerWrites.count, 45)
+        for (position, timer) in zip(xWrites, timerWrites) {
+            XCTAssertLessThan(position.cycle, timer.cycle)
+            let predicted = try CapturedNewGameInjuryTick.advance(
+                kind: 64, room: RoomID(8, 10),
+                x: position.previous, y: 112,
+                timer: UInt8(timer.previous), lifeByte: 4, velocityX: 3
+            )
+            XCTAssertEqual(predicted.x, position.value)
+            XCTAssertEqual(Int(predicted.timer), timer.value)
+        }
+        let transition = report.playerStateWrites.filter { $0.frame == 918 }
+        let kind = try XCTUnwrap(transition.first {
+            $0.address == 38658 && $0.instructionAddress == 43520
+        })
+        let timer = try XCTUnwrap(transition.first {
+            $0.address == 38660 && $0.instructionAddress == 43523
+        })
+        let phase = try CapturedNewGameInjuryTick.finishKnockback(
+            kind: UInt8(kind.previous), room: RoomID(8, 10),
+            x: 191, y: 112, timer: UInt8(timer.previous), lifeByte: 4
+        )
+        XCTAssertEqual(Int(phase.kind), kind.value)
+        XCTAssertEqual(Int(phase.timer), timer.value)
     }
 }

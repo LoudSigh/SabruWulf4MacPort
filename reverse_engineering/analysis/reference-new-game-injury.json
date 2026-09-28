@@ -3,22 +3,39 @@
   "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
   "frameBoundaryMode": "reference-relative",
   "schedule": "restart-ready-w-q-schedule.json",
-  "sourceFramesCompared": 900,
-  "matchingFullRAMFrames": 900,
+  "sourceFramesCompared": 1500,
+  "matchingFullRAMFrames": 1500,
   "positiveContactFrame": 868,
   "injuryKind64EntryFrame": 870,
   "boundedFourLifeKnockback": {
     "roomID": 168,
-    "sourceTickCount": 28,
-    "matchingXTicks": 28,
-    "matchingTimerTicks": 28,
+    "sourceTickCount": 45,
+    "matchingXTicks": 45,
+    "matchingTimerTicks": 45,
     "firstX": 56,
-    "lastX": 140,
+    "lastX": 191,
     "firstTimer": 32,
-    "lastTimer": 60,
+    "lastTimer": 77,
     "sourceXVelocity": 3,
     "kind": 64,
-    "lifeByte": 4
+    "lifeByte": 4,
+    "terminalPhaseAtSourceFrame": 918,
+    "nextKind": 65,
+    "nextTimer": 63
   },
-  "limits": "The source X and timer writes may straddle displayed frames. The pure native helper accepts an externally scheduled actor-update event only for these 28 observed ticks. It does not infer contact-to-injury timing, apply life loss, implement other lives/rooms, select knockback direction or continue after timer 60."
+  "observedLifeByteChanges": [
+    {"frame": 983, "from": 4, "to": 3},
+    {"frame": 1131, "from": 3, "to": 2},
+    {"frame": 1317, "from": 2, "to": 1},
+    {"frame": 1499, "from": 1, "to": 0}
+  ],
+  "injuryCountdown": {
+    "matchingKind65Updates": 252,
+    "matchingFinalKind69Updates": 63,
+    "matchingSourceUpdates": 315,
+    "observedSourceUpdates": 315,
+    "lifeDecrementEntryFrames": [231, 983, 1131, 1317, 1499],
+    "note": "The initial kind-65 countdown precedes the new-game restart; later life-byte 4, 3 and 2 injuries use kind 65. The final 1-to-0 loss uses kind 69 and ends in kind 21."
+  },
+  "limits": "Source X and timer writes may straddle displayed frames. The pure helpers accept externally scheduled actor-update events only for the measured kind-64 knockback, kind-65 life-byte 1-4 countdowns, and final kind-69 life-byte-1 countdown in room 168. They do not infer contact-to-injury timing, generalize room collisions or trigger the subsequent menu/game-over flow."
 }
