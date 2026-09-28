@@ -79,13 +79,7 @@ struct WorldReferenceView: View {
             if world != nil {
                 if world?.schemaVersion == 2 {
                     if let movement {
-                        Text(
-                            "Measured movement · source frame "
-                                + "\(movement.referenceFrameOffset + movement.frame) · room "
-                                + "\(movement.room.y * 16 + movement.room.x) "
-                                + "· X \(movement.player.x), Y \(movement.player.y)"
-                                + (movement.transitioning ? " · switching rooms" : "")
-                        )
+                        Text(movementSummary(movement))
                         .font(.caption.monospacedDigit())
                         Picker("Held original key", selection: $heldKey) {
                             Text("None").tag("none")
@@ -108,7 +102,7 @@ struct WorldReferenceView: View {
                         }
                         .buttonStyle(.bordered)
                         if movementOrigin == .observedNewGameReady {
-                            Text("Post-setup slice only: begins after source frame 790. Hold W for 60 frames, then None for 50 to compare frames 791–900. Menu polling, enemies and most exits are not simulated.")
+                            Text("Post-setup slice only: begins after source frame 790. Keep one Q/W/E direction for 60 frames, then None for 50 (frames 791–900). R/down is checked only through frame 866 and pauses before the unexplained next step. Menu polling, enemies and most exits are not simulated.")
                                 .font(.caption)
                             if let replay, replay.frames.count < 900 {
                                 Text("This shorter replay cannot compare the full post-setup slice; import the private 900-frame late-W replay.")
@@ -789,6 +783,14 @@ struct WorldReferenceView: View {
             parts.append("Orange and purple rings mark private moving-entity comparisons.")
         }
         return parts.joined(separator: " ")
+    }
+
+    private func movementSummary(_ state: CapturedMovementState) -> String {
+        let frame = state.referenceFrameOffset + state.frame
+        let room = state.room.y * 16 + state.room.x
+        return "Measured movement · source frame \(frame) · room \(room) "
+            + "· X \(state.player.x), Y \(state.player.y)"
+            + (state.transitioning ? " · switching rooms" : "")
     }
 
     private func resetMovement(origin: CapturedMovementOrigin? = nil) {

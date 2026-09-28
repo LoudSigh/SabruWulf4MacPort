@@ -524,6 +524,50 @@ if [[ -e "$READY_SCREEN" ]]; then
 else
     mv "$TEMP_READY_SCREEN" "$READY_SCREEN"
 fi
+printf 'Checking bounded Q/E/R source paths after new-game setup...\n'
+for direction in q e r; do
+    READY_SCHEDULE="reverse_engineering/analysis/restart-ready-$direction-schedule.json"
+    READY_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-$direction-900.json"
+    "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+        --schedule "$READY_SCHEDULE" 900 --reference-timing --actor-kind \
+        > "$TEMP_MENU"
+    if [[ -e "$READY_REPLAY" ]]; then
+        if ! cmp -s "$READY_REPLAY" "$TEMP_MENU"; then
+            printf 'Existing private %s replay differs: %s\n' "$direction" "$READY_REPLAY" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_MENU" "$READY_REPLAY"
+    fi
+    "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$READY_REPLAY" \
+        --menu "$MENU" 503
+    READY_CONTACT="$ROOT/$PRIVATE/restart-ready-contact-$direction-900.json"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$READY_SCHEDULE" 900 \
+        --reference-timing --require-ram-parity --require-contact-parity \
+        --require-first-injury-parity --require-menu-sequence \
+        > "$TEMP_MENU_CONTACT"
+    if [[ -e "$READY_CONTACT" ]]; then
+        if ! cmp -s "$READY_CONTACT" "$TEMP_MENU_CONTACT"; then
+            printf 'Existing private %s contact check differs: %s\n' "$direction" "$READY_CONTACT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_MENU_CONTACT" "$READY_CONTACT"
+    fi
+    READY_SCREEN="$ROOT/$PRIVATE/restart-ready-background-$direction-900.json"
+    "$ROOT/$PRIVATE/VerifyBackgroundScreen" "$ROM" "$GAME" \
+        "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+        "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
+        --schedule "$READY_SCHEDULE" 900 > "$TEMP_READY_SCREEN"
+    if [[ -e "$READY_SCREEN" ]]; then
+        if ! cmp -s "$READY_SCREEN" "$TEMP_READY_SCREEN"; then
+            printf 'Existing private %s screen check differs: %s\n' "$direction" "$READY_SCREEN" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_READY_SCREEN" "$READY_SCREEN"
+    fi
+done
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"

@@ -318,11 +318,12 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Priority**: P0
 - **Preconditions**: Hash-verified private version-2 world and [restart-ready-movement-schedule.json](../reverse_engineering/analysis/restart-ready-movement-schedule.json) exported to a 900-frame private replay.
 - **Steps**:
-  1. Require every 900-frame RAM/screen hash, 2,652 contact returns and the 29,056/29,056 covered room RGB pixels at frame 900 to agree with the reference.
+  1. Require every 900-frame RAM/screen hash for each Q/W/E/R input, all 10,648 contact returns and the covered room RGB pixels at frame 900 to agree with the reference (28,544 pixels in the north room for E; 29,056 for the others).
   2. Initialize the native measured state at `.observedNewGameReady`; confirm source frame offset 790, room ID 168 and X=120/Y=112.
-  3. Hold W for 60 measured frames, then None for 50. Compare native room/X/Y with replay frames 791–900 at each frame, including X=136 at 800 and X=193 at 820, 850 and 900.
-  4. Try Up, Fire or an extra 111th step; ensure the source-backed preview rejects unsupported input/frame range without silently advancing.
-- **Expected Result**: All 110 checked room/X/Y frames agree, and the captured-midgame origin remains unchanged. The viewer makes the post-setup origin selectable but never implies that menu polling, initial actor animation, enemies, damage or full new-game state are simulated.
+  3. For Q/W/E separately, hold one direction for 60 measured frames then None for 50 and compare frames 791–900. Check W X=136 at 800 and 193 by 820; E enters room 152 at 819 and rebases at 825.
+  4. For R, compare only frames 791–866 (76 frames); its frame-867 native step must fail explicitly before the one-pixel source difference.
+  5. Try a mid-run direction change, Fire, or an extra 111th step on Q/W/E; ensure the preview rejects unverified input/range without silently advancing.
+- **Expected Result**: Q/W/E each match 110 checked room/X/Y frames, R matches 76 before a source disagreement of unclassified cause, and the captured-midgame origin remains unchanged. The viewer makes the post-setup origin selectable but never implies that menu polling, initial actor animation, enemies, damage or full new-game state are simulated.
 - **Edge Cases / Variants**: Shorter unrelated imported replay, reset/switch origins, app background/resume and first frame after release.
 
 ## Regression cadence and coverage

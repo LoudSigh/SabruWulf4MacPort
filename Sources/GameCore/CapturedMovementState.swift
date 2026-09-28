@@ -6,6 +6,7 @@ public enum CapturedMovementError: Error, LocalizedError {
     case invalidInitialState
     case unsupportedSchedule
     case unsupportedTimeRange
+    case unsupportedRuntimeDivergence
 
     public var errorDescription: String? {
         switch self {
@@ -16,9 +17,11 @@ public enum CapturedMovementError: Error, LocalizedError {
         case .invalidInitialState:
             "The imported world does not support the captured player start."
         case .unsupportedSchedule:
-            "The observed new-game slice verifies 60 W frames followed by 50 frames without input."
+            "The observed new-game slice verifies one held Q/W/E/R direction for 60 frames, then 50 frames without input."
         case .unsupportedTimeRange:
             "The observed new-game movement slice ends after 110 source-checked frames."
+        case .unsupportedRuntimeDivergence:
+            "R/down is source-checked only through frame 866; the next position differs for an unclassified runtime cause."
         }
     }
 }
@@ -40,10 +43,12 @@ public struct CapturedMovementState: Sendable {
     private var velocityX = -3
     private var velocityY = 0
     private var pendingNorthFrames = 0
+    private var settlingNorthFrames = 0
     private var pendingSouthFrames = 0
     private var pendingWestFrames = 0
     private var pendingEastFrames = 0
     private var settlingSouthFrames = 0
+    private var observedReadyAction: OriginalAction?
 
     public init(
         world: WorldReference, origin: CapturedMovementOrigin = .gameplayCapture
@@ -69,9 +74,19 @@ public struct CapturedMovementState: Sendable {
     public mutating func advance(holding actions: Set<OriginalAction> = []) throws {
         guard !actions.contains(.fire) else { throw CapturedMovementError.unsupportedAction }
         if referenceFrameOffset != 0 {
+            if observedReadyAction == .down && frame >= 76 {
+                throw CapturedMovementError.unsupportedRuntimeDivergence
+            }
             guard frame < 110 else { throw CapturedMovementError.unsupportedTimeRange }
-            guard actions == (frame < 60 ? [.right] : []) else {
-                throw CapturedMovementError.unsupportedSchedule
+            if frame < 60 {
+                guard actions.count == 1, let direction = actions.first,
+                      direction != .fire,
+                      observedReadyAction == nil || observedReadyAction == direction else {
+                    throw CapturedMovementError.unsupportedSchedule
+                }
+                observedReadyAction = direction
+            } else {
+                guard actions.isEmpty else { throw CapturedMovementError.unsupportedSchedule }
             }
         }
         if pendingNorthFrames > 0 {
@@ -81,7 +96,13 @@ public struct CapturedMovementState: Sendable {
                 velocityX = decay(velocityX)
                 velocityY = decay(velocityY)
                 transitioning = false
+                settlingNorthFrames = referenceFrameOffset == 0 ? 0 : 1
             }
+            frame += 1
+            return
+        }
+        if settlingNorthFrames > 0 {
+            settlingNorthFrames -= 1
             frame += 1
             return
         }
@@ -163,7 +184,7 @@ public struct CapturedMovementState: Sendable {
             room = north
             velocityX = nextVX
             velocityY = nextVY
-            pendingNorthFrames = 7
+            pendingNorthFrames = referenceFrameOffset == 0 ? 7 : 6
             transitioning = true
         } else if next.y >= 192 {
             guard room == RoomID(8, 9),

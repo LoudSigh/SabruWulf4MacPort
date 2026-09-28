@@ -44,6 +44,7 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(moved.player, GridPoint(136, 112))
         XCTAssertEqual(moved.frame + moved.referenceFrameOffset, 800)
         XCTAssertThrowsError(try moved.advance(holding: [.up]))
+        XCTAssertThrowsError(try moved.advance())
         XCTAssertEqual(moved.frame, 10)
     }
 
@@ -56,26 +57,48 @@ final class CapturedMovementTests: XCTestCase {
         let source = try WorldReference.load(
             from: Data(contentsOf: URL(fileURLWithPath: worldPath))
         )
-        let replay = try ReferenceReplay.load(
-            from: Data(contentsOf: URL(fileURLWithPath: replayPath))
-        )
-        XCTAssertEqual(replay.frames.count, 900)
-        var state = try CapturedMovementState(
-            world: source, origin: .observedNewGameReady
-        )
-        for sourceIndex in 790..<900 {
-            try state.advance(holding: sourceIndex < 850 ? [.right] : [])
-            let expected = replay.frames[sourceIndex]
-            XCTAssertEqual(state.frame + state.referenceFrameOffset, expected.index)
-            XCTAssertEqual(state.room.y * 16 + state.room.x, expected.playerRoomID)
-            XCTAssertEqual(state.player, GridPoint(expected.playerX, expected.playerY))
-        }
-        XCTAssertThrowsError(try state.advance()) { error in
-            guard case CapturedMovementError.unsupportedTimeRange = error else {
-                return XCTFail("Expected bounded new-game slice, got \(error)")
+        var paths: [(String, OriginalAction, String)] = [(replayPath, .right, "w")]
+        if let directory = environment["SABRE_PRIVATE_NEW_GAME_REPLAY_DIR"] {
+            for (key, direction) in [("q", OriginalAction.left), ("e", .up), ("r", .down)] {
+                let path = URL(fileURLWithPath: directory)
+                    .appendingPathComponent("replay-restart-ready-\(key)-900.json")
+                paths.append((path.path, direction, key))
             }
         }
-        XCTAssertEqual(state.frame, 110)
+        for (path, direction, key) in paths {
+            let replay = try ReferenceReplay.load(
+                from: Data(contentsOf: URL(fileURLWithPath: path))
+            )
+            XCTAssertEqual(replay.frames.count, 900)
+            var state = try CapturedMovementState(
+                world: source, origin: .observedNewGameReady
+            )
+            let lastIndex = direction == .down ? 866 : 900
+            for sourceIndex in 790..<lastIndex {
+                try state.advance(holding: sourceIndex < 850 ? [direction] : [])
+                let expected = replay.frames[sourceIndex]
+                XCTAssertEqual(state.frame + state.referenceFrameOffset, expected.index)
+                XCTAssertEqual(
+                    state.room.y * 16 + state.room.x, expected.playerRoomID,
+                    "\(key) frame \(expected.index)"
+                )
+                XCTAssertEqual(
+                    state.player, GridPoint(expected.playerX, expected.playerY),
+                    "\(key) frame \(expected.index)"
+                )
+            }
+            XCTAssertThrowsError(try state.advance()) { error in
+                switch error {
+                case CapturedMovementError.unsupportedRuntimeDivergence where direction == .down:
+                    break
+                case CapturedMovementError.unsupportedTimeRange where direction != .down:
+                    break
+                default:
+                    XCTFail("Expected bounded new-game slice, got \(error)")
+                }
+            }
+            XCTAssertEqual(state.frame, lastIndex - 790)
+        }
     }
 
     func testNorthTransitionFreezesThenRebasesActor() throws {

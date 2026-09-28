@@ -3,8 +3,9 @@
   "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
   "frameBoundaryMode": "reference-relative",
   "schedule": "restart-ready-movement-schedule.json",
-  "frames": 900,
-  "matchingRAMAndScreenFrames": 900,
+  "framesPerDirection": 900,
+  "matchingRAMAndScreenFramesPerDirection": 900,
+  "matchingContactCalls": 2652,
   "firstExactMenuTextFrame": 503,
   "sourceReadyFrame": 790,
   "nativeSliceFirstFrame": 791,
@@ -20,5 +21,51 @@
     {"frame": 850, "roomID": 168, "x": 193, "y": 112},
     {"frame": 900, "roomID": 168, "x": 193, "y": 112}
   ],
-  "limits": "The native slice starts after the observed actor is ready at source frame 790 with X=120/Y=112 and zero initial horizontal velocity. It does not reproduce menu polling, redraw delays or the first 790 frames. Only the stated W/None sequence and 110 actor room/X/Y frames were checked; enemy movement, dynamic collisions, sprite animation, other actions and beyond frame 900 remain unsupported."
+  "additionalDirections": [
+    {
+      "schedule": "restart-ready-q-schedule.json",
+      "key": "q",
+      "matchingRAMAndScreenFrames": 900,
+      "matchingContactCalls": 2661,
+      "nativeActorRoomXYMatches": 110,
+      "finalRoomID": 168,
+      "finalX": 56,
+      "finalY": 112,
+      "matchingCoveredRGBPixelsAt900": 29056
+    },
+    {
+      "schedule": "restart-ready-e-schedule.json",
+      "key": "e",
+      "matchingRAMAndScreenFrames": 900,
+      "matchingContactCalls": 2690,
+      "nativeActorRoomXYMatches": 110,
+      "northExitFrame": 819,
+      "northRebaseFrame": 825,
+      "finalRoomID": 152,
+      "finalX": 120,
+      "finalY": 126,
+      "matchingCoveredRGBPixelsAt900": 28544
+    },
+    {
+      "schedule": "restart-ready-r-schedule.json",
+      "key": "r",
+      "matchingRAMAndScreenFrames": 900,
+      "matchingContactCalls": 2645,
+      "nativeActorRoomXYMatches": 76,
+      "lastNativeParityFrame": 866,
+      "firstUnresolvedNativeFrame": 867,
+      "sourceYAt867": 134,
+      "unsupportedNativeYAt867": 135,
+      "finalRoomID": 168,
+      "finalX": 120,
+      "finalY": 135,
+      "matchingCoveredRGBPixelsAt900": 29056
+    }
+  ],
+  "totals": {
+    "referenceRAMAndScreenFrames": 3600,
+    "nativeActorRoomXYMatches": 406,
+    "matchingContactCalls": 10648
+  },
+  "limits": "The native slices start only after observed actor readiness at source frame 790 with X=120/Y=112 and zero horizontal/vertical velocity. They do not reproduce menu polling, redraw delays or the first 790 frames. Q/W/E each verify a 60-direction/50-idle sequence through frame 900; R verifies only frames 791..866 because the source stays at Y=134 on 867 while static-only native motion would reach Y=135. Its cause is unclassified, not proof of an enemy block. All other input combinations, enemy behavior, injury, sprite animation and further play remain unsupported."
 }
