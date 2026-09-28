@@ -33,9 +33,11 @@
     "framesCompared": 256,
     "nativeMatchesManualCPUReplay": 256,
     "unmodifiedStepFrameActorMatches": 182,
+    "firstRNGStateDivergenceFrame": 101,
+    "firstMovingEntityDivergenceFrame": 102,
     "firstActorStateDivergenceFrame": 163,
     "firstStepFrameActorMismatch": 183,
-    "independentDifference": "A moving entity reaches the player in the unmodified emulator at frame 163 but takes a different route in manual CPU stepping. The unmodified player enters damage mode at frame 164, before late Q. Dynamic actor timing remains unported.",
+    "independentDifference": "After E is released, a gameplay RNG byte first diverges at frame 101; a moving entity is placed differently at frame 102. It reaches the player in the unmodified emulator at frame 163, triggering damage mode at frame 164, before late Q. Whether CPU refresh-register timing explains the random branch remains to be proven.",
     "checkpoints": [
       {"frame": 225, "roomID": 152, "x": 0, "y": 126},
       {"frame": 226, "roomID": 151, "x": 0, "y": 126},

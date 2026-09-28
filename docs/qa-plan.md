@@ -162,7 +162,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   2. Observe room 152 -> 151 at frame 226 and actor X rebasing to 239 at frame 233.
   3. Compare the same schedule to the unmodified `stepFrame()` reference path; record the earliest input-dependent mismatch.
   4. Probe beyond frame 256 privately; diagnose moving-actor collisions before extending the native implementation.
-- **Expected Result**: Native state matches all 256 manual reference frames. Independent `stepFrame()` has a moving-entity encounter at frame 163 and changes player mode at frame 164; its actor room/X/Y agrees only through frame 182. **Do not certify the west branch** as independently validated until dynamic-actor routes are reconciled. No moving-actor pause is hard-coded into native gameplay.
+- **Expected Result**: Native state matches all 256 manual reference frames. Independent `stepFrame()` first diverges in gameplay RNG state at frame 101, in a moving entity at frame 102, then has an encounter at frame 163 and changes player mode at frame 164; its actor room/X/Y agrees only through frame 182. **Do not certify the west branch** as independently validated until RNG and dynamic-actor routes are reconciled. No moving-actor pause is hard-coded into native gameplay.
 - **Edge Cases / Variants**: Fresh keyboard-port reads, reference timing/cache differences, moving entities blocking X=27 in room 152 or X=170 in room 151.
 
 ## Regression cadence and coverage
