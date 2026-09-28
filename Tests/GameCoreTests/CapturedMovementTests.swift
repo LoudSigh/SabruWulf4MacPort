@@ -71,6 +71,25 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(state.player.y, 39)
     }
 
+    func testProvisionalWestExitFreezesThenRebasesActor() throws {
+        var state = try CapturedMovementState(world: world())
+        for _ in 0..<100 where state.room == RoomID(8, 10) {
+            try state.advance(holding: [.down])
+        }
+        for _ in 0..<7 { try state.advance() }
+        for _ in 0..<100 where state.room == RoomID(8, 9) {
+            try state.advance(holding: [.left])
+        }
+        XCTAssertEqual(state.room, RoomID(7, 9))
+        let old = state.player
+        for _ in 0..<6 {
+            try state.advance(holding: [.left])
+            XCTAssertEqual(state.player, old)
+        }
+        try state.advance(holding: [.left])
+        XCTAssertEqual(state.player.x, 239)
+    }
+
     func testUnverifiedFireAndBoundariesFailWithoutAdvancing() throws {
         var state = try CapturedMovementState(world: world())
         XCTAssertThrowsError(try state.advance(holding: [.fire]))
@@ -101,12 +120,18 @@ final class CapturedMovementTests: XCTestCase {
         let source = try WorldReference.load(
             from: Data(contentsOf: URL(fileURLWithPath: worldPath))
         )
-        let paths = [replayPath] + (environment["SABRE_PRIVATE_ROUND_TRIP"].map { [$0] } ?? [])
-        for (index, path) in paths.enumerated() {
+        var paths: [(path: String, count: Int)] = [(replayPath, 180)]
+        if let roundTrip = environment["SABRE_PRIVATE_ROUND_TRIP"] {
+            paths.append((roundTrip, 200))
+        }
+        if let westExit = environment["SABRE_PRIVATE_WEST_EXIT"] {
+            paths.append((westExit, 256))
+        }
+        for (path, count) in paths {
             let replay = try ReferenceReplay.load(
                 from: Data(contentsOf: URL(fileURLWithPath: path))
             )
-            XCTAssertEqual(replay.frames.count, index == 0 ? 180 : 200)
+            XCTAssertEqual(replay.frames.count, count)
             var state = try CapturedMovementState(world: source)
             for (offset, frame) in replay.frames.enumerated() {
                 let key = replay.schedule?.first {
@@ -117,6 +142,7 @@ final class CapturedMovementTests: XCTestCase {
                 case "w": actions = [.right]
                 case "e": actions = [.down]
                 case "r": actions = [.up]
+                case "q": actions = [.left]
                 case nil: actions = []
                 default:
                     XCTFail("Unsupported parity key \(key ?? "")")

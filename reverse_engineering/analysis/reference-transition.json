@@ -28,6 +28,20 @@
       {"frame": 200, "roomID": 168, "x": 120, "y": 135}
     ]
   },
+  "westExitProbe": {
+    "schedule": "west-exit-schedule.json",
+    "framesCompared": 256,
+    "nativeMatchesManualCPUReplay": 256,
+    "unmodifiedStepFrameActorMatches": 182,
+    "firstStepFrameActorMismatch": 183,
+    "independentDifference": "After a long no-input interval, the unmodified stepFrame emulator stops responding to Q while fresh-FE manual CPU stepping continues. This path is provisional until the divergence is diagnosed.",
+    "checkpoints": [
+      {"frame": 225, "roomID": 152, "x": 0, "y": 126},
+      {"frame": 226, "roomID": 151, "x": 0, "y": 126},
+      {"frame": 233, "roomID": 151, "x": 239, "y": 126},
+      {"frame": 256, "roomID": 151, "x": 170, "y": 126}
+    ]
+  },
   "checkpoints": [
     {"frame": 67, "roomID": 168, "x": 121, "y": 42},
     {"frame": 68, "roomID": 152, "x": 121, "y": 42},

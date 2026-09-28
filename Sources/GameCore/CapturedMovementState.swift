@@ -29,6 +29,7 @@ public struct CapturedMovementState: Sendable {
     private var velocityY = 0
     private var pendingNorthFrames = 0
     private var pendingSouthFrames = 0
+    private var pendingWestFrames = 0
     private var settlingSouthFrames = 0
 
     public init(world: WorldReference) throws {
@@ -70,6 +71,17 @@ public struct CapturedMovementState: Sendable {
             frame += 1
             return
         }
+        if pendingWestFrames > 0 {
+            pendingWestFrames -= 1
+            if pendingWestFrames == 0 {
+                player = GridPoint(239, player.y)
+                velocityX = decay(velocityX)
+                velocityY = decay(velocityY)
+                transitioning = false
+            }
+            frame += 1
+            return
+        }
         if settlingSouthFrames > 0 {
             settlingSouthFrames -= 1
             transitioning = false
@@ -83,10 +95,21 @@ public struct CapturedMovementState: Sendable {
         let nextVY = min(48, max(-48, velocityY + vertical))
         let next = GridPoint(player.x + nextVX / 16, player.y + nextVY / 16)
 
-        guard next.x >= 0, next.x < 240 else {
+        guard next.x < 240 else {
             throw CapturedMovementError.unsupportedBoundary
         }
-        if next.y < 40 {
+        if next.x < 0 {
+            guard room == RoomID(8, 9),
+                  let west = world.adjacent(to: room, direction: .west),
+                  west == RoomID(7, 9) else {
+                throw CapturedMovementError.unsupportedBoundary
+            }
+            room = west
+            velocityX = nextVX
+            velocityY = nextVY
+            pendingWestFrames = 7
+            transitioning = true
+        } else if next.y < 40 {
             guard room == WorldReference.capturedGameplayRoom,
                   let north = world.adjacent(to: room, direction: .north),
                   north == RoomID(8, 9) else {

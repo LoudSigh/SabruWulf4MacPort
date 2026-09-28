@@ -154,6 +154,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Room/X/Y matches all 180 north-exit frames, 200 round-trip frames and 600 held-direction frames; the separate placeholder remains unaffected. Locally run `SABRE_PRIVATE_WORLD=<private-world-v2.json> SABRE_PRIVATE_REPLAY=<private-replay-upper-exit-180.json> SABRE_PRIVATE_ROUND_TRIP=<private-replay-round-trip-200.json> SABRE_PRIVATE_HELD_REPLAY_DIR=<private-directory> swift test --filter CapturedMovementTests` for automated parity. This gate does not validate attacks, enemies, score or most room exits.
 - **Edge Cases / Variants**: Play at 50 Hz versus single-step, app background/resume, missing version-2 bounds and alternate inputs that reach an unsupported exit.
 
+### TC-013: Provisional west exit and dynamic-actor blocker
+- **Priority**: P1
+- **Preconditions**: Private version-2 world and `replay-west-exit-256.json` generated from [west-exit-schedule.json](../reverse_engineering/analysis/west-exit-schedule.json).
+- **Steps**:
+  1. Run the W/E/idle/Q schedule and compare native room/X/Y to the manual CPU reference for frames 1–256.
+  2. Observe room 152 -> 151 at frame 226 and actor X rebasing to 239 at frame 233.
+  3. Compare the same schedule to the unmodified `stepFrame()` reference path; record the earliest input-dependent mismatch.
+  4. Probe beyond frame 256 privately; diagnose moving-actor collisions before extending the native implementation.
+- **Expected Result**: Native state matches all 256 manual reference frames. Independent `stepFrame()` agrees only through frame 182 (late Q has no actor effect thereafter), so **do not certify the west branch** as independently validated. No moving-actor pause is hard-coded into native gameplay.
+- **Edge Cases / Variants**: Fresh keyboard-port reads, reference timing/cache differences, moving entities blocking X=27 in room 152 or X=170 in room 151.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

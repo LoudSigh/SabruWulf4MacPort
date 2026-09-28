@@ -76,7 +76,7 @@ struct WorldReferenceView: View {
                                 .accessibilityLabel("Reset measured movement")
                         }
                         .buttonStyle(.bordered)
-                        Text("Partial source-backed movement only: no enemies, combat, items or validated exits beyond the captured north passage and return. Playback pauses on unsupported behavior.")
+                        Text("Partial movement only: north/return match the independent reference; the west exit matches a manual CPU replay but not an independent late-Q run. No enemies, combat, items or other validated exits. Playback pauses on unsupported behavior.")
                             .font(.caption)
                     } else {
                         Button("Start measured movement (partial)") { resetMovement() }
@@ -246,15 +246,10 @@ struct WorldReferenceView: View {
                 }
                 .frame(height: 180)
                 .accessibilityLabel(
-                    "Room template \(world.roomType(at: selected) ?? 0), "
-                        + "\(placements.count) placements. "
-                        + (art.isEmpty
-                            ? "Generic markers only; orange outlines show measured background bounds when available."
-                            : "Optional local image overlay, not verified original composition.")
-                        + (markerPosition != nil
-                            ? " Cyan ring marks the recorded player position." : "")
-                        + (movementMarkerPosition != nil
-                            ? " Pink ring marks the measured movement position." : "")
+                    roomSummary(
+                        template: world.roomType(at: selected) ?? 0,
+                        placements: placements.count
+                    )
                 )
             }
         }
@@ -362,6 +357,20 @@ struct WorldReferenceView: View {
     private var movementMarkerPosition: GridPoint? {
         guard let movement, selected == movement.room else { return nil }
         return movement.player
+    }
+
+    private func roomSummary(template: Int, placements: Int) -> String {
+        var parts = ["Room template \(template), \(placements) placements."]
+        parts.append(art.isEmpty
+            ? "Generic markers only; orange outlines show measured background bounds when available."
+            : "Optional local image overlay, not verified original composition.")
+        if markerPosition != nil {
+            parts.append("Cyan ring marks the recorded player position.")
+        }
+        if movementMarkerPosition != nil {
+            parts.append("Pink ring marks the measured movement position.")
+        }
+        return parts.joined(separator: " ")
     }
 
     private func resetMovement() {

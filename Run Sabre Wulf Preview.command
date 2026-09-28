@@ -77,7 +77,8 @@ TEMP_REPLAY="$(mktemp "$ROOT/$PRIVATE/.replay-XXXXXXXX.json")"
 TEMP_TRANSITION="$(mktemp "$ROOT/$PRIVATE/.transition-XXXXXXXX.json")"
 TEMP_HELD="$(mktemp "$ROOT/$PRIVATE/.held-XXXXXXXX.json")"
 TEMP_ROUND="$(mktemp "$ROOT/$PRIVATE/.round-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND"' EXIT
+TEMP_WEST="$(mktemp "$ROOT/$PRIVATE/.west-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -112,6 +113,19 @@ if [[ -e "$ROUND_TRIP" ]]; then
     fi
 else
     mv "$TEMP_ROUND" "$ROUND_TRIP"
+fi
+
+printf 'Preparing a private provisional west-exit reference...\n'
+WEST_EXIT="$ROOT/$PRIVATE/replay-west-exit-256.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/west-exit-schedule.json 256 > "$TEMP_WEST"
+if [[ -e "$WEST_EXIT" ]]; then
+    if ! cmp -s "$WEST_EXIT" "$TEMP_WEST"; then
+        printf 'Existing private west-exit replay differs; refusing to overwrite %s\n' "$WEST_EXIT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_WEST" "$WEST_EXIT"
 fi
 
 printf 'Preparing four private 150-frame held-direction references...\n'
@@ -154,5 +168,6 @@ printf '\nOpened the native placeholder app, two original static captures, and a
 printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REPLAY"
 printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TRANSITION"
 printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"
+printf 'Import %s for a provisional west exit; independent emulator input diverges after a long idle interval.\n' "$WEST_EXIT"
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
 printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'
