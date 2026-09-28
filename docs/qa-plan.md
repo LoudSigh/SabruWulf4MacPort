@@ -550,6 +550,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   8. Reproduce the 42/42 two-pixel east collisions at one-pixel clearance, then remove the initial east offset and verify a T-assisted north transition with 827/827 RAM frames and no injury.
   9. Continue from the exact frame-827 north-room checkpoint with unchanged CPU/RAM/interrupt state; compare two 900/900 RAM-parity routes and withhold an east-edge claim until 58 northward clearance pixels are actually achieved.
   10. Extend one corrected source continuation to frame 915; require 915/915 RAM frames, full 58-pixel clearance, a second room transition, no injury and one-room improvement in target distance—still no pickup claim.
+  11. Reuse the exact frame-915 source state, settle T-only for eight frames, then check one T-assisted east room transition at frame 983 with 983/983 RAM parity and distance 5→4 while the record remains active.
 - **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown. A two-pixel east step stalls at one-pixel clearance; correcting an initial offset permits a source-verified north exit, not a collectible contact.
 - **Edge Cases / Variants**: Different key timing, player count, repeated restart, item disappearance and renderer overlap.
 
