@@ -387,8 +387,9 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Steps**:
   1. Verify slot 12 timer 1→0 at frame 184, velocity clears and the timer is reseeded to 13.
   2. Verify a later 1→0 at frame 220 selects X velocity −80 and Y +80 without resetting the timer, followed by 0→255 at frame 224.
-  3. Require the bounded native state to reject timer 1 rather than assume either observed branch always applies.
-- **Expected Result**: Both differing source outcomes are preserved as private evidence and numeric documentation; neither is presented as a generalized expiry rule.
+  3. Run the private `--require-enemy-expiry-parity` gate and require two matching routine returns over 250/250 full-RAM frames.
+  4. Require the bounded active-movement state to reject timer 1; test the separate expiry decision with supplied RNG/clock bytes and reject unmeasured states.
+- **Expected Result**: Both source outcomes match the bounded decision based on whether either prior velocity byte is nonzero. No autonomous scheduling, RNG generation or subsequent countdown wraparound is inferred.
 - **Edge Cases / Variants**: RNG-dependent second direction, countdown wraparound, actor removal and different room.
 
 ## Regression cadence and coverage

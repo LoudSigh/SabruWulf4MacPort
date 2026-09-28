@@ -403,6 +403,19 @@ if [[ -e "$EXTENDED_WRITES" ]]; then
 else
     mv "$TEMP_COMBAT_ENTITY" "$EXTENDED_WRITES"
 fi
+EXPIRY_REPORT="$ROOT/$PRIVATE/enemy-expiry-fire-before-contact-250.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
+    --reference-timing --require-ram-parity --require-enemy-expiry-parity \
+    > "$TEMP_COMBAT_ENTITY"
+if [[ -e "$EXPIRY_REPORT" ]]; then
+    if ! cmp -s "$EXPIRY_REPORT" "$TEMP_COMBAT_ENTITY"; then
+        printf 'Existing private expiry comparison differs: %s\n' "$EXPIRY_REPORT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_COMBAT_ENTITY" "$EXPIRY_REPORT"
+fi
 printf 'Checking source enemy direction values and seventeen private motion steps...\n'
 if ! SABRE_PRIVATE_MENU_RAM="$ROOT/$PRIVATE/snapshot-${MENU_SHA:0:12}-48k.bin" \
     SABRE_PRIVATE_GAME_RAM="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-48k.bin" \
@@ -425,6 +438,12 @@ if ! SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
     swift test --filter CapturedActiveEnemyStateTests \
     > "$ROOT/$PRIVATE/active-enemy-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/active-enemy-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_ENEMY_EXPIRY_REPORT="$EXPIRY_REPORT" \
+    swift test --filter CapturedEnemyExpiryTests \
+    > "$ROOT/$PRIVATE/enemy-expiry-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/enemy-expiry-test.log" >&2
     exit 1
 fi
 printf 'Preparing a private 600-frame injury and remaining-life observation...\n'

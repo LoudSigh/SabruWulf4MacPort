@@ -8,6 +8,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case invalidInput
     case missingWorld
     case noActiveEnemyUpdates
+    case noEnemyExpiryEvents
+    case unfinishedEnemyExpiry
     case stepBudget
     case unimplemented
     case ramMismatch(matching: Int, total: Int)
@@ -16,11 +18,12 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case menuSequenceMismatch
     case enemyDirectionMismatch(frame: Int)
     case enemyStateMismatch(frame: Int, expected: [Int], actual: [Int])
+    case enemyExpiryMismatch(frame: Int)
 
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -29,6 +32,10 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "Set SABRE_PRIVATE_WORLD to the ignored, verified version-2 world JSON"
         case .noActiveEnemyUpdates:
             "The entity-phase parity gate found no eligible moving slot-12 updates"
+        case .noEnemyExpiryEvents:
+            "The enemy-expiry parity gate found no eligible slot-12 timer expiries"
+        case .unfinishedEnemyExpiry:
+            "A slot-12 timer-expiry branch did not return within the observed frames"
         case .stepBudget:
             "Manual CPU run exceeded 100000 instructions in one frame"
         case .unimplemented:
@@ -45,6 +52,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "The measured slot-12 RNG direction choice differs from source frame \(frame)"
         case .enemyStateMismatch(let frame, let expected, let actual):
             "Slot-12 state differs at frame \(frame): predicted \(expected), source \(actual)"
+        case .enemyExpiryMismatch(let frame):
+            "The measured slot-12 timer-expiry result differs at source frame \(frame)"
         }
     }
 }
@@ -159,6 +168,23 @@ private struct ActiveEnemyComparison: Encodable {
     let updateFrames: [Int]
 }
 
+private struct EnemyExpiryComparison: Encodable {
+    let calls: Int
+    let matchingCalls: Int
+    let stoppedFrames: [Int]
+    let resumedFrames: [Int]
+}
+
+private struct PendingEnemyExpiry {
+    let frame: Int
+    let kind: UInt8
+    let room: RoomID
+    let velocityX: Int
+    let velocityY: Int
+    let rng: UInt8
+    let clock: UInt8
+}
+
 private struct ActiveEnemyFrame {
     let kind: UInt8
     let timer: UInt8
@@ -224,6 +250,7 @@ private struct Report: Encodable {
     let menuSequence: MenuSequenceComparison?
     let enemyDirectionComparison: EnemyDirectionComparison?
     let activeEnemyComparison: ActiveEnemyComparison?
+    let enemyExpiryComparison: EnemyExpiryComparison?
     let codeCoverage: CodeCoverage?
 }
 
@@ -310,13 +337,14 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...16).contains(arguments.count),
+            guard (5...17).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--watch-entity-state",
                        "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
                        "--coverage", "--require-entity-phase-parity",
+                       "--require-enemy-expiry-parity",
                        "--require-enemy-direction-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
@@ -339,6 +367,9 @@ private struct SnapshotDivergence {
                         && options.contains("--require-ram-parity")),
                   !options.contains("--require-entity-phase-parity")
                     || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--require-enemy-expiry-parity")
+                    || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
@@ -351,6 +382,7 @@ private struct SnapshotDivergence {
             let requireEnemyDirectionParity = options.contains("--require-enemy-direction-parity")
             let includeCoverage = options.contains("--coverage")
             let requireEntityPhaseParity = options.contains("--require-entity-phase-parity")
+            let requireEnemyExpiryParity = options.contains("--require-enemy-expiry-parity")
             let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
@@ -427,6 +459,10 @@ private struct SnapshotDivergence {
             var matchingActiveEnemyUpdates = 0
             var countdownOnlyUpdates = 0
             var activeEnemyFrames: [Int] = []
+            var pendingEnemyExpiry: PendingEnemyExpiry?
+            var enemyExpiryCalls = 0
+            var enemyStoppedFrames: [Int] = []
+            var enemyResumedFrames: [Int] = []
 
             for frame in 0..<count {
                 let pressed = try segments.first(where: {
@@ -448,6 +484,43 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    if requireEnemyExpiryParity, cpu.ix == 0x9792 {
+                        if cpu.pc == 0xA56A, memory.read(0x9793) == 152,
+                           memory.read(0x9794) == 1,
+                           (108...111).contains(Int(memory.read(0x9792))) {
+                            let vx = Int(Int8(bitPattern: memory.read(0x9798)))
+                            let vy = Int(Int8(bitPattern: memory.read(0x9799)))
+                            if (vx == 0 && vy == 0)
+                                || ([-80, -48, 48, 96].contains(vx) && vy == 80) {
+                                pendingEnemyExpiry = PendingEnemyExpiry(
+                                    frame: frame + 1, kind: memory.read(0x9792),
+                                    room: RoomID(8, 9), velocityX: vx, velocityY: vy,
+                                    rng: memory.read(0x9695), clock: memory.read(0x5C78)
+                                )
+                            }
+                        } else if cpu.pc == 0xA570, let old = pendingEnemyExpiry {
+                            pendingEnemyExpiry = nil
+                            let predicted = try CapturedEnemyExpiry.resolve(
+                                kind: old.kind, timer: 1, room: old.room,
+                                velocityX: old.velocityX, velocityY: old.velocityY,
+                                rngByte: old.rng, clockByte: old.clock
+                            )
+                            enemyExpiryCalls += 1
+                            guard memory.read(0x9792) == predicted.kind,
+                                  memory.read(0x9794) == predicted.timer,
+                                  Int(Int8(bitPattern: memory.read(0x9798)))
+                                    == predicted.velocityX,
+                                  Int(Int8(bitPattern: memory.read(0x9799)))
+                                    == predicted.velocityY else {
+                                throw DivergenceError.enemyExpiryMismatch(frame: old.frame)
+                            }
+                            if old.velocityX == 0 && old.velocityY == 0 {
+                                enemyResumedFrames.append(old.frame)
+                            } else {
+                                enemyStoppedFrames.append(old.frame)
+                            }
+                        }
+                    }
                     if requireEnemyDirectionParity {
                         if cpu.pc == 0xA5D5, cpu.ix == 0x9792,
                            memory.read(0x9793) == 152,
@@ -715,6 +788,14 @@ private struct SnapshotDivergence {
             if requireEntityPhaseParity && activeEnemyUpdates == 0 {
                 throw DivergenceError.noActiveEnemyUpdates
             }
+            if requireEnemyExpiryParity {
+                guard pendingEnemyExpiry == nil else {
+                    throw DivergenceError.unfinishedEnemyExpiry
+                }
+                guard enemyExpiryCalls > 0 else {
+                    throw DivergenceError.noEnemyExpiryEvents
+                }
+            }
             guard (!requireContactParity || pendingContacts.isEmpty),
                   (!requireInjuryParity || pendingInjury == nil),
                   (!requireEnemyDirectionParity || pendingEnemyDirection == nil) else {
@@ -790,6 +871,12 @@ private struct SnapshotDivergence {
                         matchingUpdates: matchingActiveEnemyUpdates,
                         countdownOnlyUpdates: countdownOnlyUpdates,
                         updateFrames: activeEnemyFrames
+                    ) : nil,
+                enemyExpiryComparison: requireEnemyExpiryParity
+                    ? EnemyExpiryComparison(
+                        calls: enemyExpiryCalls, matchingCalls: enemyExpiryCalls,
+                        stoppedFrames: enemyStoppedFrames,
+                        resumedFrames: enemyResumedFrames
                     ) : nil,
                 codeCoverage: coverage
             )
