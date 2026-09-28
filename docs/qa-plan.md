@@ -381,6 +381,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: All 14 observed moving transitions and three separate countdown-only display frames match the source without embedding original code, frames or media.
 - **Edge Cases / Variants**: Countdown and move in the same display frame, countdown before move, timer 1, missing private world, no eligible updates and source parity mismatch.
 
+### TC-034: Do not conflate two source enemy timer expiries
+- **Priority**: P1
+- **Preconditions**: SHA-checked private 250-frame T-key encounter write trace and verified reference-relative RAM parity.
+- **Steps**:
+  1. Verify slot 12 timer 1→0 at frame 184, velocity clears and the timer is reseeded to 13.
+  2. Verify a later 1→0 at frame 220 selects X velocity −80 and Y +80 without resetting the timer, followed by 0→255 at frame 224.
+  3. Require the bounded native state to reject timer 1 rather than assume either observed branch always applies.
+- **Expected Result**: Both differing source outcomes are preserved as private evidence and numeric documentation; neither is presented as a generalized expiry rule.
+- **Edge Cases / Variants**: RNG-dependent second direction, countdown wraparound, actor removal and different room.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

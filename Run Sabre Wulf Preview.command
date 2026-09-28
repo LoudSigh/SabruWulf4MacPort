@@ -390,6 +390,19 @@ if [[ -e "$EXTENDED_ENTITY" ]]; then
 else
     mv "$TEMP_COMBAT_ENTITY" "$EXTENDED_ENTITY"
 fi
+EXTENDED_WRITES="$ROOT/$PRIVATE/entity-writes-fire-before-contact-250.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
+    --reference-timing --require-ram-parity --watch-entity-state \
+    > "$TEMP_COMBAT_ENTITY"
+if [[ -e "$EXTENDED_WRITES" ]]; then
+    if ! cmp -s "$EXTENDED_WRITES" "$TEMP_COMBAT_ENTITY"; then
+        printf 'Existing extended private entity-write trace differs: %s\n' "$EXTENDED_WRITES" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_COMBAT_ENTITY" "$EXTENDED_WRITES"
+fi
 printf 'Checking source enemy direction values and seventeen private motion steps...\n'
 if ! SABRE_PRIVATE_MENU_RAM="$ROOT/$PRIVATE/snapshot-${MENU_SHA:0:12}-48k.bin" \
     SABRE_PRIVATE_GAME_RAM="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-48k.bin" \
@@ -408,6 +421,7 @@ if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json
     exit 1
 fi
 if ! SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
+    SABRE_PRIVATE_FIRE_EXTENDED_WRITES="$EXTENDED_WRITES" \
     swift test --filter CapturedActiveEnemyStateTests \
     > "$ROOT/$PRIVATE/active-enemy-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/active-enemy-test.log" >&2

@@ -155,4 +155,38 @@ final class CapturedActiveEnemyStateTests: XCTestCase {
             }
         }
     }
+
+    func testTwoDifferentSourceTimerExpiriesWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_FIRE_EXTENDED_WRITES"]
+        else { throw XCTSkip("Set the private 250-frame fire write trace") }
+        struct Write: Decodable {
+            let frame: Int
+            let instructionAddress: Int
+            let address: Int
+            let previous: Int
+            let value: Int
+        }
+        struct Report: Decodable {
+            let matchingRAMFrames: Int
+            let entityStateWrites: [Write]
+        }
+        let report = try JSONDecoder().decode(
+            Report.self, from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(report.matchingRAMFrames, 250)
+        func has(_ frame: Int, _ pc: Int, _ address: Int, _ from: Int, _ to: Int) -> Bool {
+            report.entityStateWrites.contains {
+                $0.frame == frame && $0.instructionAddress == pc
+                    && $0.address == address && $0.previous == from && $0.value == to
+            }
+        }
+        XCTAssertTrue(has(184, 42346, 38804, 1, 0))
+        XCTAssertTrue(has(184, 42506, 38808, 208, 0))
+        XCTAssertTrue(has(184, 42509, 38809, 80, 0))
+        XCTAssertTrue(has(184, 42519, 38804, 0, 13))
+        XCTAssertTrue(has(220, 42346, 38804, 1, 0))
+        XCTAssertTrue(has(220, 42466, 38808, 0, 176))
+        XCTAssertTrue(has(220, 42487, 38809, 0, 80))
+        XCTAssertTrue(has(224, 42346, 38804, 0, 255))
+    }
 }
