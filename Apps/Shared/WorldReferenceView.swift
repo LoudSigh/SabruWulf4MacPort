@@ -18,6 +18,9 @@ struct WorldReferenceView: View {
     @State private var importError: String?
     @State private var art: [Int: WorldRaster] = [:]
     @State private var artStatus: String?
+    @State private var importingReplay = false
+    @State private var replay: ReferenceReplay?
+    @State private var replayFrameValue = 0.0
 
     private let columns = Array(
         repeating: GridItem(.flexible(minimum: 17), spacing: 2), count: 16
@@ -37,6 +40,28 @@ struct WorldReferenceView: View {
             Button("Import your private world data") { importing = true }
                 .buttonStyle(.bordered)
             if world != nil {
+                Button("Import a private gameplay replay (optional)") {
+                    importingReplay = true
+                }
+                .buttonStyle(.bordered)
+                if let replay {
+                    let frame = replay.frames[min(Int(replayFrameValue), replay.frames.count - 1)]
+                    Text(
+                        "Recorded \(replay.input.uppercased()) · frame \(frame.index) "
+                            + "· room \(frame.playerRoomID) · X \(frame.playerX), Y \(frame.playerY)"
+                    )
+                    .font(.caption.monospacedDigit())
+                    Slider(
+                        value: $replayFrameValue,
+                        in: 0...Double(replay.frames.count - 1),
+                        step: 1
+                    )
+                    .accessibilityLabel("Reference replay frame")
+                    .onChange(of: replayFrameValue) { _, value in
+                        let id = replay.frames[Int(value)].playerRoomID
+                        selected = RoomID(id % 16, id / 16)
+                    }
+                }
                 Button("Preview private background images (optional)") {
                     importingArtwork = true
                 }
@@ -122,17 +147,17 @@ struct WorldReferenceView: View {
                                     )
                             }
                         }
-                        if selected == WorldReference.capturedGameplayRoom {
+                        if let position = markerPosition {
                             Circle()
                                 .stroke(.cyan, lineWidth: 2)
                                 .frame(width: 12, height: 12)
                                 .position(
-                                    x: CGFloat(WorldReference.capturedPlayerPosition.x)
+                                    x: CGFloat(position.x)
                                         * area.size.width / 256,
-                                    y: CGFloat(WorldReference.capturedPlayerPosition.y)
+                                    y: CGFloat(position.y)
                                         * area.size.height / 192
                                 )
-                                .accessibilityLabel("Captured player position")
+                                .accessibilityLabel("Recorded player position")
                         }
                     }
                 }
@@ -143,8 +168,8 @@ struct WorldReferenceView: View {
                         + (art.isEmpty
                             ? "Generic markers only."
                             : "Optional local image overlay, not verified original composition.")
-                        + (selected == WorldReference.capturedGameplayRoom
-                            ? " Cyan ring marks the captured player position." : "")
+                        + (markerPosition != nil
+                            ? " Cyan ring marks the recorded player position." : "")
                 )
             }
         }
@@ -168,6 +193,8 @@ struct WorldReferenceView: View {
                 selected = WorldReference.capturedGameplayRoom
                 art = [:]
                 artStatus = nil
+                replay = nil
+                replayFrameValue = 0
                 importError = nil
             } catch {
                 importError = error.localizedDescription
@@ -211,6 +238,43 @@ struct WorldReferenceView: View {
                 importError = error.localizedDescription
             }
         }
+        .fileImporter(
+            isPresented: $importingReplay,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first, world != nil else {
+                    throw CocoaError(.fileNoSuchFile)
+                }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                if let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                   size > 2_000_000 {
+                    throw ReferenceReplayError.unsupportedFormat
+                }
+                let imported = try ReferenceReplay.load(from: Data(contentsOf: url))
+                replay = imported
+                replayFrameValue = 0
+                let room = imported.frames[0].playerRoomID
+                selected = RoomID(room % 16, room / 16)
+                importError = nil
+            } catch {
+                importError = error.localizedDescription
+            }
+        }
+    }
+
+    private var markerPosition: GridPoint? {
+        if let replay {
+            let frame = replay.frames[min(Int(replayFrameValue), replay.frames.count - 1)]
+            guard selected == RoomID(frame.playerRoomID % 16, frame.playerRoomID / 16) else {
+                return nil
+            }
+            return GridPoint(frame.playerX, frame.playerY)
+        }
+        return selected == WorldReference.capturedGameplayRoom
+            ? WorldReference.capturedPlayerPosition : nil
     }
 
     private func image(for raster: WorldRaster) -> Image {

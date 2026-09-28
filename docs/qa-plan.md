@@ -121,6 +121,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: No input holds position; directional keys produce distinct X/Y outcomes; fire leaves position unchanged in these cases. All five held-input runs stay in room 168. For the six 100-frame schedules, screen hashes and actor room/X/Y at frames 40 and 100 also match the unmodified reference emulator. This tests one captured room and selected times only, not the whole-world collision or quest.
 - **Edge Cases / Variants**: World boundaries, blocked left route, keyboard repeat, enemy motion and differences in a cycle-accurate emulator.
 
+### TC-010: Import private replay into the native world viewer
+- **Priority**: P1
+- **Preconditions**: Import the validated world JSON first; generate `replay-q-100.json` with the local preview launcher.
+- **Steps**:
+  1. Import the private replay and scrub to frames 1, 40 and 100.
+  2. Confirm the captured room remains 168, with recorded coordinates displayed and the cyan ring staying in the selected room.
+  3. Select a different room, then scrub; the view should return to the recorded room.
+  4. Import malformed JSON, a different snapshot hash, or nonsequential frame numbers.
+- **Expected Result**: A read-only actor marker follows the imported frame data; invalid inputs report errors. The separate prototype gameplay state is unaffected. No original media is bundled.
+- **Edge Cases / Variants**: iOS/visionOS Files provider permissions, VoiceOver slider labels, last-frame clamping, incomplete artwork coverage.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

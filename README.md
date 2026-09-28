@@ -14,7 +14,7 @@ For local-only source recovery, use the [private snapshot analysis workflow](doc
 
 The user-supplied [SkoolKit reference cross-check](docs/external-reference.md) now confirms a 16×16 room layout, 48 reusable room templates and their bounded RAM range against **both** local snapshots. Its optional private world-map viewer is structural, not original game artwork; the native prototype remains a separate 2×2 placeholder.
 
-The native apps can now [import the private 16×16 world reference](docs/build.md) for **read-only exploration** of all 256 positions and source placement coordinates. This is a real first data-model slice, not yet faithful character movement, enemy rules, collision or a released game.
+The native apps can now [import the private 16×16 world reference](docs/build.md) for **read-only exploration** of all 256 positions and source placement coordinates. The Mac preview launcher also generates a private Q-key actor replay that you can import and scrub in the world viewer. The data has been cross-checked against the reference emulator at frames 40 and 100, but the app still has **no ported collision, enemy or quest rules**; the interactive four-room prototype is separate.
 
 To inspect the 160 images linked from its graphics page—or make an **authorized local copy** under ignored `SNAPSHOTS/graphics/downloaded/`—use the [private graphics downloader](docs/download-skoolkit-assets.md). No third-party images are included in this repository.
 

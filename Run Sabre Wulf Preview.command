@@ -65,6 +65,26 @@ fi
 "$ROOT/$PRIVATE/SnapshotRoomIndex" "$MENU" "$GAME" --private-map \
     > "$ROOT/$PRIVATE/room-index-report.json"
 
+printf 'Preparing a private 100-frame Q-key reference replay...\n'
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift reverse_engineering/tools/SnapshotReplay.swift \
+    -o "$ROOT/$PRIVATE/SnapshotReplay" > "$ROOT/$PRIVATE/replay-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/replay-build.log" >&2
+    exit 1
+fi
+REPLAY="$ROOT/$PRIVATE/replay-q-100.json"
+TEMP_REPLAY="$(mktemp "$ROOT/$PRIVATE/.replay-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY"' EXIT
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
+if [[ -e "$REPLAY" ]]; then
+    if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
+        printf 'Existing private replay differs; refusing to overwrite %s\n' "$REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_REPLAY" "$REPLAY"
+fi
+
 MENU_PNG="$ROOT/$PRIVATE/snapshot-${MENU_SHA:0:12}-screen.png"
 GAME_PNG="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-screen.png"
 WORLD_MAP="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world.html"
@@ -88,4 +108,5 @@ open "$APP"
 open -a Preview "$MENU_PNG" "$GAME_PNG"
 open "$WORLD_MAP"
 printf '\nOpened the native placeholder app, two original static captures, and a private world-type map.\n'
+printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REPLAY"
 printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'
