@@ -2,17 +2,37 @@ import Foundation
 import XCTest
 @testable import GameCore
 
+private struct ContactArmingReport: Decodable {
+    struct Contact: Decodable {
+        let positiveFrames: [Int]
+    }
+    struct Write: Decodable {
+        let frame: Int
+        let instructionAddress: Int
+        let address: Int
+        let previous: Int
+        let value: Int
+    }
+
+    let matchingRAMFrames: Int
+    let contactComparison: Contact?
+    let playerStateWrites: [Write]?
+}
+
 final class CapturedContactArmingTests: XCTestCase {
     func testBoundedPositiveContactArmsTimer() throws {
-        for (kind, life, room, vx) in [
-            (UInt8(27), UInt8(1), RoomID(8, 9), 0),
-            (UInt8(16), UInt8(1), RoomID(8, 9), 0),
-            (UInt8(19), UInt8(4), RoomID(8, 10), -29),
+        for (kind, life, room, vx, expected) in [
+            (UInt8(27), UInt8(1), RoomID(8, 9), 0, UInt8(1)),
+            (UInt8(16), UInt8(1), RoomID(8, 9), 0, UInt8(1)),
+            (UInt8(19), UInt8(4), RoomID(8, 10), -29, UInt8(1)),
+            (UInt8(17), UInt8(3), RoomID(8, 10), 0, UInt8(1)),
+            (UInt8(17), UInt8(2), RoomID(8, 10), 0, UInt8(1)),
+            (UInt8(17), UInt8(1), RoomID(8, 10), 0, UInt8(2)),
         ] {
             XCTAssertEqual(try CapturedContactArming.timerAfterContact(
                 contact: true, kind: kind, timer: 0,
                 lifeByte: life, room: room, velocityX: vx
-            ), 1)
+            ), expected)
             XCTAssertThrowsError(try CapturedContactArming.timerAfterContact(
                 contact: false, kind: kind, timer: 0,
                 lifeByte: life, room: room, velocityX: vx
@@ -52,24 +72,6 @@ final class CapturedContactArmingTests: XCTestCase {
         guard let directory = ProcessInfo.processInfo.environment[
             "SABRE_PRIVATE_INJURY_START_DIR"
         ] else { throw XCTSkip("Set the ignored contact/player-write directory") }
-        struct Contact: Decodable {
-            let positiveFrames: [Int]
-        }
-        struct ContactReport: Decodable {
-            let matchingRAMFrames: Int
-            let contactComparison: Contact
-        }
-        struct Write: Decodable {
-            let frame: Int
-            let instructionAddress: Int
-            let address: Int
-            let previous: Int
-            let value: Int
-        }
-        struct WriteReport: Decodable {
-            let matchingRAMFrames: Int
-            let playerStateWrites: [Write]
-        }
         let base = URL(fileURLWithPath: directory)
         for (contactName, writeName, contactFrame, armedFrame, kind, life, room, vx) in [
             ("menu-sequence-no-fire-encounter-800.json",
@@ -82,16 +84,17 @@ final class CapturedContactArmingTests: XCTestCase {
              "restart-ready-w-q-player-writes-v2-900.json", 868, 868, 19, 4, 168, -29),
         ] {
             let contacts = try JSONDecoder().decode(
-                ContactReport.self,
+                ContactArmingReport.self,
                 from: Data(contentsOf: base.appendingPathComponent(contactName))
             )
             let writes = try JSONDecoder().decode(
-                WriteReport.self,
+                ContactArmingReport.self,
                 from: Data(contentsOf: base.appendingPathComponent(writeName))
             )
             XCTAssertTrue(contacts.matchingRAMFrames >= writes.matchingRAMFrames)
-            XCTAssertTrue(contacts.contactComparison.positiveFrames.contains(contactFrame))
-            let arming = try XCTUnwrap(writes.playerStateWrites.first {
+            XCTAssertTrue(try XCTUnwrap(contacts.contactComparison)
+                .positiveFrames.contains(contactFrame))
+            let arming = try XCTUnwrap(try XCTUnwrap(writes.playerStateWrites).first {
                 $0.frame == armedFrame && $0.address == 38660
                     && $0.instructionAddress == 43877
             })
@@ -101,6 +104,38 @@ final class CapturedContactArmingTests: XCTestCase {
                 lifeByte: UInt8(life), room: RoomID(room % 16, room / 16),
                 velocityX: vx
             ), UInt8(arming.value))
+        }
+    }
+
+    func testPrivateLaterContactArmingWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment[
+            "SABRE_PRIVATE_LONG_WQ_CONTACT"
+        ] else { throw XCTSkip("Set the ignored 1800-frame W/Q contact report") }
+        let report = try JSONDecoder().decode(
+            ContactArmingReport.self, from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(report.matchingRAMFrames, 1800)
+        let contacts = try XCTUnwrap(report.contactComparison)
+        let writes = try XCTUnwrap(report.playerStateWrites)
+        XCTAssertEqual(
+            contacts.positiveFrames, [162, 298, 868, 1063, 1250, 1385, 1528]
+        )
+        for (frame, life, armedTimer) in [
+            (1063, UInt8(3), UInt8(1)),
+            (1250, UInt8(2), UInt8(1)),
+            (1385, UInt8(1), UInt8(2)),
+        ] {
+            XCTAssertTrue(contacts.positiveFrames.contains(frame))
+            let arming = try XCTUnwrap(writes.first {
+                $0.frame == frame && $0.address == 38660
+                    && $0.instructionAddress == 43877
+            })
+            XCTAssertEqual(arming.previous, 0)
+            XCTAssertEqual(arming.value, Int(armedTimer))
+            XCTAssertEqual(try CapturedContactArming.timerAfterContact(
+                contact: true, kind: 17, timer: 0,
+                lifeByte: life, room: RoomID(8, 10), velocityX: 0
+            ), armedTimer)
         }
     }
 }

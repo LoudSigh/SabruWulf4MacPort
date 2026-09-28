@@ -867,6 +867,18 @@ if [[ -e "$REVERSE_MENU_ROUTINES" ]]; then
 else
     mv "$TEMP_MENU_CONTACT" "$REVERSE_MENU_ROUTINES"
 fi
+REVERSE_LONG_CONTACT="$ROOT/$PRIVATE/restart-ready-w-q-contact-1800.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 1800 \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    --watch-player-state > "$TEMP_MENU_CONTACT"
+if [[ -e "$REVERSE_LONG_CONTACT" ]]; then
+    if ! cmp -s "$REVERSE_LONG_CONTACT" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private W/Q long contact comparison differs: %s\n' "$REVERSE_LONG_CONTACT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$REVERSE_LONG_CONTACT"
+fi
 printf 'Checking the native post-setup room, position and sprite ID against all four paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
@@ -893,12 +905,14 @@ if ! SABRE_PRIVATE_NEW_GAME_INJURY_COUNTDOWN="$REVERSE_LONG_INJURY" \
     exit 1
 fi
 if ! SABRE_PRIVATE_INJURY_START_DIR="$ROOT/$PRIVATE" \
+    SABRE_PRIVATE_LONG_WQ_CONTACT="$REVERSE_LONG_CONTACT" \
     swift test --filter CapturedInjuryStartTests \
     > "$ROOT/$PRIVATE/injury-start-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/injury-start-test.log" >&2
     exit 1
 fi
 if ! SABRE_PRIVATE_INJURY_START_DIR="$ROOT/$PRIVATE" \
+    SABRE_PRIVATE_LONG_WQ_CONTACT="$REVERSE_LONG_CONTACT" \
     swift test --filter CapturedContactArmingTests \
     > "$ROOT/$PRIVATE/contact-arming-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/contact-arming-test.log" >&2

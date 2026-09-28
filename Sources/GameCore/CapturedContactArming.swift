@@ -4,7 +4,7 @@ public enum CapturedContactArmingError: Error, LocalizedError {
     case unsupportedState
 
     public var errorDescription: String? {
-        "Contact arming is supported only for four measured first-injury player states."
+        "Contact arming is supported only for seven measured injury-entry player states."
     }
 }
 
@@ -21,6 +21,9 @@ public enum CapturedContactArming {
               ) else {
             throw CapturedContactArmingError.unsupportedState
         }
-        return 1
+        return CapturedInjuryStart.isFinalLifePlayer(
+            kind: kind, lifeByte: lifeByte,
+            room: room, velocityX: velocityX
+        ) ? 2 : 1
     }
 }

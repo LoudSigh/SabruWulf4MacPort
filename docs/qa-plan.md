@@ -460,26 +460,26 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Numeric control-flow counts are reproducible, while unexecuted routines and exact routine extents remain unknown and no disassembly appears in Git.
 - **Edge Cases / Variants**: Jump-entered/return-terminated code, RST, extended return, interrupt entry, initial snapshot stack and path-end truncation.
 
-### TC-041: Bounded first-injury entry across lives
+### TC-041: Bounded injury entry across lives
 - **Priority**: P1
-- **Preconditions**: Private player-write reports for no-T/A/T and restarted W/Q schedules, with hashed 48K ROM/snapshot.
+- **Preconditions**: Private player-write reports for no-T/A/T and the 1,800-frame restarted W/Q schedule, with hashed 48K ROM/snapshot.
 - **Steps**:
-  1. Require 190/190 RAM frames on no-T and A, 250/250 on extended T and 900/900 on W/Q.
-  2. At onset frames 164, 170, 229 and 870, verify ordered timer 1→32, player kind →64 and horizontal velocity →+3 writes.
-  3. Feed each previously observed kind, room, life byte, timer and velocity to `CapturedInjuryStart`; reject unobserved player states.
-  4. Keep contact-triggered timer 0→1 and actor-update scheduling external.
-- **Expected Result**: **4/4** source-supplied first-injury entries match; this is not autonomous damage or a generalized contact delay.
-- **Edge Cases / Variants**: Different player kind, other room/life count, prior horizontal velocity and timer not equal to one.
+  1. Require 190/190 RAM frames on no-T and A, 250/250 on extended T and 1,800/1,800 on W/Q.
+  2. At ordinary entry frames 164/170/229/870/1064/1251, verify timer 1→32, kind →64 and velocity →+3; at final-life frame 1386 verify timer 2→32, kind →68 and velocity →−3.
+  3. Feed each observed kind, room, life byte, timer and velocity to `CapturedInjuryStart`; reject unobserved player states.
+  4. Keep contact-triggered timer arming and actor-update scheduling external.
+- **Expected Result**: **7/7** source-supplied entries match; this is not autonomous damage or a generalized contact delay.
+- **Edge Cases / Variants**: Final-life variant, different player kind/room, prior horizontal velocity and unsupported timer.
 
 ### TC-042: Arm only the observed positive first contacts
 - **Priority**: P1
-- **Preconditions**: SHA-checked private T/no-T/A 800-frame menu-return contact reports and W/Q 900-frame contact/player-write reports.
+- **Preconditions**: SHA-checked private T/no-T/A 800-frame menu-return contact reports and W/Q 1,800-frame contact/player-write report.
 - **Steps**:
-  1. Require 3,300/3,300 full RAM-parity frames and positive contact frames 162, 169, 228 and 868.
-  2. Match the corresponding first-injury player timer 0→1 writes at frames 163, 169, 228 and 868.
+  1. Require 4,200/4,200 full RAM-parity frames and first-injury positive contact frames 162/169/228/868/1063/1250/1385.
+  2. Match the six ordinary player timer 0→1 writes and the final-life timer 0→2 write.
   3. Supply a positive contact and each bounded player kind/room/life/velocity input to `CapturedContactArming`; verify timer one.
   4. Reject contact false and all unsupported states. Keep polling cadence and subsequent kind-64 onset external.
-- **Expected Result**: **4/4** bounded source arming writes match without asserting a fixed display-frame damage delay.
+- **Expected Result**: **7/7** bounded source arming writes match without asserting a fixed display-frame damage delay.
 - **Edge Cases / Variants**: Contact at a display-frame boundary, repeat contact during injury, other life counts and a source contact predicate with no player damage.
 
 ### TC-043: Multiple captured kind-65 life countdowns

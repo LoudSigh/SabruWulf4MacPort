@@ -14,6 +14,8 @@
     "restartKeyHeldFrames": [531, 535],
     "observedReadyFrame": 790,
     "positiveContactFrame": 868,
+    "boundedInjuryContactFrames": [868, 1063, 1250, 1385],
+    "matchingContactRoutineReturnsAcrossFullReplay": 5587,
     "firstInjuryEntryFrame": 870,
     "lifeByteChangeFrames": [983, 1131, 1317, 1499]
   },
