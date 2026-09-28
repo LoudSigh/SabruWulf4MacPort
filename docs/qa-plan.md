@@ -105,7 +105,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Priority**: P1
 - **Preconditions**: User-captured 1-player keyboard snapshot and the linked 48K control handler; `OriginalAction` mapping tests.
 - **Steps**:
-  1. Confirm Q/W/E/R/T map to left/right/down/up/fire; unrelated A/P/Space do not acquire invented original bindings.
+  1. Confirm Q/W/E/R/T map to left/right/up/down/fire; unrelated A/P/Space do not acquire invented original bindings.
   2. Run a 100-frame no-input replay and repeat each Q/W/E/R/T held from frame index 20 through 39 with fresh FE reads.
   3. Check divergence frames and re-run one scenario to confirm deterministic JSON; compare visible outcomes to the user's working original emulator.
 - **Expected Result**: The action mapping is stable and each source-row key changes the approximate reference trace. Do **not** accept changed hashes alone as proof of exact movement, collision, or fire behavior in the native game.
@@ -231,11 +231,11 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Preconditions**: `SnapshotRoomIndex --private-map` has generated the private world and background atlas from both verified captures.
 - **Steps**:
   1. Import the matching world, then `snapshot-803e4197989c-background-atlas-v1.json`.
-  2. Visit several world positions and confirm native mint 1-bit shapes align with orange measured bounds; source Y=136/height=56 begins at the screen top, and E/down moves the actor marker toward the screen bottom.
+  2. Visit several world positions and confirm native mint 1-bit shapes align with orange measured bounds; source Y=136/height=56 begins at screen Y=136, and E/up moves the actor marker toward the screen top.
   3. Toggle the approximate attribute-color preview; verify synthetic ink/paper/bright/FLASH-bit tests and complementing the source bitmap bit for ink/paper selection, but do not claim screen parity.
   4. Import local PNG backgrounds as well, then replace the world. Check that source atlas precedence is clear and stale art/atlas data is removed when world data changes.
   5. Attempt a modified bitmap byte, a malformed attribute header, an oversized file and an atlas missing one of 41 referenced records.
-- **Expected Result**: The importer verifies 41 unique background records, 9,686 source bytes and all 919 references. Invalid data reports an error, with no silent fallback to invented bitmaps. Bitmap placement and actor markers convert source bottom-origin Y consistently. Optional standard 48K attribute colors are clearly approximate; FLASH timing, transparency and full-scene sprite compositing remain unimplemented. No original pixels are bundled or pushed.
+- **Expected Result**: The importer verifies 41 unique background records, 9,686 source bytes and all 919 references. Invalid data reports an error, with no silent fallback to invented bitmaps. Bitmap placement and actor markers use source X/Y directly; the captured room's 29,056 covered RGB pixels match the reference with bit inversion. FLASH timing, dynamic sprites and other rooms remain unverified. No original pixels are bundled or pushed.
 - **Edge Cases / Variants**: Multi-placement overlap, 4:3 resizing, VoiceOver room summary and iOS/visionOS private file access.
 
 ### TC-021: Controlled fire/no-fire/unrelated-key enemy approach

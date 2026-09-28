@@ -75,6 +75,20 @@ fi
 "$ROOT/$PRIVATE/SnapshotSpriteIndex" "$MENU" "$GAME" --private-atlas \
     > "$ROOT/$PRIVATE/sprite-index-report.json"
 
+printf 'Checking the captured room against source background pixels...\n'
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift Sources/GameCore/*.swift \
+    reverse_engineering/tools/VerifyBackgroundScreen.swift \
+    -o "$ROOT/$PRIVATE/VerifyBackgroundScreen" \
+    > "$ROOT/$PRIVATE/background-screen-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/background-screen-build.log" >&2
+    exit 1
+fi
+"$ROOT/$PRIVATE/VerifyBackgroundScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
+    > "$ROOT/$PRIVATE/background-pixel-parity.json"
+
 printf 'Preparing a private 100-frame Q-key reference replay...\n'
 if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
     "$CORE"/*.swift reverse_engineering/tools/SnapshotReplay.swift \

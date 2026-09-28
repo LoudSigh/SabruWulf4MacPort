@@ -5,8 +5,8 @@ final class OriginalControlsTests: XCTestCase {
     func testSpectrumKeyboardRowMapsToFiveActions() {
         XCTAssertEqual(OriginalAction.fromSpectrumKey("q"), .left)
         XCTAssertEqual(OriginalAction.fromSpectrumKey("w"), .right)
-        XCTAssertEqual(OriginalAction.fromSpectrumKey("e"), .down)
-        XCTAssertEqual(OriginalAction.fromSpectrumKey("r"), .up)
+        XCTAssertEqual(OriginalAction.fromSpectrumKey("e"), .up)
+        XCTAssertEqual(OriginalAction.fromSpectrumKey("r"), .down)
         XCTAssertEqual(OriginalAction.fromSpectrumKey("t"), .fire)
         XCTAssertEqual(OriginalAction.fromSpectrumKey("Q"), .left)
     }

@@ -102,7 +102,7 @@ public struct CapturedMovementState: Sendable {
         }
 
         let horizontal = (actions.contains(.right) ? 7 : 0) - (actions.contains(.left) ? 7 : 0)
-        let vertical = (actions.contains(.up) ? 7 : 0) - (actions.contains(.down) ? 7 : 0)
+        let vertical = (actions.contains(.down) ? 7 : 0) - (actions.contains(.up) ? 7 : 0)
         let nextVX = min(48, max(-48, velocityX + horizontal))
         let nextVY = min(48, max(-48, velocityY + vertical))
         let next = GridPoint(player.x + nextVX / 16, player.y + nextVY / 16)

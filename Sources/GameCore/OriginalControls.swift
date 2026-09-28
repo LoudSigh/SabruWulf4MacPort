@@ -11,8 +11,8 @@ public enum OriginalAction: String, Sendable, CaseIterable {
         switch character.lowercased() {
         case "q": .left
         case "w": .right
-        case "e": .down
-        case "r": .up
+        case "e": .up
+        case "r": .down
         case "t": .fire
         default: nil
         }

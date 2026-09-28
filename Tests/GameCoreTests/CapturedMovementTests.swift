@@ -33,16 +33,16 @@ final class CapturedMovementTests: XCTestCase {
     func testNorthTransitionFreezesThenRebasesActor() throws {
         var state = try CapturedMovementState(world: world())
         for _ in 0..<100 where !state.transitioning {
-            try state.advance(holding: [.down])
+            try state.advance(holding: [.up])
         }
         XCTAssertTrue(state.transitioning)
         XCTAssertEqual(state.room, RoomID(8, 9))
         let previous = state.player
         for _ in 0..<6 {
-            try state.advance(holding: [.down])
+            try state.advance(holding: [.up])
             XCTAssertEqual(state.player, previous)
         }
-        try state.advance(holding: [.down])
+        try state.advance(holding: [.up])
         XCTAssertFalse(state.transitioning)
         XCTAssertEqual(state.player, GridPoint(previous.x, 191))
     }
@@ -50,31 +50,31 @@ final class CapturedMovementTests: XCTestCase {
     func testVerifiedReturnFreezesThenRebasesActor() throws {
         var state = try CapturedMovementState(world: world())
         for _ in 0..<100 where state.room == RoomID(8, 10) {
-            try state.advance(holding: [.down])
+            try state.advance(holding: [.up])
         }
         XCTAssertEqual(state.room, RoomID(8, 9))
         for _ in 0..<7 { try state.advance() }
         XCTAssertEqual(state.player.y, 191)
         for _ in 0..<100 where state.room == RoomID(8, 9) {
-            try state.advance(holding: [.up])
+            try state.advance(holding: [.down])
         }
         XCTAssertEqual(state.room, RoomID(8, 10))
         let oldX = state.player.x
         let oldY = state.player.y
         for _ in 0..<5 {
-            try state.advance(holding: [.up])
+            try state.advance(holding: [.down])
             XCTAssertEqual(state.player.y, oldY)
         }
-        try state.advance(holding: [.up])
+        try state.advance(holding: [.down])
         XCTAssertEqual(state.player, GridPoint(oldX - 1, 39))
-        try state.advance(holding: [.up])
+        try state.advance(holding: [.down])
         XCTAssertEqual(state.player.y, 39)
     }
 
     func testProvisionalWestExitAndEastReturnRebaseActor() throws {
         var state = try CapturedMovementState(world: world())
         for _ in 0..<100 where state.room == RoomID(8, 10) {
-            try state.advance(holding: [.down])
+            try state.advance(holding: [.up])
         }
         for _ in 0..<7 { try state.advance() }
         for _ in 0..<100 where state.room == RoomID(8, 9) {
@@ -154,8 +154,8 @@ final class CapturedMovementTests: XCTestCase {
                 let actions: Set<OriginalAction>
                 switch key {
                 case "w": actions = [.right]
-                case "e": actions = [.down]
-                case "r": actions = [.up]
+                case "e": actions = [.up]
+                case "r": actions = [.down]
                 case "q": actions = [.left]
                 case nil: actions = []
                 default:

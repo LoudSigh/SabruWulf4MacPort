@@ -60,7 +60,7 @@ struct WorldReferenceView: View {
                     + "The separate movement preview implements only a measured subset of original rules."
             )
             .font(.caption)
-            Text("Original keyboard reference: Q left · W right · E down · R up · T fire (not bound to this viewer)")
+            Text("Original keyboard reference: Q left · W right · E up · R down · T fire (not bound to this viewer)")
                 .font(.caption)
             Button("Import your private world data") { importing = true }
                 .buttonStyle(.bordered)
@@ -78,8 +78,8 @@ struct WorldReferenceView: View {
                             Text("None").tag("none")
                             Text("Q · left").tag("q")
                             Text("W · right").tag("w")
-                            Text("E · down").tag("e")
-                            Text("R · up").tag("r")
+                            Text("E · up").tag("e")
+                            Text("R · down").tag("r")
                         }
                         HStack {
                             Button("Step frame") { advanceMovement() }
@@ -302,7 +302,7 @@ struct WorldReferenceView: View {
                                     .position(
                                         x: (CGFloat(placement.x) + CGFloat(width) / 2)
                                             * area.size.width / 256,
-                                        y: (screenY(placement.y) - CGFloat(height) / 2)
+                                        y: (screenY(placement.y) + CGFloat(height) / 2)
                                             * area.size.height / 192
                                     )
                             }
@@ -586,7 +586,7 @@ struct WorldReferenceView: View {
                     )
                     .position(
                         x: (CGFloat(placement.x) + CGFloat(mask.width) / 2) * size.width / 256,
-                        y: (screenY(placement.y) - CGFloat(mask.height) / 2)
+                        y: (screenY(placement.y) + CGFloat(mask.height) / 2)
                             * size.height / 192
                     )
             case .failure(let error):
@@ -605,7 +605,7 @@ struct WorldReferenceView: View {
                 .blendMode(.screen)
                 .position(
                     x: (CGFloat(placement.x) + graphic.size.width / 8) * size.width / 256,
-                    y: (screenY(placement.y) - graphic.size.height / 8)
+                    y: (screenY(placement.y) + graphic.size.height / 8)
                         * size.height / 192
                 )
         } else {
@@ -614,7 +614,7 @@ struct WorldReferenceView: View {
                 .frame(width: 7, height: 7)
                 .position(
                     x: (CGFloat(placement.x) + 4) * size.width / 256,
-                    y: (screenY(placement.y) - 4) * size.height / 192
+                    y: (screenY(placement.y) + 4) * size.height / 192
                 )
         }
     }

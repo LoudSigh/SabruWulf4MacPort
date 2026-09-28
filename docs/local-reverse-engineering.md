@@ -67,6 +67,19 @@ git check-ignore reverse_engineering/private/snapshot-803e4197989c-background-at
 
 This additionally checks the bitmap and attribute headers of all 41 background records, matches the complete records across snapshots, and writes their bytes **only** under the ignored private directory. The native app validates the aggregate hash and placement dimensions before drawing 1-bit room geometry. [background-index.json](../reverse_engineering/analysis/background-index.json) contains numeric evidence, not graphics or instruction bytes.
 
+For an exact, bounded screen check of the captured room after extracting both private atlases:
+
+```sh
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift Sources/GameCore/*.swift \
+  reverse_engineering/tools/VerifyBackgroundScreen.swift -o "$OUT/VerifyBackgroundScreen"
+"$OUT/VerifyBackgroundScreen" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+  reverse_engineering/private/snapshot-803e4197989c-world-v2.json \
+  reverse_engineering/private/snapshot-803e4197989c-background-atlas-v1.json \
+  > reverse_engineering/private/background-pixel-parity.json
+```
+
+The tool fails unless the bitmap-bit inversion and source-direct X/Y reproduce **29,056/29,056 covered RGB pixels** in room 168 of the unmodified snapshot. The remaining 20,096 screen pixels are **uncovered**, not claimed as correct. It prints only numeric evidence and never writes a screenshot or source pixels outside the ignored private directory.
+
 ## Private, bounded input comparison
 
 `SnapshotReplay.swift` schedules one keyboard key at frame index 20 and releases it at index 40, with a 48K IM1 boundary at 69,888 cycles. It reads the FE keyboard matrix on **every** I/O read rather than relying on a frozen emulator time counter. It records numeric instruction/read/write counts and frame hashes, no screen pixels or original code:
