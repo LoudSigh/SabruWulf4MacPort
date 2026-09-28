@@ -131,6 +131,7 @@ struct WorldReferenceView: View {
                     Text(
                         "Recorded \(input.uppercased()) · frame \(frame.index) "
                             + "· room \(frame.playerRoomID) · X \(frame.playerX), Y \(frame.playerY)"
+                            + " · source life byte \(frame.reportedLives)"
                             + (frame.playerKind.map { " · actor state \($0)" } ?? "")
                     )
                     .font(.caption.monospacedDigit())

@@ -147,7 +147,9 @@ TEMP_FIRE="$(mktemp "$ROOT/$PRIVATE/.fire-XXXXXXXX.json")"
 TEMP_COMBAT="$(mktemp "$ROOT/$PRIVATE/.combat-XXXXXXXX.json")"
 TEMP_COMBAT_ENTITY="$(mktemp "$ROOT/$PRIVATE/.combat-entity-XXXXXXXX.json")"
 TEMP_CONTACT="$(mktemp "$ROOT/$PRIVATE/.contact-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT"' EXIT
+TEMP_LONG="$(mktemp "$ROOT/$PRIVATE/.long-replay-XXXXXXXX.json")"
+TEMP_LONG_CONTACT="$(mktemp "$ROOT/$PRIVATE/.long-contact-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -318,6 +320,33 @@ for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
         mv "$TEMP_CONTACT" "$CONTACT_REPORT"
     fi
 done
+printf 'Preparing a private 600-frame injury and remaining-life observation...\n'
+LONG_REPLAY="$ROOT/$PRIVATE/replay-no-fire-600.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/no-fire-encounter-schedule.json 600 \
+    --reference-timing --actor-kind > "$TEMP_LONG"
+if [[ -e "$LONG_REPLAY" ]]; then
+    if ! cmp -s "$LONG_REPLAY" "$TEMP_LONG"; then
+        printf 'Existing private long replay differs; refusing to overwrite %s\n' "$LONG_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_LONG" "$LONG_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$LONG_REPLAY"
+LONG_CONTACT="$ROOT/$PRIVATE/contact-check-no-fire-encounter-600.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/no-fire-encounter-schedule.json 600 \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    > "$TEMP_LONG_CONTACT"
+if [[ -e "$LONG_CONTACT" ]]; then
+    if ! cmp -s "$LONG_CONTACT" "$TEMP_LONG_CONTACT"; then
+        printf 'Existing private long contact comparison differs; refusing to overwrite %s\n' "$LONG_CONTACT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_LONG_CONTACT" "$LONG_CONTACT"
+fi
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"

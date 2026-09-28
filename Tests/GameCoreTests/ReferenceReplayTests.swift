@@ -6,11 +6,11 @@ final class ReferenceReplayTests: XCTestCase {
     private func fixture(
         index: Int = 1, room: Int = 168,
         sha: String = WorldReference.supportedSnapshotSHA256,
-        kind: Int? = nil
+        kind: Int? = nil, lives: Int = 1
     ) throws -> Data {
         var frame: [String: Any] = [
             "index": index, "playerRoomID": room, "playerX": 57,
-            "playerY": 112, "reportedLives": 1,
+            "playerY": 112, "reportedLives": lives,
         ]
         if let kind { frame["playerKind"] = kind }
         return try JSONSerialization.data(withJSONObject: [
@@ -27,6 +27,7 @@ final class ReferenceReplayTests: XCTestCase {
         XCTAssertEqual(replay.frames[0].playerRoomID, 168)
         XCTAssertNil(replay.frames[0].playerKind)
         XCTAssertEqual(try ReferenceReplay.load(from: fixture(kind: 42)).frames[0].playerKind, 42)
+        XCTAssertEqual(try ReferenceReplay.load(from: fixture(lives: 0)).frames[0].reportedLives, 0)
     }
 
     func testRejectsUnverifiedOrMalformedFrames() throws {
@@ -34,6 +35,8 @@ final class ReferenceReplayTests: XCTestCase {
         XCTAssertThrowsError(try ReferenceReplay.load(from: fixture(room: 256)))
         XCTAssertThrowsError(try ReferenceReplay.load(from: fixture(kind: -1)))
         XCTAssertThrowsError(try ReferenceReplay.load(from: fixture(kind: 256)))
+        XCTAssertThrowsError(try ReferenceReplay.load(from: fixture(lives: -1)))
+        XCTAssertThrowsError(try ReferenceReplay.load(from: fixture(lives: 10)))
         XCTAssertThrowsError(try ReferenceReplay.load(
             from: fixture(sha: String(repeating: "0", count: 64))
         ))
@@ -152,5 +155,24 @@ final class ReferenceReplayTests: XCTestCase {
                 return (64...69).contains(kind)
             })
         }
+    }
+
+    func testPrivateLongInjuryObservationWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_LONG_NO_FIRE_REPLAY"]
+        else {
+            throw XCTSkip("Set SABRE_PRIVATE_LONG_NO_FIRE_REPLAY for local life-byte observation")
+        }
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(replay.frames.count, 600)
+        XCTAssertEqual(replay.frameBoundaryMode, "reference-relative")
+        XCTAssertEqual(replay.frames[163].playerKind, 64)
+        XCTAssertEqual(replay.frames[164].playerKind, 65)
+        XCTAssertEqual(replay.frames[229].playerKind, 65)
+        XCTAssertEqual(replay.frames[229].reportedLives, 1)
+        XCTAssertEqual(replay.frames[230].playerKind, 17)
+        XCTAssertEqual(replay.frames[230].reportedLives, 0)
+        XCTAssertEqual(replay.frames[317].playerKind, 70)
     }
 }

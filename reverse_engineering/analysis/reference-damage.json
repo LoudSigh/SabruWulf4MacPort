@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "framesPerRun": 600,
+  "observations": [
+    {
+      "schedule": "no-fire-encounter-schedule.json",
+      "matchingRAMAndScreenFrames": 600,
+      "matchingContactCalls": 1305,
+      "positiveContactFrames": [162, 298],
+      "initialInjuryKind64": [164, 164],
+      "kind65": [165, 230],
+      "lifeByteFallsFrom1To0AtFrame": 231,
+      "kind17": [231, 298],
+      "laterKinds": [{"kind": 68, "frames": [299, 300]}, {"kind": 69, "frames": [301, 317]}, {"kind": 70, "frames": [318, 600]}]
+    },
+    {
+      "schedule": "unrelated-a-control-schedule.json",
+      "matchingRAMAndScreenFrames": 600,
+      "matchingContactCalls": 1339,
+      "positiveContactFrames": [169, 305],
+      "initialInjuryKind64": [170, 170],
+      "kind65": [171, 236],
+      "lifeByteFallsFrom1To0AtFrame": 237,
+      "kind17": [237, 305],
+      "laterKinds": [{"kind": 64, "frames": [306, 307]}, {"kind": 65, "frames": [308, 324]}, {"kind": 66, "frames": [325, 600]}]
+    },
+    {
+      "schedule": "fire-before-contact-schedule.json",
+      "matchingRAMAndScreenFrames": 600,
+      "matchingContactCalls": 1833,
+      "positiveContactFrames": [228, 474],
+      "initialInjuryKind64": [229, 230],
+      "kind65": [231, 296],
+      "lifeByteFallsFrom1To0AtFrame": 297,
+      "kind17": [297, 474],
+      "laterKinds": [{"kind": 68, "frames": [475, 475]}, {"kind": 69, "frames": [476, 493]}, {"kind": 70, "frames": [494, 600]}]
+    }
+  ],
+  "limits": "Each 600-frame run matches the unmodified emulator's individual RAM/screen hashes and the pure contact predicate's individual source returns. Kind 65 occupies exactly 66 frames before the first life-byte decrement in these three cases; kind 64 occupies one or two frames, and the second contact follows a different kind sequence. These observations do not establish the full injury algorithm, lives interpretation, game-over screen, attack damage, respawn or native enemy AI."
+}
