@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "entitySlot": 12,
+  "roomID": 152,
+  "paths": [
+    {"schedule": "fire-before-contact-schedule.json", "matchingMovingUpdates": 8, "observedMovingUpdates": 8, "countdownOnlyFrames": 1},
+    {"schedule": "no-fire-encounter-schedule.json", "matchingMovingUpdates": 2, "observedMovingUpdates": 2, "countdownOnlyFrames": 0},
+    {"schedule": "unrelated-a-control-schedule.json", "matchingMovingUpdates": 4, "observedMovingUpdates": 4, "countdownOnlyFrames": 2}
+  ],
+  "totals": {"matchingMovingUpdates": 14, "observedMovingUpdates": 14, "countdownOnlyFrames": 3},
+  "rule": "In the bounded active encounter, movement toggles kind bit 0; an externally observed countdown event decrements the timer. Countdown and movement may appear in separate displayed frames. The parity gate compares the resulting kind, timer, position and complete emulator RAM against the verified source.",
+  "limits": "The model accepts only observed slot-12 kinds 108-111, timer 2-15, room 152 and four verified signed X velocities with Y velocity 80. It does not decide when either event happens, synthesize RNG, handle timer expiry, spawn other actors or apply contact and injury."
+}

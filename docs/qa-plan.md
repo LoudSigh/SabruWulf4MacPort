@@ -369,6 +369,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: All 6,900 reference RAM frames agree; 2,589 distinct executed RAM PC starts have zero overlap with known immutable data and validated sprite records. Original instruction lengths and the other 19,974 RAM bytes remain **unclassified**, not inferred from a PC-start count.
 - **Edge Cases / Variants**: Source self-modification, alternate menu path, ROM code versus RAM, omitted schedule and PC at a data interval boundary.
 
+### TC-033: Source-driven active-enemy phase and countdown
+- **Priority**: P1
+- **Preconditions**: SHA-checked 48K ROM and gameplay snapshot, private version-2 world, and three 190-frame encounter schedules.
+- **Steps**:
+  1. Run the launcher or `SnapshotDivergence --reference-timing --require-ram-parity --require-entity-phase-parity` with `SABRE_PRIVATE_WORLD` set to the ignored private world for each T/no-T/A schedule.
+  2. Run `CapturedActiveEnemyStateTests` with the private encounter-report directory and require 8/2/4 moving-update frames, 1/0/2 countdown-only frames, and 190/190 full RAM frames per path.
+  3. Confirm an independent countdown at frame 166 followed by movement at frame 167 on the T path preserves timer 6 across the movement, while kind and position change.
+  4. Reject unsupported timer expiry, actor kinds, rooms and velocities; ensure the app never treats these supplied events as autonomous combat.
+- **Expected Result**: All 14 observed moving transitions and three separate countdown-only display frames match the source without embedding original code, frames or media.
+- **Edge Cases / Variants**: Countdown and move in the same display frame, countdown before move, timer 1, missing private world, no eligible updates and source parity mismatch.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

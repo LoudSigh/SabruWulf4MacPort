@@ -337,6 +337,19 @@ for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
     else
         mv "$TEMP_CONTACT" "$DIRECTION_REPORT"
     fi
+    ACTIVE_ENEMY_REPORT="$ROOT/$PRIVATE/active-enemy-check-$scenario-190.json"
+    SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+        "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
+        --reference-timing --require-ram-parity --require-entity-phase-parity \
+        > "$TEMP_CONTACT"
+    if [[ -e "$ACTIVE_ENEMY_REPORT" ]]; then
+        if ! cmp -s "$ACTIVE_ENEMY_REPORT" "$TEMP_CONTACT"; then
+            printf 'Existing private active-enemy comparison differs: %s\n' "$ACTIVE_ENEMY_REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_CONTACT" "$ACTIVE_ENEMY_REPORT"
+    fi
 done
 printf 'Checking a second RNG-selected enemy heading on the extended T route...\n'
 EXTENDED_FIRE="$ROOT/$PRIVATE/replay-fire-before-contact-250.json"
@@ -380,6 +393,12 @@ if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json
     swift test --filter 'CapturedEntityMotionTests/testPrivateEnemyMovesAgainstReferenceWhenProvided' \
     > "$ROOT/$PRIVATE/entity-motion-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/entity-motion-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedActiveEnemyStateTests \
+    > "$ROOT/$PRIVATE/active-enemy-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/active-enemy-test.log" >&2
     exit 1
 fi
 printf 'Preparing a private 600-frame injury and remaining-life observation...\n'
