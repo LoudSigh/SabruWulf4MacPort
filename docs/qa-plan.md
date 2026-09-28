@@ -216,6 +216,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: All 196 pointer IDs are selectable; 152 distinct nonempty records decode and 14 IDs reuse the empty sentinel. The importer verifies table and record hashes, rejects changed source data explicitly and neither changes movement nor bundles bitmap bytes.
 - **Edge Cases / Variants**: iOS/visionOS Files provider permissions, VoiceOver slider labels, resetting atlas on world replacement, smallest/largest sprite and unsupported color/animation claims.
 
+### TC-019: Resolve recorded T-state silhouettes privately
+- **Priority**: P1
+- **Preconditions**: Private world, hash-validated sprite atlas and `replay-fire-reference-100.json` imported into the same viewer.
+- **Steps**:
+  1. Scrub the T-key frames 20–41 and check the displayed silhouette ID follows the recorded actor state, including 42 at frame 21 and 20 at frame 41.
+  2. Import an older replay with no actor-state field; inspect the manual atlas slider independently.
+  3. Replace the world and confirm the atlas and replay are cleared rather than silently paired with new data.
+- **Expected Result**: All 100 T-run actor-state IDs resolve to nonempty source masks. No bitmap payload is bundled or pushed, and source-mask display never changes movement or claims full animation/combat fidelity.
+- **Edge Cases / Variants**: Invalid actor ID, empty sentinel ID, file permission loss and large text/accessibility settings.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

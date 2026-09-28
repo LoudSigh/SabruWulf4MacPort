@@ -22,6 +22,7 @@ Two independently recovered Sabreman bitmap records (sprite IDs 16 and 21) were 
 The native viewer can now **optionally** show local sprite samples 16 and 21 as thumbnails from a user-selected private folder. This is an inspection surface, not a sprite renderer or permission to distribute those images; playback and simulation remain independent of imported art.
 
 The local [sprite index tool](../reverse_engineering/tools/SnapshotSpriteIndex.swift) can export all 196 pointer IDs and their 153 target records to an **ignored private atlas** after checking both snapshots agree. The shared [SpriteAtlas](../Sources/GameCore/SpriteAtlas.swift) verifies the pointer-table and record hashes, explicitly represents the empty sentinel and decodes the 152 nonempty bitmap masks. In the native viewer, import that atlas to browse any pointer ID and render its shape in newly drawn monochrome pixels; the private JSON and rendered source pixels are never bundled or tracked. This verifies byte-to-silhouette decoding, **not** original palette/compositing or which animation frames follow which events.
+When the verified T-key replay supplies a player actor-state ID, the viewer can look up that index in the private atlas and draw its mask beside the recorded frame. All 100 recorded T-run IDs have nonempty bounded masks; that does not prove how the original game layered sprites, assigned colors, or selected frames outside this capture.
 
 ## Reproduce and inspect privately
 

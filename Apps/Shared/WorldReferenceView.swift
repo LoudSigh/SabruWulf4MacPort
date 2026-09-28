@@ -127,6 +127,20 @@ struct WorldReferenceView: View {
                         let id = replay.frames[Int(value)].playerRoomID
                         selected = RoomID(id % 16, id / 16)
                     }
+                    if let spriteAtlas, let kind = frame.playerKind {
+                        switch Result(catching: { try spriteAtlas.mask(at: kind) }) {
+                        case .success(let mask?):
+                            Text("Recorded actor-state \(kind) · decoded silhouette only")
+                                .font(.caption)
+                            NativeSpritePreview(mask: mask)
+                        case .success(nil):
+                            Text("Recorded actor-state \(kind) has no bitmap.")
+                                .font(.caption)
+                        case .failure(let error):
+                            Text(error.localizedDescription)
+                                .foregroundStyle(.red)
+                        }
+                    }
                     if let movement, (1...replay.frames.count).contains(movement.frame) {
                         let expected = replay.frames[movement.frame - 1]
                         let matches = expected.playerRoomID == movement.room.y * 16 + movement.room.x

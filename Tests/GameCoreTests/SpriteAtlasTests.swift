@@ -84,5 +84,14 @@ final class SpriteAtlasTests: XCTestCase {
         let sample21 = try XCTUnwrap(atlas.mask(at: 21))
         XCTAssertEqual(sample21.width, 16)
         XCTAssertEqual(sample21.height, 22)
+        if let replayPath = ProcessInfo.processInfo.environment["SABRE_PRIVATE_FIRE_REPLAY"] {
+            let replay = try ReferenceReplay.load(
+                from: Data(contentsOf: URL(fileURLWithPath: replayPath))
+            )
+            for frame in replay.frames {
+                let kind = try XCTUnwrap(frame.playerKind)
+                XCTAssertNotNil(try atlas.mask(at: kind))
+            }
+        }
     }
 }
