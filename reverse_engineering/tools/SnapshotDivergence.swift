@@ -10,11 +10,12 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case unimplemented
     case ramMismatch(matching: Int, total: Int)
     case contactMismatch(frame: Int, predicted: Bool, actual: Bool)
+    case injuryMismatch(frame: Int)
 
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity (requires reference timing and RAM parity)] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] | --self-test (source parity flags require reference timing and RAM parity)"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -27,6 +28,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "Only \(matching) of \(total) RAM frames match the unmodified emulator"
         case .contactMismatch(let frame, let predicted, let actual):
             "Source contact return at frame \(frame): predicted \(predicted), observed \(actual)"
+        case .injuryMismatch(let frame):
+            "Captured one-life injury transition differs from the source at frame \(frame)"
         }
     }
 }
@@ -107,6 +110,19 @@ private struct PendingContact {
     let predicted: Bool
 }
 
+private struct InjuryComparison: Encodable {
+    let sourceUpdates: Int
+    let matchingUpdates: Int
+    let lifeDecrementFrames: [Int]
+}
+
+private struct PendingInjury {
+    let expected: CapturedInjuryStep
+    let frame: Int
+
+    var isTerminal: Bool { expected.timer == 0 }
+}
+
 private struct Report: Encodable {
     let schemaVersion = 1
     let snapshotSHA256: String
@@ -123,6 +139,7 @@ private struct Report: Encodable {
     let rngFrames: [Int]?
     let rngWrites: [RNGWrite]?
     let contactComparison: ContactComparison?
+    let injuryComparison: InjuryComparison?
 }
 
 private func hash(_ data: Data) -> String {
@@ -206,14 +223,18 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...10).contains(arguments.count),
+            guard (5...11).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--reference-timing",
-                       "--require-ram-parity", "--require-contact-parity"].contains($0)
+                       "--require-ram-parity", "--require-contact-parity",
+                       "--require-first-injury-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
                   let count = Int(arguments[4]), (1...600).contains(count),
                   !options.contains("--require-contact-parity")
+                    || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--require-first-injury-parity")
                     || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
@@ -221,6 +242,7 @@ private struct SnapshotDivergence {
             let includeTrace = options.contains("--trace")
             let watchActorState = options.contains("--watch-actor-state")
             let requireContactParity = options.contains("--require-contact-parity")
+            let requireInjuryParity = options.contains("--require-first-injury-parity")
             let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
@@ -270,6 +292,10 @@ private struct SnapshotDivergence {
             var contactCalls = 0
             var matchingContactCalls = 0
             var positiveContactFrames: [Int] = []
+            var pendingInjury: PendingInjury?
+            var injuryUpdates = 0
+            var matchingInjuryUpdates = 0
+            var lifeDecrementFrames: [Int] = []
 
             for frame in 0..<count {
                 let pressed = try segments.first(where: {
@@ -291,6 +317,33 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    if requireInjuryParity {
+                        if cpu.pc == 0xAA10,
+                           memory.read(0x9702) == 65,
+                           memory.read(0x96BD) == 1 {
+                            let expected = try CapturedFirstInjuryTick.advance(
+                                kind: memory.read(0x9702),
+                                timer: memory.read(0x9704),
+                                lifeByte: memory.read(0x96BD)
+                            )
+                            pendingInjury = PendingInjury(
+                                expected: expected, frame: frame + 1
+                            )
+                        } else if let injury = pendingInjury,
+                                  cpu.pc == (injury.isTerminal ? 0xAA45 : 0xAA57) {
+                            pendingInjury = nil
+                            injuryUpdates += 1
+                            guard memory.read(0x9702) == injury.expected.kind,
+                                  memory.read(0x9704) == injury.expected.timer,
+                                  memory.read(0x96BD) == injury.expected.lifeByte else {
+                                throw DivergenceError.injuryMismatch(frame: injury.frame)
+                            }
+                            matchingInjuryUpdates += 1
+                            if injury.isTerminal {
+                                lifeDecrementFrames.append(injury.frame)
+                            }
+                        }
+                    }
                     if requireContactParity {
                         if cpu.pc == 0xAB36 {
                             let other = cpu.ix
@@ -430,7 +483,8 @@ private struct SnapshotDivergence {
             if options.contains("--require-ram-parity"), matchingRAMFrames != count {
                 throw DivergenceError.ramMismatch(matching: matchingRAMFrames, total: count)
             }
-            guard !requireContactParity || pendingContacts.isEmpty else {
+            guard (!requireContactParity || pendingContacts.isEmpty),
+                  (!requireInjuryParity || pendingInjury == nil) else {
                 throw DivergenceError.invalidInput
             }
             let report = Report(
@@ -451,6 +505,12 @@ private struct SnapshotDivergence {
                     ? ContactComparison(
                         calls: contactCalls, matchingCalls: matchingContactCalls,
                         positiveFrames: positiveContactFrames
+                    ) : nil,
+                injuryComparison: requireInjuryParity
+                    ? InjuryComparison(
+                        sourceUpdates: injuryUpdates,
+                        matchingUpdates: matchingInjuryUpdates,
+                        lifeDecrementFrames: lifeDecrementFrames
                     ) : nil
             )
             let encoder = JSONEncoder()

@@ -3,6 +3,13 @@
   "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
   "frameBoundaryMode": "reference-relative",
   "framesPerRun": 600,
+  "firstInjuryRoutine": {
+    "scope": "Only source kind 65 with timer 1..63 and life byte exactly 1; one source actor-update tick, not one display frame",
+    "timerAtKind65Entry": 63,
+    "sourceUpdatesPerFirstInjury": 63,
+    "matchingUpdatesAcrossThreeRuns": 189,
+    "terminalTransition": "At timer 1 the next source update produces kind 17, timer 0 and life byte 0; other player/global fields and game-over paths remain unmodeled"
+  },
   "observations": [
     {
       "schedule": "no-fire-encounter-schedule.json",

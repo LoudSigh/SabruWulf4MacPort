@@ -149,7 +149,8 @@ TEMP_COMBAT_ENTITY="$(mktemp "$ROOT/$PRIVATE/.combat-entity-XXXXXXXX.json")"
 TEMP_CONTACT="$(mktemp "$ROOT/$PRIVATE/.contact-XXXXXXXX.json")"
 TEMP_LONG="$(mktemp "$ROOT/$PRIVATE/.long-replay-XXXXXXXX.json")"
 TEMP_LONG_CONTACT="$(mktemp "$ROOT/$PRIVATE/.long-contact-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT"' EXIT
+TEMP_LONG_INJURY="$(mktemp "$ROOT/$PRIVATE/.long-injury-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -346,6 +347,19 @@ if [[ -e "$LONG_CONTACT" ]]; then
     fi
 else
     mv "$TEMP_LONG_CONTACT" "$LONG_CONTACT"
+fi
+LONG_INJURY="$ROOT/$PRIVATE/injury-check-no-fire-encounter-600.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/no-fire-encounter-schedule.json 600 \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    --require-first-injury-parity > "$TEMP_LONG_INJURY"
+if [[ -e "$LONG_INJURY" ]]; then
+    if ! cmp -s "$LONG_INJURY" "$TEMP_LONG_INJURY"; then
+        printf 'Existing private injury comparison differs; refusing to overwrite %s\n' "$LONG_INJURY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_LONG_INJURY" "$LONG_INJURY"
 fi
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do

@@ -275,10 +275,10 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Preconditions**: Verified 48K snapshot/ROM and the no-fire, T and A source-free schedules; private reference emulator available.
 - **Steps**:
   1. Replay each schedule for 600 reference-relative frames with actor kind enabled; require 600/600 RAM and screen hashes per run.
-  2. For each run, require contact parity; compare first and second positive frames in [reference-damage.json](../reverse_engineering/analysis/reference-damage.json).
+  2. For each run, require contact and first-injury parity; compare first and second positive frames in [reference-damage.json](../reverse_engineering/analysis/reference-damage.json). Check 63/63 source actor-update transitions per first injury.
   3. In the viewer import `replay-no-fire-600.json`; scrub frames 162, 164, 165, 230, 231, 298 and 318. Compare the displayed source life byte and actor kind with the numeric evidence.
   4. Scrub T through frame 228 and 297; confirm the previous 190-frame no-contact observation is not mislabeled as permanent protection. Confirm the measured native movement slice does not apply a fabricated injury transition.
-- **Expected Result**: The source life byte drops 1→0 after 66 kind-65 frames in each first-injury run, but the kind-64 duration and subsequent kind sequences differ. The viewer remains read-only; native health and end-state behavior are **not** asserted from these bounded traces.
+- **Expected Result**: The source life byte drops 1→0 after 63 kind-65 **actor updates** spread across 66 displayed frames in each first-injury run. The pure core tick matches 189/189 source transitions; the kind-64 duration, actor-update scheduling and subsequent zero-life kinds still differ or remain unmodeled. The viewer remains read-only; native health and end-state behavior are **not** asserted from these bounded traces.
 - **Edge Cases / Variants**: Long replay import limit (600), replay mismatch/timing mode, second contact after lives byte reaches zero, T held during a later encounter and unsupported damage model.
 
 ## Regression cadence and coverage
