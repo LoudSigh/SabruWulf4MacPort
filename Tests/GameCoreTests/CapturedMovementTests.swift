@@ -30,6 +30,54 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(state.room, RoomID(8, 10))
     }
 
+    func testObservedNewGameOriginDoesNotAlterCaptureOrigin() throws {
+        let source = try world()
+        let observed = try CapturedMovementState(
+            world: source, origin: .observedNewGameReady
+        )
+        XCTAssertEqual(observed.room, RoomID(8, 10))
+        XCTAssertEqual(observed.player, GridPoint(120, 112))
+        XCTAssertEqual(observed.referenceFrameOffset, 790)
+        XCTAssertEqual(try CapturedMovementState(world: source).player, GridPoint(57, 112))
+        var moved = observed
+        for _ in 0..<10 { try moved.advance(holding: [.right]) }
+        XCTAssertEqual(moved.player, GridPoint(136, 112))
+        XCTAssertEqual(moved.frame + moved.referenceFrameOffset, 800)
+        XCTAssertThrowsError(try moved.advance(holding: [.up]))
+        XCTAssertEqual(moved.frame, 10)
+    }
+
+    func testPrivateObservedNewGameMovementWhenProvided() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let worldPath = environment["SABRE_PRIVATE_WORLD"],
+              let replayPath = environment["SABRE_PRIVATE_NEW_GAME_REPLAY"] else {
+            throw XCTSkip("Set private world and late W source replay for new-game parity")
+        }
+        let source = try WorldReference.load(
+            from: Data(contentsOf: URL(fileURLWithPath: worldPath))
+        )
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: replayPath))
+        )
+        XCTAssertEqual(replay.frames.count, 900)
+        var state = try CapturedMovementState(
+            world: source, origin: .observedNewGameReady
+        )
+        for sourceIndex in 790..<900 {
+            try state.advance(holding: sourceIndex < 850 ? [.right] : [])
+            let expected = replay.frames[sourceIndex]
+            XCTAssertEqual(state.frame + state.referenceFrameOffset, expected.index)
+            XCTAssertEqual(state.room.y * 16 + state.room.x, expected.playerRoomID)
+            XCTAssertEqual(state.player, GridPoint(expected.playerX, expected.playerY))
+        }
+        XCTAssertThrowsError(try state.advance()) { error in
+            guard case CapturedMovementError.unsupportedTimeRange = error else {
+                return XCTFail("Expected bounded new-game slice, got \(error)")
+            }
+        }
+        XCTAssertEqual(state.frame, 110)
+    }
+
     func testNorthTransitionFreezesThenRebasesActor() throws {
         var state = try CapturedMovementState(world: world())
         for _ in 0..<100 where !state.transitioning {

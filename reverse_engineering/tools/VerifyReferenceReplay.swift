@@ -96,7 +96,7 @@ private struct VerifyReferenceReplay {
                   replay.romSHA256 == romHash,
                   replay.frameBoundaryMode == "reference-relative",
                   replay.input == "schedule",
-                  (1...800).contains(replay.frames.count),
+                  (1...900).contains(replay.frames.count),
                   !replay.schedule.isEmpty else {
                 throw VerificationError.invalidReplay
             }

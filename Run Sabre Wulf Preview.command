@@ -154,7 +154,8 @@ TEMP_MENU="$(mktemp "$ROOT/$PRIVATE/.menu-return-XXXXXXXX.json")"
 TEMP_MENU_CONTACT="$(mktemp "$ROOT/$PRIVATE/.menu-contact-XXXXXXXX.json")"
 TEMP_RESTART_SCREEN="$(mktemp "$ROOT/$PRIVATE/.restart-screen-XXXXXXXX.json")"
 TEMP_KEYBOARD_SCREEN="$(mktemp "$ROOT/$PRIVATE/.keyboard-screen-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN"' EXIT
+TEMP_READY_SCREEN="$(mktemp "$ROOT/$PRIVATE/.ready-screen-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -480,6 +481,48 @@ if [[ -e "$KEYBOARD_SCREEN" ]]; then
     fi
 else
     mv "$TEMP_KEYBOARD_SCREEN" "$KEYBOARD_SCREEN"
+fi
+printf 'Verifying the bounded native movement slice after source new-game setup...\n'
+READY_SCHEDULE=reverse_engineering/analysis/restart-ready-movement-schedule.json
+READY_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule "$READY_SCHEDULE" 900 --reference-timing --actor-kind \
+    > "$TEMP_MENU"
+if [[ -e "$READY_REPLAY" ]]; then
+    if ! cmp -s "$READY_REPLAY" "$TEMP_MENU"; then
+        printf 'Existing private ready-movement replay differs: %s\n' "$READY_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU" "$READY_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$READY_REPLAY" \
+    --menu "$MENU" 503
+READY_CONTACT="$ROOT/$PRIVATE/restart-ready-contact-900.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$READY_SCHEDULE" 900 \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    --require-first-injury-parity --require-menu-sequence \
+    > "$TEMP_MENU_CONTACT"
+if [[ -e "$READY_CONTACT" ]]; then
+    if ! cmp -s "$READY_CONTACT" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private ready-movement contact check differs: %s\n' "$READY_CONTACT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$READY_CONTACT"
+fi
+READY_SCREEN="$ROOT/$PRIVATE/restart-ready-background-900.json"
+"$ROOT/$PRIVATE/VerifyBackgroundScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-background-atlas-v1.json" \
+    --schedule "$READY_SCHEDULE" 900 > "$TEMP_READY_SCREEN"
+if [[ -e "$READY_SCREEN" ]]; then
+    if ! cmp -s "$READY_SCREEN" "$TEMP_READY_SCREEN"; then
+        printf 'Existing private ready-movement screen check differs: %s\n' "$READY_SCREEN" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_READY_SCREEN" "$READY_SCREEN"
 fi
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do

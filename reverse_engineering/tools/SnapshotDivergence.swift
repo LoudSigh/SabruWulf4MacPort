@@ -16,7 +16,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...800> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] | --self-test (source parity flags require reference timing and RAM parity)"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] | --self-test (source parity flags require reference timing and RAM parity)"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -242,7 +242,7 @@ private struct SnapshotDivergence {
                        "--require-first-injury-parity", "--require-menu-sequence"].contains($0)
                   }),
                   Set(options).count == options.count,
-                  let count = Int(arguments[4]), (1...800).contains(count),
+                  let count = Int(arguments[4]), (1...900).contains(count),
                   !options.contains("--require-contact-parity")
                     || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")),
@@ -250,7 +250,7 @@ private struct SnapshotDivergence {
                     || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")),
                   !options.contains("--require-menu-sequence")
-                    || (count == 800 && options.contains("--reference-timing")
+                    || (count >= 800 && options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")
                         && options.contains("--require-contact-parity")) else {
                 throw DivergenceError.usage

@@ -4,6 +4,8 @@ public enum CapturedMovementError: Error, LocalizedError {
     case unsupportedBoundary
     case unsupportedAction
     case invalidInitialState
+    case unsupportedSchedule
+    case unsupportedTimeRange
 
     public var errorDescription: String? {
         switch self {
@@ -13,16 +15,26 @@ public enum CapturedMovementError: Error, LocalizedError {
             "Attack behavior has not been verified for this movement preview."
         case .invalidInitialState:
             "The imported world does not support the captured player start."
+        case .unsupportedSchedule:
+            "The observed new-game slice verifies 60 W frames followed by 50 frames without input."
+        case .unsupportedTimeRange:
+            "The observed new-game movement slice ends after 110 source-checked frames."
         }
     }
 }
 
 /// Source-backed movement from the captured gameplay state; dynamic actors and combat are excluded.
+public enum CapturedMovementOrigin: Equatable, Sendable {
+    case gameplayCapture
+    case observedNewGameReady
+}
+
 public struct CapturedMovementState: Sendable {
     public private(set) var room = WorldReference.capturedGameplayRoom
     public private(set) var player = WorldReference.capturedPlayerPosition
     public private(set) var frame = 0
     public private(set) var transitioning = false
+    public let referenceFrameOffset: Int
 
     private let world: WorldReference
     private var velocityX = -3
@@ -33,15 +45,22 @@ public struct CapturedMovementState: Sendable {
     private var pendingEastFrames = 0
     private var settlingSouthFrames = 0
 
-    public init(world: WorldReference) throws {
+    public init(
+        world: WorldReference, origin: CapturedMovementOrigin = .gameplayCapture
+    ) throws {
+        let start = origin == .observedNewGameReady
+            ? GridPoint(120, 112) : Self.capturedPosition
         guard world.schemaVersion == 2,
               try !world.overlapsBackgroundBounds(
-                  in: Self.capturedRoom, actorAt: Self.capturedPosition,
+                  in: Self.capturedRoom, actorAt: start,
                   width: 14, height: 22
               ) else {
             throw CapturedMovementError.invalidInitialState
         }
         self.world = world
+        player = start
+        referenceFrameOffset = origin == .observedNewGameReady ? 790 : 0
+        velocityX = origin == .observedNewGameReady ? 0 : -3
     }
 
     private static let capturedRoom = WorldReference.capturedGameplayRoom
@@ -49,6 +68,12 @@ public struct CapturedMovementState: Sendable {
 
     public mutating func advance(holding actions: Set<OriginalAction> = []) throws {
         guard !actions.contains(.fire) else { throw CapturedMovementError.unsupportedAction }
+        if referenceFrameOffset != 0 {
+            guard frame < 110 else { throw CapturedMovementError.unsupportedTimeRange }
+            guard actions == (frame < 60 ? [.right] : []) else {
+                throw CapturedMovementError.unsupportedSchedule
+            }
+        }
         if pendingNorthFrames > 0 {
             pendingNorthFrames -= 1
             if pendingNorthFrames == 0 {

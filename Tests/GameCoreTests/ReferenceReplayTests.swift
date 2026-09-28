@@ -75,7 +75,7 @@ final class ReferenceReplayTests: XCTestCase {
     }
 
     func testScheduledReplayAcceptsBoundedMenuReturnAndRejectsLargerRun() throws {
-        let frames: [[String: Int]] = (1...801).map { index in
+        let frames: [[String: Int]] = (1...901).map { index in
             [
                 "index": index, "playerRoomID": 152,
                 "playerX": 121, "playerY": 126,
@@ -91,12 +91,12 @@ final class ReferenceReplayTests: XCTestCase {
                 ["key": "w", "startFrame": 20, "endFrame": 30],
                 ["key": "0", "startFrame": 530, "endFrame": 535],
             ],
-            "frames": Array(frames.prefix(800)),
+            "frames": Array(frames.prefix(900)),
         ]
         let imported = try ReferenceReplay.load(
             from: JSONSerialization.data(withJSONObject: payload)
         )
-        XCTAssertEqual(imported.frames.count, 800)
+        XCTAssertEqual(imported.frames.count, 900)
         XCTAssertEqual(imported.schedule?.map(\.key), ["w", "0"])
         XCTAssertEqual(imported.frames[230].reportedLives, 0)
         payload["frames"] = frames

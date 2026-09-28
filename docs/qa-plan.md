@@ -279,7 +279,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. In the viewer import `replay-no-fire-600.json`; scrub frames 162, 164, 165, 230, 231, 298 and 318. Compare the displayed source life byte and actor kind with the numeric evidence.
   4. Scrub T through frame 228 and 297; confirm the previous 190-frame no-contact observation is not mislabeled as permanent protection. Confirm the measured native movement slice does not apply a fabricated injury transition.
 - **Expected Result**: The source life byte drops 1→0 after 63 kind-65 **actor updates** spread across 66 displayed frames in each first-injury run. The pure core tick matches 189/189 source transitions; the kind-64 duration, actor-update scheduling and subsequent zero-life kinds still differ or remain unmodeled. The viewer remains read-only; native health and end-state behavior are **not** asserted from these bounded traces.
-- **Edge Cases / Variants**: Long replay import limit (800), replay mismatch/timing mode, second contact after lives byte reaches zero, T held during a later encounter and unsupported damage model.
+- **Edge Cases / Variants**: Long replay import limit (900), replay mismatch/timing mode, second contact after lives byte reaches zero, T held during a later encounter and unsupported damage model.
 
 ### TC-025: Verify bounded return to menu
 - **Priority**: P0
@@ -289,7 +289,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   2. Run `VerifyReferenceReplay --menu SNAPSHOTS/Snapshot.z80` with expected first menu-text frames 503 (no T), 510 (A), and 679 (T); reject an intentionally incorrect expected frame.
   3. Also require `SnapshotDivergence --require-menu-sequence` alongside reference/RAM/contact parity: verify menu setup at second contact+68, menu return routine at +199, and first exact text at +205 in all three schedules.
   4. Scrub each imported replay just before and after that frame; note that the viewer **does not render the replay's menu screen** and the numeric player fields left in memory are inactive once the menu appears.
-  5. Check import accepts 800 frames and rejects 801; verify the private replay and screen are not bundled or committed.
+  5. Check import accepts up to 900 frames and rejects 901; verify the private replay and screen are not bundled or committed.
 - **Expected Result**: All 2,400 RAM and screen hashes match, while the first exact central menu-text region matches 2,560/2,560 RGB pixels only at the expected frame in each run. The result proves this bounded visible return, not full-screen parity, starting a new game, or a native game-over implementation.
 - **Edge Cases / Variants**: FLASH/color phase, changed menu snapshot, replay hash corruption, later matching frames, app slider on final frame.
 
@@ -313,6 +313,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. Compare a no-`3` schedule with W still held long enough; it first moves at frame 793 and reaches X=136 at 800. Verify short W holds through frame 720 do not prove input is broken.
 - **Expected Result**: A bounded post-start actor motion path is observable in source RAM; native game initialization, enemy AI and input polling cadence are still incomplete. Menu `3` changes RAM and polling phase, so its four-frame movement shift is **not** labeled a verified control-mode effect.
 - **Edge Cases / Variants**: Different menu phase, W held/released during setup, player collision after X=193 and alternate life counts.
+
+### TC-028: Play only verified post-setup native movement
+- **Priority**: P0
+- **Preconditions**: Hash-verified private version-2 world and [restart-ready-movement-schedule.json](../reverse_engineering/analysis/restart-ready-movement-schedule.json) exported to a 900-frame private replay.
+- **Steps**:
+  1. Require every 900-frame RAM/screen hash, 2,652 contact returns and the 29,056/29,056 covered room RGB pixels at frame 900 to agree with the reference.
+  2. Initialize the native measured state at `.observedNewGameReady`; confirm source frame offset 790, room ID 168 and X=120/Y=112.
+  3. Hold W for 60 measured frames, then None for 50. Compare native room/X/Y with replay frames 791–900 at each frame, including X=136 at 800 and X=193 at 820, 850 and 900.
+  4. Try Up, Fire or an extra 111th step; ensure the source-backed preview rejects unsupported input/frame range without silently advancing.
+- **Expected Result**: All 110 checked room/X/Y frames agree, and the captured-midgame origin remains unchanged. The viewer makes the post-setup origin selectable but never implies that menu polling, initial actor animation, enemies, damage or full new-game state are simulated.
+- **Edge Cases / Variants**: Shorter unrelated imported replay, reset/switch origins, app background/resume and first frame after release.
 
 ## Regression cadence and coverage
 

@@ -53,6 +53,7 @@ struct WorldReferenceView: View {
     @State private var importingEntityTrace = false
     @State private var entityTrace: ReferenceEntityTrace?
     @State private var movement: CapturedMovementState?
+    @State private var movementOrigin: CapturedMovementOrigin = .gameplayCapture
     @State private var heldKey = "none"
     @State private var playingMovement = false
 
@@ -79,7 +80,8 @@ struct WorldReferenceView: View {
                 if world?.schemaVersion == 2 {
                     if let movement {
                         Text(
-                            "Measured movement · frame \(movement.frame) · room "
+                            "Measured movement · source frame "
+                                + "\(movement.referenceFrameOffset + movement.frame) · room "
                                 + "\(movement.room.y * 16 + movement.room.x) "
                                 + "· X \(movement.player.x), Y \(movement.player.y)"
                                 + (movement.transitioning ? " · switching rooms" : "")
@@ -105,11 +107,34 @@ struct WorldReferenceView: View {
                                 .accessibilityLabel("Reset measured movement")
                         }
                         .buttonStyle(.bordered)
+                        if movementOrigin == .observedNewGameReady {
+                            Text("Post-setup slice only: begins after source frame 790. Hold W for 60 frames, then None for 50 to compare frames 791–900. Menu polling, enemies and most exits are not simulated.")
+                                .font(.caption)
+                            if let replay, replay.frames.count < 900 {
+                                Text("This shorter replay cannot compare the full post-setup slice; import the private 900-frame late-W replay.")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
+                        }
                         Text("Partial movement: north/return match the independent reference; west/east passages are provisional because enemy paths differ. No native enemies, combat, items or other validated exits. Playback pauses on unsupported behavior.")
                             .font(.caption)
+                        HStack {
+                            Button("Use gameplay capture start") {
+                                resetMovement(origin: .gameplayCapture)
+                            }
+                            Button("Use observed new-game ready start") {
+                                resetMovement(origin: .observedNewGameReady)
+                            }
+                        }
+                        .buttonStyle(.bordered)
                     } else {
-                        Button("Start measured movement (partial)") { resetMovement() }
-                            .buttonStyle(.bordered)
+                        Button("Start measured movement (partial)") {
+                            resetMovement(origin: .gameplayCapture)
+                        }
+                        Button("Start after observed new-game setup (partial)") {
+                            resetMovement(origin: .observedNewGameReady)
+                        }
+                        .buttonStyle(.bordered)
                     }
                 } else {
                     Text("Legacy world export: topology only, without source integrity or measured bounds. Regenerate from the verified snapshots for movement and artwork.")
@@ -161,13 +186,17 @@ struct WorldReferenceView: View {
                                 .foregroundStyle(.red)
                         }
                     }
-                    if let movement, (1...replay.frames.count).contains(movement.frame) {
-                        let expected = replay.frames[movement.frame - 1]
+                    if let movement,
+                       (1...replay.frames.count).contains(
+                           movement.frame + movement.referenceFrameOffset
+                       ) {
+                        let sourceFrame = movement.frame + movement.referenceFrameOffset
+                        let expected = replay.frames[sourceFrame - 1]
                         let matches = expected.playerRoomID == movement.room.y * 16 + movement.room.x
                             && expected.playerX == movement.player.x
                             && expected.playerY == movement.player.y
                         Text(
-                            "Measured frame \(movement.frame) vs imported replay: "
+                            "Measured source frame \(sourceFrame) vs imported replay: "
                                 + (matches ? "actor position matches" : "actor position differs")
                         )
                         .font(.caption)
@@ -408,6 +437,7 @@ struct WorldReferenceView: View {
                 entityTrace = nil
                 replayFrameValue = 0
                 movement = nil
+                movementOrigin = .gameplayCapture
                 playingMovement = false
                 heldKey = "none"
                 importError = nil
@@ -574,8 +604,12 @@ struct WorldReferenceView: View {
                 let imported = try ReferenceReplay.load(from: Data(contentsOf: url))
                 replay = imported
                 entityTrace = nil
-                replayFrameValue = 0
-                let room = imported.frames[0].playerRoomID
+                let desiredIndex = movement.map {
+                    $0.frame + $0.referenceFrameOffset - 1
+                } ?? 0
+                let replayIndex = min(max(desiredIndex, 0), imported.frames.count - 1)
+                replayFrameValue = Double(replayIndex)
+                let room = imported.frames[replayIndex].playerRoomID
                 selected = RoomID(room % 16, room / 16)
                 importError = nil
             } catch {
@@ -757,14 +791,24 @@ struct WorldReferenceView: View {
         return parts.joined(separator: " ")
     }
 
-    private func resetMovement() {
+    private func resetMovement(origin: CapturedMovementOrigin? = nil) {
         guard let world else { return }
         do {
-            movement = try CapturedMovementState(world: world)
-            heldKey = "none"
+            let selectedOrigin = origin ?? movementOrigin
+            let next = try CapturedMovementState(world: world, origin: selectedOrigin)
+            movement = next
+            movementOrigin = selectedOrigin
+            heldKey = selectedOrigin == .observedNewGameReady ? "w" : "none"
             playingMovement = false
             selected = WorldReference.capturedGameplayRoom
-            replayFrameValue = 0
+            if let replay {
+                replayFrameValue = Double(min(
+                    max(next.referenceFrameOffset - 1, 0),
+                    replay.frames.count - 1
+                ))
+            } else {
+                replayFrameValue = 0
+            }
             importError = nil
         } catch {
             importError = error.localizedDescription
@@ -789,7 +833,10 @@ struct WorldReferenceView: View {
             movement = next
             selected = next.room
             if let replay {
-                replayFrameValue = Double(min(max(next.frame - 1, 0), replay.frames.count - 1))
+                let sourceIndex = next.frame + next.referenceFrameOffset - 1
+                if replay.frames.indices.contains(sourceIndex) {
+                    replayFrameValue = Double(sourceIndex)
+                }
             }
             importError = nil
         } catch {
@@ -800,13 +847,18 @@ struct WorldReferenceView: View {
 
     private var markerPosition: GridPoint? {
         if let replay {
+            if let movement, movement.referenceFrameOffset > 0,
+               replay.frames.count < movement.frame + movement.referenceFrameOffset {
+                return nil
+            }
             let frame = replay.frames[min(Int(replayFrameValue), replay.frames.count - 1)]
             guard selected == RoomID(frame.playerRoomID % 16, frame.playerRoomID / 16) else {
                 return nil
             }
             return GridPoint(frame.playerX, frame.playerY)
         }
-        return selected == WorldReference.capturedGameplayRoom
+        return movementOrigin != .observedNewGameReady
+            && selected == WorldReference.capturedGameplayRoom
             ? WorldReference.capturedPlayerPosition : nil
     }
 

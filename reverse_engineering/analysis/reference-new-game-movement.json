@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "schedule": "restart-ready-movement-schedule.json",
+  "frames": 900,
+  "matchingRAMAndScreenFrames": 900,
+  "firstExactMenuTextFrame": 503,
+  "sourceReadyFrame": 790,
+  "nativeSliceFirstFrame": 791,
+  "nativeSliceLastFrame": 900,
+  "nativeActorRoomXYMatches": 110,
+  "sourceKeyIntervalZeroBased": [788, 850],
+  "nativeActions": "W for source frames 791..850, then None for 851..900",
+  "firstActorXMoveFrame": 793,
+  "start": {"roomID": 168, "x": 120, "y": 112},
+  "checkpoints": [
+    {"frame": 800, "roomID": 168, "x": 136, "y": 112},
+    {"frame": 820, "roomID": 168, "x": 193, "y": 112},
+    {"frame": 850, "roomID": 168, "x": 193, "y": 112},
+    {"frame": 900, "roomID": 168, "x": 193, "y": 112}
+  ],
+  "limits": "The native slice starts after the observed actor is ready at source frame 790 with X=120/Y=112 and zero initial horizontal velocity. It does not reproduce menu polling, redraw delays or the first 790 frames. Only the stated W/None sequence and 110 actor room/X/Y frames were checked; enemy movement, dynamic collisions, sprite animation, other actions and beyond frame 900 remain unsupported."
+}
