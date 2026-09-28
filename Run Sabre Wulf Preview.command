@@ -1,4 +1,4 @@
-#!/bin/bash
+Isola#!/bin/bash
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd -P)"
@@ -458,7 +458,8 @@ if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json
     cat "$ROOT/$PRIVATE/entity-motion-test.log" >&2
     exit 1
 fi
-if ! SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
+if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
     SABRE_PRIVATE_FIRE_EXTENDED_WRITES="$EXTENDED_WRITES" \
     swift test --filter CapturedActiveEnemyStateTests \
     > "$ROOT/$PRIVATE/active-enemy-test.log" 2>&1; then

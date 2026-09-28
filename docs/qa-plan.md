@@ -403,6 +403,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: **8,740/8,740** source writes match; source operands and update cadence remain explicitly external.
 - **Edge Cases / Variants**: Carry set/clear, modulo-256 wrap, unchanged write values and alternate keyboard timing.
 
+### TC-036: Compose the observed active enemy path
+- **Priority**: P1
+- **Preconditions**: Private verified world, 250-frame T replay, matching entity trace and ordered source write report.
+- **Steps**:
+  1. Initialize slot 12 from the source frame-156 kind, timer, position and velocities.
+  2. Supply countdown, movement and expiry events in the observed write order; supply the two measured RNG/clock pairs at the expiry calls.
+  3. Compare kind, position, timer and velocities at every frame end from 157 through 230 against the reference trace and write report, including timer 2→1 before its final movement and later 0→255→254.
+  4. Reject a further unverified countdown after timer 254; confirm no scheduler or native RNG is silently added.
+- **Expected Result**: **74/74** consecutive source-backed states match without using an emulator in the core.
+- **Edge Cases / Variants**: Countdown/movement split across frames, same-frame countdown before movement, timer-expiry branch choice and stale actor bytes after removal.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

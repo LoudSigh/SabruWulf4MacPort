@@ -76,6 +76,23 @@ final class CapturedActiveEnemyStateTests: XCTestCase {
         XCTAssertEqual(enemy.position, GridPoint(83, 135))
     }
 
+    func testTerminalCountdownMayPrecedeItsLastMotion() throws {
+        var enemy = try CapturedActiveEnemyState(
+            kind: 109, timer: 2, room: RoomID(8, 9),
+            position: GridPoint(71, 135), velocityX: -48, velocityY: 80
+        )
+        try enemy.advanceCountdownOnSourceUpdate()
+        XCTAssertEqual(enemy.timer, 1)
+        try enemy.advanceOnSourceUpdate(world: world(), countdownOccurred: false)
+        XCTAssertEqual(enemy.position, GridPoint(68, 135))
+        XCTAssertEqual(enemy.kind, 108)
+        XCTAssertThrowsError(try enemy.advanceOnSourceUpdate(
+            world: world(), countdownOccurred: false
+        ))
+        try enemy.expireOnSourceUpdate(rngByte: 69, clockByte: 38)
+        XCTAssertEqual(enemy.timer, 13)
+    }
+
     func testPrivateEnemyStateParityWhenProvided() throws {
         guard let directory = ProcessInfo.processInfo.environment["SABRE_PRIVATE_ENTITY_TRACE_DIR"]
         else { throw XCTSkip("Set the private encounter-report directory") }
@@ -188,5 +205,131 @@ final class CapturedActiveEnemyStateTests: XCTestCase {
         XCTAssertTrue(has(220, 42466, 38808, 0, 176))
         XCTAssertTrue(has(220, 42487, 38809, 0, 80))
         XCTAssertTrue(has(224, 42346, 38804, 0, 255))
+    }
+
+    func testBoundedFirePathAcrossBothExpiries() throws {
+        let world = try world()
+        var enemy = try CapturedActiveEnemyState(
+            kind: 108, timer: 9, room: RoomID(8, 9),
+            position: GridPoint(92, 130),
+            velocityX: -48, velocityY: 80
+        )
+        for _ in 0..<8 {
+            try enemy.advanceOnSourceUpdate(world: world)
+        }
+        XCTAssertEqual(enemy.position, GridPoint(68, 135))
+        XCTAssertEqual(enemy.kind, 108)
+        XCTAssertEqual(enemy.timer, 1)
+
+        try enemy.expireOnSourceUpdate(rngByte: 69, clockByte: 38)
+        XCTAssertEqual(enemy.timer, 13)
+        XCTAssertEqual(enemy.velocityX, 0)
+        XCTAssertEqual(enemy.velocityY, 0)
+        XCTAssertThrowsError(try enemy.advanceOnSourceUpdate(world: world))
+        for _ in 0..<12 {
+            try enemy.advanceCountdownOnSourceUpdate()
+        }
+        XCTAssertEqual(enemy.timer, 1)
+        XCTAssertEqual(enemy.position, GridPoint(68, 135))
+
+        try enemy.expireOnSourceUpdate(rngByte: 153, clockByte: 38)
+        XCTAssertEqual(enemy.timer, 0)
+        XCTAssertEqual(enemy.velocityX, -80)
+        XCTAssertEqual(enemy.velocityY, 80)
+        try enemy.advanceOnSourceUpdate(world: world, countdownOccurred: false)
+        XCTAssertEqual(enemy.position, GridPoint(63, 135))
+        XCTAssertEqual(enemy.kind, 109)
+        try enemy.advanceCountdownOnSourceUpdate()
+        XCTAssertEqual(enemy.timer, 255)
+        try enemy.advanceOnSourceUpdate(world: world, countdownOccurred: false)
+        XCTAssertEqual(enemy.position, GridPoint(58, 135))
+        XCTAssertEqual(enemy.kind, 108)
+        try enemy.advanceCountdownOnSourceUpdate()
+        XCTAssertEqual(enemy.timer, 254)
+        try enemy.advanceOnSourceUpdate(world: world, countdownOccurred: false)
+        XCTAssertEqual(enemy.position, GridPoint(53, 135))
+        XCTAssertEqual(enemy.kind, 109)
+        XCTAssertThrowsError(try enemy.advanceCountdownOnSourceUpdate())
+    }
+
+    func testPrivateContinuousEnemyPathWhenProvided() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let directory = env["SABRE_PRIVATE_ENTITY_TRACE_DIR"],
+              let worldPath = env["SABRE_PRIVATE_WORLD"] else {
+            throw XCTSkip("Set the private world and 250-frame enemy traces")
+        }
+        struct Write: Decodable {
+            let frame: Int
+            let instructionAddress: Int
+            let address: Int
+            let previous: Int
+            let value: Int
+        }
+        struct Report: Decodable {
+            let matchingRAMFrames: Int
+            let entityStateWrites: [Write]
+        }
+        let base = URL(fileURLWithPath: directory)
+        let report = try JSONDecoder().decode(
+            Report.self,
+            from: Data(contentsOf: base.appendingPathComponent(
+                "entity-writes-fire-before-contact-250.json"
+            ))
+        )
+        let trace = try ReferenceEntityTrace.load(from: Data(contentsOf:
+            base.appendingPathComponent("trace-fire-before-contact-250.json")
+        ))
+        let replay = try ReferenceReplay.load(from: Data(contentsOf:
+            base.appendingPathComponent("replay-fire-before-contact-250.json")
+        ))
+        try trace.validate(replay: replay)
+        XCTAssertEqual(report.matchingRAMFrames, 250)
+        let world = try WorldReference.load(
+            from: Data(contentsOf: URL(fileURLWithPath: worldPath))
+        )
+        var enemy = try CapturedActiveEnemyState(
+            kind: 108, timer: 9, room: RoomID(8, 9),
+            position: GridPoint(92, 130), velocityX: -48, velocityY: 80
+        )
+        var observedTimer = 9
+        var observedVX = -48
+        var observedVY = 80
+        let writesByFrame = Dictionary(grouping: report.entityStateWrites, by: \.frame)
+        for frame in 157...230 {
+            for write in writesByFrame[frame] ?? [] {
+                if write.address == 38804 && write.instructionAddress == 42346 {
+                    XCTAssertEqual(Int(enemy.timer), write.previous, "frame \(frame)")
+                    if write.previous == 1 {
+                        let rng: UInt8 = frame == 184 ? 69 : 153
+                        try enemy.expireOnSourceUpdate(rngByte: rng, clockByte: 38)
+                    } else {
+                        try enemy.advanceCountdownOnSourceUpdate()
+                    }
+                } else if write.address == 38802 && write.instructionAddress == 42388 {
+                    do {
+                        try enemy.advanceOnSourceUpdate(
+                            world: world, countdownOccurred: false
+                        )
+                    } catch {
+                        XCTFail("Enemy motion at frame \(frame): \(enemy), \(error)")
+                        throw error
+                    }
+                }
+                if write.address == 38804 { observedTimer = write.value }
+                if write.address == 38808 {
+                    observedVX = Int(Int8(bitPattern: UInt8(write.value)))
+                }
+                if write.address == 38809 {
+                    observedVY = Int(Int8(bitPattern: UInt8(write.value)))
+                }
+            }
+            let source = trace.trace[frame - 1].fullEmulatorEntity
+            XCTAssertEqual(source.roomID, 152)
+            XCTAssertEqual(Int(enemy.kind), source.kind, "frame \(frame)")
+            XCTAssertEqual(enemy.position, GridPoint(source.x, source.y), "frame \(frame)")
+            XCTAssertEqual(Int(enemy.timer), observedTimer, "frame \(frame)")
+            XCTAssertEqual(enemy.velocityX, observedVX, "frame \(frame)")
+            XCTAssertEqual(enemy.velocityY, observedVY, "frame \(frame)")
+        }
     }
 }
