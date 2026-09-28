@@ -10,6 +10,13 @@
   "calls": 4,
   "cyclesPerCall": 1296,
   "perCallWriteAddressCount": 22,
+  "recordFieldOffsets": {
+    "spriteID": 0,
+    "roomIndex": 1,
+    "x": 3,
+    "y": 4,
+    "writtenUnknownField": 5
+  },
   "writeAddressGroups": [
     {"start": "0x5FF6", "endInclusive": "0x5FF7"},
     {"start": "0x97FE", "endInclusive": "0x9827", "recordCount": 4, "bytesPerRecord": 12, "sparseFields": true}
@@ -23,5 +30,21 @@
     "roomsDistinctWithinEachExit": true,
     "spriteIDsDistinctWithinEachExit": true
   },
-  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. The two paths do not support fixed four-room placement. No record values, instruction bytes, images or disassembly are published."
+  "lookupEvidence": {
+    "matchingRoomIndexToWorldLayoutRead": 16,
+    "observedRecordWrites": 16,
+    "worldLayoutReads": 16,
+    "heldOutMatchingFixedSpriteIDs": 12,
+    "heldOutRecords": 12,
+    "rngGlobalReadsPerCall": 1,
+    "directClockGlobalReadsPerCall": 0,
+    "mutableGlobalPairReadsAndRewritesPerCall": 8
+  },
+  "pickupProbeReadiness": {
+    "playerSharesRecordRoomAtFrame790": false,
+    "nearestRecordWorldGridStepsByPath": [5, 4],
+    "recordActivityAtFrame790Verified": false,
+    "interventionPerformed": false
+  },
+  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. A pickup test needs a naturally reached active same-room record or complete validated cross-room state; actor-room teleport alone was not attempted. No record values, instruction bytes, images or disassembly are published."
 }

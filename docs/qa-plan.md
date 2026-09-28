@@ -526,7 +526,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 
 ### TC-047: Verify candidate quest and scoring mechanics
 - **Priority**: P0
-- **Preconditions**: Authorized, verified 48K gameplay source and source-controlled saves before an item and guarded exit.
+- **Preconditions**: Authorized, verified 48K gameplay source and source-controlled saves with a naturally reached **active same-room record** before pickup and a guarded exit. Current frame-790 restarts do not provide one.
 - **Steps**:
   1. Cross an item with and without attack input; check whether pickup is automatic and measure its actual contact boundary.
   2. Record each of the four visible amulet indicators and revisit collected sites; do not assume fixed locations across fresh games.
@@ -542,9 +542,10 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Steps**:
   1. Require 800/800 full RAM parity per path and two calls to the candidate placement PC per restart.
   2. Confirm 22 write addresses per call and four bounded 12-byte records with valid room/coordinate/sprite fields.
-  3. Compare first- and second-call outputs across the two paths; keep record values private.
-  4. Reject an assumption of fixed four-room placement if four room fields differ after the second call; do not label the records as quest pieces until pickup is demonstrated.
-- **Expected Result**: Four source-supported dynamic placement records are measured, but quest identity and deterministic placement inputs remain unknown.
+  3. Check per-record offsets +0/+1/+3/+4 for sprite/room/X/Y; require all 16 room writes to match the read world-layout indexes and 12 held-out sprite IDs to match per-record predictions.
+  4. Compare first- and second-call outputs across the two paths; keep record values private.
+  5. Reject an assumption of fixed four-room placement if four room fields differ after the second call; do not label the records as quest pieces until pickup is demonstrated.
+- **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown.
 - **Edge Cases / Variants**: Different key timing, player count, repeated restart, item disappearance and renderer overlap.
 
 ## Regression cadence and coverage
