@@ -26,6 +26,11 @@ private struct Summary: Encodable {
     let lastPointer: String
     let minimumPointer: String
     let maximumPointer: String
+    let validSpriteHeaders: Int
+    let recordsEndingAtNextPointer: Int
+    let payloadBytesAccountedFor: Int
+    let spriteRecordSHA256: String
+    let largestRecordBytes: Int
 }
 
 private struct Report: Encodable {
@@ -69,6 +74,28 @@ private func inspect(_ file: [UInt8]) throws -> Summary {
     let start = 49028 - 0x4000
     let bytes = Array(snapshot.ram48[start..<(start + 392)])
     let pointers = try decode(bytes)
+    let unique = Array(Set(pointers)).sorted()
+    var validHeaders = 0
+    var aligned = 0
+    var payloadBytes = 0
+    var spriteRecordBytes: [UInt8] = []
+    var largest = 0
+    for (index, address) in unique.enumerated() {
+        let offset = address - 0x4000
+        let width = Int(snapshot.ram48[offset])
+        let height = Int(snapshot.ram48[offset + 1])
+        let length = 2 + width * height
+        let next = index + 1 < unique.count ? unique[index + 1] : 65536
+        if width <= 8 && height <= 64 && length <= next - address {
+            validHeaders += 1
+            payloadBytes += length
+            spriteRecordBytes.append(
+                contentsOf: snapshot.ram48[offset..<(offset + length)]
+            )
+            largest = max(largest, length)
+            if length == next - address { aligned += 1 }
+        }
+    }
     return Summary(
         snapshotSha256: sha256(file),
         tableSha256: sha256(bytes),
@@ -76,7 +103,12 @@ private func inspect(_ file: [UInt8]) throws -> Summary {
         firstPointer: hex(pointers[0]),
         lastPointer: hex(pointers[195]),
         minimumPointer: hex(pointers.min()!),
-        maximumPointer: hex(pointers.max()!)
+        maximumPointer: hex(pointers.max()!),
+        validSpriteHeaders: validHeaders,
+        recordsEndingAtNextPointer: aligned,
+        payloadBytesAccountedFor: payloadBytes,
+        spriteRecordSHA256: sha256(spriteRecordBytes),
+        largestRecordBytes: largest
     )
 }
 

@@ -8,9 +8,9 @@
   "totalBytes": 49152,
   "classificationCounts": {
     "code": 0,
-    "data": 11486,
+    "data": 19492,
     "padding": 0,
-    "unknown": 37666
+    "unknown": 29660
   },
   "knownDataIntervals": [
     {"start": "0x4000", "endExclusive": "0x5800", "kind": "ULA bitmap"},
@@ -21,11 +21,20 @@
     {"start": "0x6200", "endExclusive": "0x70BC", "kind": "48 contiguous zero-terminated room templates; 3772 bytes"},
     {"start": "0xBF84", "endExclusive": "0xC10C", "kind": "196 little-endian sprite-frame pointers; 392 bytes"}
   ],
+  "knownSparseData": [
+    {
+      "kind": "153 validated unique sprite records addressed by the 196-entry pointer table",
+      "sourcePointerTableStart": "0xBF84",
+      "recordBytes": 8006,
+      "recordEncoding": "two-byte width/height header followed by width-times-height payload",
+      "individualAddresses": "private only; five gaps between consecutive records remain unknown"
+    }
+  ],
   "observedProgramCounterAddresses": [
     {"address": "0xBDAF", "evidence": "menu snapshot PC; instruction extent unclassified"},
     {"address": "0xB8A1", "evidence": "gameplay snapshot PC; instruction extent unclassified"}
   ],
   "candidateInstructionStartsInIsolatedGameplayTrace": 1422,
   "candidateInstructionStartsClassifiedAsCode": false,
-  "note": "Display, source-backed 16x16 layout/room-template intervals and sprite pointer table are classified. PCs mark execution points, not routine boundaries. Background/sprite graphic encoding and most RAM remain unknown; no source bytes or disassembly are included."
+  "note": "Display, validated layout/room intervals, sprite pointer table and 153 sprite records are classified; five gaps between records and remaining RAM stay unknown. PC starts are not complete instruction boundaries. No source bytes, sprites or disassembly are included."
 }
