@@ -78,8 +78,12 @@ swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift \
 "$OUT/SnapshotDivergence" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
   reverse_engineering/analysis/west-exit-schedule.json 256 \
   > reverse_engineering/private/west-divergence.json
+"$OUT/SnapshotDivergence" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+  reverse_engineering/analysis/west-exit-schedule.json 256 --trace \
+  > reverse_engineering/private/west-entity-trace.json
 jq '{firstRNGDifference,firstMovingEntityDifference,firstPlayerStateDifference,firstPlayerPositionDifference}' \
   reverse_engineering/private/west-divergence.json
 ```
 
 The divergence tool compares fresh-FE CPU stepping with the unmodified emulator's `stepFrame()` under the same inputs; it emits only hashes and selected numeric state, not RAM or instructions. For the west schedule it measures the first RNG difference at frame 101, moving-entity placement difference at 102, player state change at 163, and player coordinate difference at 183. The unmodified emulator's moving entity reaches the player before the late Q press; this is **not** evidence of a faulty keyboard. The earlier RNG split may depend on CPU refresh-register phase, but that link is still unproven. Never publish the full private replays or original game bytes.
+The optional `--trace` also records two numeric positions for one moving-entity slot and both player positions per frame. It is only for the ignored private viewer: import the matching `replay-west-exit-256.json` first, then this trace. The app rejects frame-count or player-path mismatches; it does not simulate enemies.

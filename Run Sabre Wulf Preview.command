@@ -78,7 +78,8 @@ TEMP_TRANSITION="$(mktemp "$ROOT/$PRIVATE/.transition-XXXXXXXX.json")"
 TEMP_HELD="$(mktemp "$ROOT/$PRIVATE/.held-XXXXXXXX.json")"
 TEMP_ROUND="$(mktemp "$ROOT/$PRIVATE/.round-XXXXXXXX.json")"
 TEMP_WEST="$(mktemp "$ROOT/$PRIVATE/.west-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST"' EXIT
+TEMP_ENTITY="$(mktemp "$ROOT/$PRIVATE/.entity-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -128,6 +129,25 @@ else
     mv "$TEMP_WEST" "$WEST_EXIT"
 fi
 
+printf 'Comparing a private moving-entity path across both reference runners...\n'
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift reverse_engineering/tools/SnapshotDivergence.swift \
+    -o "$ROOT/$PRIVATE/SnapshotDivergence" > "$ROOT/$PRIVATE/divergence-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/divergence-build.log" >&2
+    exit 1
+fi
+ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/west-exit-schedule.json 256 --trace > "$TEMP_ENTITY"
+if [[ -e "$ENTITY_TRACE" ]]; then
+    if ! cmp -s "$ENTITY_TRACE" "$TEMP_ENTITY"; then
+        printf 'Existing private entity comparison differs; refusing to overwrite %s\n' "$ENTITY_TRACE" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_ENTITY" "$ENTITY_TRACE"
+fi
+
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"
@@ -169,5 +189,6 @@ printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REP
 printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TRANSITION"
 printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"
 printf 'Import %s for a provisional west exit; an enemy changes the independent emulator actor state before late Q.\n' "$WEST_EXIT"
+printf 'After importing that west replay, import %s to compare its private moving-entity paths.\n' "$ENTITY_TRACE"
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
 printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'

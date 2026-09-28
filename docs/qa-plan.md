@@ -165,6 +165,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Native state matches all 256 manual reference frames. Independent `stepFrame()` first diverges in gameplay RNG state at frame 101, in a moving entity at frame 102, then has an encounter at frame 163 and changes player mode at frame 164; its actor room/X/Y agrees only through frame 182. **Do not certify the west branch** as independently validated until RNG and dynamic-actor routes are reconciled. No moving-actor pause is hard-coded into native gameplay.
 - **Edge Cases / Variants**: Fresh keyboard-port reads, reference timing/cache differences, moving entities blocking X=27 in room 152 or X=170 in room 151.
 
+### TC-014: Compare private moving-entity paths without simulating them
+- **Priority**: P1
+- **Preconditions**: Import private version-2 world, matching `replay-west-exit-256.json`, and `west-entity-trace.json` from the preview launcher.
+- **Steps**:
+  1. Scrub to frames 101–102; inspect the first RNG and moving-entity divergence in the private diagnostic.
+  2. Scrub to frame 163; confirm orange manual entity position X=161/Y=130 and purple unmodified-emulator entity position X=104/Y=135 in room 152 near the cyan player X=121/Y=126.
+  3. Import the entity trace alongside a replay with a different frame count or player trajectory.
+- **Expected Result**: Matching traces render generic markers only while the entity is active and show numeric positions even if inactive. Mismatched replay/trace pairs show an explicit error instead of misleading markers. No enemy AI, collision or original sprite pixels are bundled.
+- **Edge Cases / Variants**: Imported file truncated/oversized, inactive entity kind, switching replay after a trace import, VoiceOver marker labels.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

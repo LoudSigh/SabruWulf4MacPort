@@ -12,7 +12,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...600> [--trace] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -37,7 +37,44 @@ private struct Difference: Encodable {
     let fullEmulator: [Int]
 }
 
+private struct EntityMarker: Encodable {
+    let kind: Int
+    let roomID: Int
+    let x: Int
+    let y: Int
+
+    init(_ memory: Memory) {
+        let base: UInt16 = 0x9702 + 12 * 12
+        kind = Int(memory.read(base))
+        roomID = Int(memory.read(base &+ 1))
+        x = Int(memory.read(base &+ 3))
+        y = Int(memory.read(base &+ 4))
+    }
+}
+
+private struct ActorMarker: Encodable {
+    let roomID: Int
+    let x: Int
+    let y: Int
+
+    init(_ memory: Memory) {
+        let base: UInt16 = 0x9702
+        roomID = Int(memory.read(base &+ 1))
+        x = Int(memory.read(base &+ 3))
+        y = Int(memory.read(base &+ 4))
+    }
+}
+
+private struct TraceFrame: Encodable {
+    let index: Int
+    let manualEntity: EntityMarker
+    let fullEmulatorEntity: EntityMarker
+    let manualPlayer: ActorMarker
+    let fullEmulatorPlayer: ActorMarker
+}
+
 private struct Report: Encodable {
+    let schemaVersion = 1
     let snapshotSHA256: String
     let romSHA256: String
     let framesCompared: Int
@@ -45,6 +82,7 @@ private struct Report: Encodable {
     let firstMovingEntityDifference: Difference?
     let firstPlayerStateDifference: Difference?
     let firstPlayerPositionDifference: Difference?
+    let trace: [TraceFrame]?
 }
 
 private func hash(_ data: Data) -> String {
@@ -113,10 +151,12 @@ private struct SnapshotDivergence {
                 print("SnapshotDivergence self-test passed")
                 return
             }
-            guard arguments.count == 5,
+            guard (5...6).contains(arguments.count),
+                  arguments.count == 5 || arguments[5] == "--trace",
                   let count = Int(arguments[4]), (1...600).contains(count) else {
                 throw DivergenceError.usage
             }
+            let includeTrace = arguments.count == 6
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
             let segments = try schedule(
@@ -156,6 +196,7 @@ private struct SnapshotDivergence {
             var firstEntity: Difference?
             var firstState: Difference?
             var firstPosition: Difference?
+            var trace: [TraceFrame] = []
 
             for frame in 0..<count {
                 let pressed = try segments.first(where: {
@@ -231,6 +272,15 @@ private struct SnapshotDivergence {
                         frame: index, manual: manualPosition, fullEmulator: fullPosition
                     )
                 }
+                if includeTrace {
+                    trace.append(TraceFrame(
+                        index: index,
+                        manualEntity: EntityMarker(memory),
+                        fullEmulatorEntity: EntityMarker(reference),
+                        manualPlayer: ActorMarker(memory),
+                        fullEmulatorPlayer: ActorMarker(reference)
+                    ))
+                }
             }
             let report = Report(
                 snapshotSHA256: hash(source),
@@ -239,7 +289,8 @@ private struct SnapshotDivergence {
                 firstRNGDifference: firstRNG,
                 firstMovingEntityDifference: firstEntity,
                 firstPlayerStateDifference: firstState,
-                firstPlayerPositionDifference: firstPosition
+                firstPlayerPositionDifference: firstPosition,
+                trace: includeTrace ? trace : nil
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

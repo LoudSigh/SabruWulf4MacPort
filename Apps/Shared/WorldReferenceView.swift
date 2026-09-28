@@ -23,6 +23,8 @@ struct WorldReferenceView: View {
     @State private var importingReplay = false
     @State private var replay: ReferenceReplay?
     @State private var replayFrameValue = 0.0
+    @State private var importingEntityTrace = false
+    @State private var entityTrace: ReferenceEntityTrace?
     @State private var movement: CapturedMovementState?
     @State private var heldKey = "none"
     @State private var playingMovement = false
@@ -118,6 +120,14 @@ struct WorldReferenceView: View {
                         )
                         .font(.caption)
                         .foregroundStyle(matches ? Color.green : Color.orange)
+                    }
+                    Button("Import private enemy route comparison (optional)") {
+                        importingEntityTrace = true
+                    }
+                    .buttonStyle(.bordered)
+                    if let entityFrame = currentEntityFrame {
+                        Text(entitySummary(entityFrame))
+                            .font(.caption.monospacedDigit())
                     }
                 }
                 Button("Preview private background images (optional)") {
@@ -242,6 +252,16 @@ struct WorldReferenceView: View {
                                 )
                                 .accessibilityLabel("Measured movement position")
                         }
+                        referenceEntityMarker(
+                            currentEntityFrame?.manualEntity, in: selected,
+                            size: area.size, color: .orange,
+                            label: "Manual CPU moving entity"
+                        )
+                        referenceEntityMarker(
+                            currentEntityFrame?.fullEmulatorEntity, in: selected,
+                            size: area.size, color: .purple,
+                            label: "Unmodified emulator moving entity"
+                        )
                     }
                 }
                 .frame(height: 180)
@@ -274,6 +294,7 @@ struct WorldReferenceView: View {
                 art = [:]
                 artStatus = nil
                 replay = nil
+                entityTrace = nil
                 replayFrameValue = 0
                 movement = nil
                 playingMovement = false
@@ -338,9 +359,33 @@ struct WorldReferenceView: View {
                 }
                 let imported = try ReferenceReplay.load(from: Data(contentsOf: url))
                 replay = imported
+                entityTrace = nil
                 replayFrameValue = 0
                 let room = imported.frames[0].playerRoomID
                 selected = RoomID(room % 16, room / 16)
+                importError = nil
+            } catch {
+                importError = error.localizedDescription
+            }
+        }
+        .fileImporter(
+            isPresented: $importingEntityTrace,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first, let replay else {
+                    throw CocoaError(.fileNoSuchFile)
+                }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                if let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                   size > 2_000_000 {
+                    throw ReferenceEntityTraceError.unsupportedFormat
+                }
+                let imported = try ReferenceEntityTrace.load(from: Data(contentsOf: url))
+                try imported.validate(replay: replay)
+                entityTrace = imported
                 importError = nil
             } catch {
                 importError = error.localizedDescription
@@ -359,6 +404,36 @@ struct WorldReferenceView: View {
         return movement.player
     }
 
+    private var currentEntityFrame: ReferenceEntityFrame? {
+        guard let entityTrace else { return nil }
+        return entityTrace.trace[min(Int(replayFrameValue), entityTrace.trace.count - 1)]
+    }
+
+    private func entitySummary(_ frame: ReferenceEntityFrame) -> String {
+        let manual = frame.manualEntity
+        let full = frame.fullEmulatorEntity
+        return "Moving slot 12 · manual room \(manual.roomID), X \(manual.x), Y \(manual.y)"
+            + " · unmodified room \(full.roomID), X \(full.x), Y \(full.y)"
+            + " (orange/purple rings when active; read-only)"
+    }
+
+    @ViewBuilder
+    private func referenceEntityMarker(
+        _ marker: ReferenceEntityMarker?, in room: RoomID, size: CGSize,
+        color: Color, label: String
+    ) -> some View {
+        if let marker, marker.kind != 0, marker.roomID == room.y * 16 + room.x {
+            Circle()
+                .stroke(color, lineWidth: 2)
+                .frame(width: 10, height: 10)
+                .position(
+                    x: CGFloat(marker.x) * size.width / 256,
+                    y: CGFloat(marker.y) * size.height / 192
+                )
+                .accessibilityLabel(label)
+        }
+    }
+
     private func roomSummary(template: Int, placements: Int) -> String {
         var parts = ["Room template \(template), \(placements) placements."]
         parts.append(art.isEmpty
@@ -369,6 +444,10 @@ struct WorldReferenceView: View {
         }
         if movementMarkerPosition != nil {
             parts.append("Pink ring marks the measured movement position.")
+        }
+        if let frame = currentEntityFrame,
+           frame.manualEntity.kind != 0 || frame.fullEmulatorEntity.kind != 0 {
+            parts.append("Orange and purple rings mark private moving-entity comparisons.")
         }
         return parts.joined(separator: " ")
     }
