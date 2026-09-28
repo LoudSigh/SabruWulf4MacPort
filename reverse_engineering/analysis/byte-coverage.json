@@ -8,9 +8,9 @@
   "totalBytes": 49152,
   "classificationCounts": {
     "code": 0,
-    "data": 11094,
+    "data": 11486,
     "padding": 0,
-    "unknown": 38058
+    "unknown": 37666
   },
   "knownDataIntervals": [
     {"start": "0x4000", "endExclusive": "0x5800", "kind": "ULA bitmap"},
@@ -18,7 +18,8 @@
     {"start": "0x6066", "endExclusive": "0x6166", "kind": "16x16 world layout indexes; 256 bytes"},
     {"start": "0x6166", "endExclusive": "0x61C6", "kind": "48 little-endian room-template pointers; 96 bytes"},
     {"start": "0x61C6", "endExclusive": "0x6200", "kind": "special menu room; 58 bytes"},
-    {"start": "0x6200", "endExclusive": "0x70BC", "kind": "48 contiguous zero-terminated room templates; 3772 bytes"}
+    {"start": "0x6200", "endExclusive": "0x70BC", "kind": "48 contiguous zero-terminated room templates; 3772 bytes"},
+    {"start": "0xBF84", "endExclusive": "0xC10C", "kind": "196 little-endian sprite-frame pointers; 392 bytes"}
   ],
   "observedProgramCounterAddresses": [
     {"address": "0xBDAF", "evidence": "menu snapshot PC; instruction extent unclassified"},
@@ -26,5 +27,5 @@
   ],
   "candidateInstructionStartsInIsolatedGameplayTrace": 1422,
   "candidateInstructionStartsClassifiedAsCode": false,
-  "note": "Display and source-backed 16x16 layout/room-template intervals are classified. PCs mark execution points, not routine boundaries. Background graphic encoding and most RAM remain unknown; no source bytes or disassembly are included."
+  "note": "Display, source-backed 16x16 layout/room-template intervals and sprite pointer table are classified. PCs mark execution points, not routine boundaries. Background/sprite graphic encoding and most RAM remain unknown; no source bytes or disassembly are included."
 }

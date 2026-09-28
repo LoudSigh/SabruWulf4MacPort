@@ -28,7 +28,8 @@ jobs:
       - name: Validate source-free room evidence
         run: |
           jq -e '.layout.dimensions == [16,16] and .roomTable.pointerCount == 48 and .records.regularRooms.contiguousTerminatedRecords == 48 and .crossSnapshotComparison.regularRoomBytesIdentical' reverse_engineering/analysis/room-index.json
-          jq -e '(.classificationCounts | [.code, .data, .padding, .unknown] | add) == .totalBytes and .classificationCounts.data == 11094' reverse_engineering/analysis/byte-coverage.json
+          jq -e '(.classificationCounts | [.code, .data, .padding, .unknown] | add) == .totalBytes and .classificationCounts.data == 11486' reverse_engineering/analysis/byte-coverage.json
+          jq -e '.pointerCount == 196 and .distinctPointers == 153 and .identicalBetweenCaptures' reverse_engineering/analysis/sprite-index.json
       - name: Test private image downloader with synthetic inputs
         run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s reverse_engineering/tests -p 'test_download_skoolkit_images.py' -v
 

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "sourceSnapshots": [
+    "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+    "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c"
+  ],
+  "tableStart": "0xBF84",
+  "tableEndExclusive": "0xC10C",
+  "tableBytes": 392,
+  "pointerCount": 196,
+  "distinctPointers": 153,
+  "minimumPointer": "0xC10C",
+  "maximumPointer": "0xEC10",
+  "sha256": "de3f2a50b66244a65039c0ae772b96baa4c2f8de54f3227027b15af316b7a538",
+  "identicalBetweenCaptures": true,
+  "externalReference": "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/asm/49028.html",
+  "limits": [
+    "Only pointer-table structure is classified; the pointed-to sprite records remain unclassified until format, boundaries and frames are verified.",
+    "No sprite bytes, frames, images or instructions are included in this metadata."
+  ]
+}

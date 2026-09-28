@@ -42,6 +42,16 @@ This **blind pass also interprets data as instructions**. Its labels and any sel
 
 The current local analysis exported the complete 49,152-byte RAM image into `reverse_engineering/private/` and produced two **private, unverified** passes: a `6000-FFFF` listing (33,343 lines) and a focused `9000-BFFF` listing (8,654 lines). Both remain ignored, and neither is being treated as proof that every byte is an instruction. A candidate ULA pulse/delay segment observed around the menu snapshot PC is described only at a high level in [functions.json](../reverse_engineering/analysis/functions.json), not reproduced as assembly.
 
+For a source-free sprite *pointer index* (not sprite images or frame data), compile and run:
+
+```sh
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift reverse_engineering/tools/SnapshotSpriteIndex.swift -o "$OUT/SnapshotSpriteIndex"
+"$OUT/SnapshotSpriteIndex" --self-test
+"$OUT/SnapshotSpriteIndex" SNAPSHOTS/Snapshot.z80 SNAPSHOTS/Snapshot_GamePlay.z80
+```
+
+The numeric result is summarized in [sprite-index.json](../reverse_engineering/analysis/sprite-index.json). The loader, bitmap and sprite record layouts still need separate validation; this tool does not emit original bytes.
+
 ## Private, bounded input comparison
 
 `SnapshotReplay.swift` schedules one keyboard key at frame index 20 and releases it at index 40, with a 48K IM1 boundary at 69,888 cycles. It reads the FE keyboard matrix on **every** I/O read rather than relying on a frozen emulator time counter. It records numeric instruction/read/write counts and frame hashes, no screen pixels or original code:

@@ -13,7 +13,9 @@ Input: user-captured `SNAPSHOTS/Snapshot.z80`, SHA-256 `34d98ec3dc55d60755a7d9ce
 | `6166-61C5` | General RAM | Verified 48-entry little-endian room pointer table |
 | `61C6-61FF` | General RAM | Verified terminated special menu-room record |
 | `6200-70BB` | General RAM | Verified 48 contiguous terminated room-template records |
-| `70BC-FFFF` | General RAM | Mixed code/data/graphics/stack, mostly **unclassified** |
+| `70BC-BF83` | General RAM | Mixed code/data/graphics/stack, mostly **unclassified** |
+| `BF84-C10B` | General RAM | Verified 196-entry sprite-frame pointer table, 392 bytes |
+| `C10C-FFFF` | General RAM | Pointed-to sprite data and other mixed RAM, not yet classified by byte |
 
 At the capture the PC is `BDAF` (RAM) and the SP is `5FF8`; these pinpoint one **executing address** and the stack top, not code extents or routine names. The ROM and game RAM relationship to the supplied TZX revision still needs validation.
 
@@ -72,3 +74,5 @@ While this cluster was running, diagnostic reads outside display/code regions to
 ## Reference-guided room structure
 
 The user-supplied [SkoolKit index](../../docs/external-reference.md) gave numeric boundaries that were checked against **both** snapshot RAM images: layout `6066-6165`, 48 room pointers `6166-61C5`, special menu room `61C6-61FF` and 48 contiguous zero-terminated room templates `6200-70BB`. The 256 layout bytes use room type indexes 0–47 and reuse 45 distinct types across the 16×16 world. The private `SnapshotRoomIndex` parser validates the complete region without committing map IDs, placement records or background graphics. These extra 4,182 bytes are now classified as data in [byte-coverage.json](./byte-coverage.json); the remainder remains unknown until analyzed, not presumed code.
+
+A separate private `SnapshotSpriteIndex` check confirmed 196 little-endian pointers at `BF84-C10B` in **both** captures, 153 distinct targets, and an identical table hash. The additional **392 pointer bytes** are data; sprite frames at the targets are not yet classified as complete records. See [sprite-index.json](./sprite-index.json). Do not infer a renderer solely from the external PNG collection.
