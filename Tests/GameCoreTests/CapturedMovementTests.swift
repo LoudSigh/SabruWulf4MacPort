@@ -71,7 +71,7 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(state.player.y, 39)
     }
 
-    func testProvisionalWestExitFreezesThenRebasesActor() throws {
+    func testProvisionalWestExitAndEastReturnRebaseActor() throws {
         var state = try CapturedMovementState(world: world())
         for _ in 0..<100 where state.room == RoomID(8, 10) {
             try state.advance(holding: [.down])
@@ -88,6 +88,17 @@ final class CapturedMovementTests: XCTestCase {
         }
         try state.advance(holding: [.left])
         XCTAssertEqual(state.player.x, 239)
+        for _ in 0..<100 where state.room == RoomID(7, 9) {
+            try state.advance(holding: [.right])
+        }
+        XCTAssertEqual(state.room, RoomID(8, 9))
+        let eastEdge = state.player
+        for _ in 0..<6 {
+            try state.advance(holding: [.right])
+            XCTAssertEqual(state.player, eastEdge)
+        }
+        try state.advance(holding: [.right])
+        XCTAssertEqual(state.player.x, 0)
     }
 
     func testUnverifiedFireAndBoundariesFailWithoutAdvancing() throws {
@@ -126,6 +137,9 @@ final class CapturedMovementTests: XCTestCase {
         }
         if let westExit = environment["SABRE_PRIVATE_WEST_EXIT"] {
             paths.append((westExit, 256))
+        }
+        if let eastReturn = environment["SABRE_PRIVATE_EAST_RETURN"] {
+            paths.append((eastReturn, 279))
         }
         for (path, count) in paths {
             let replay = try ReferenceReplay.load(

@@ -45,6 +45,21 @@
       {"frame": 256, "roomID": 151, "x": 170, "y": 126}
     ]
   },
+  "eastReturnProbe": {
+    "schedule": "east-return-schedule.json",
+    "framesCompared": 279,
+    "nativeMatchesManualCPUReplay": 279,
+    "firstUnmodelledMovingActorBlockFrame": 280,
+    "sourceEnemyPositionAtBlock": {"roomID": 152, "x": 85, "y": 130},
+    "independentComparison": "Provisional: shares the west route's pre-Q moving-entity divergence in the unmodified emulator.",
+    "checkpoints": [
+      {"frame": 245, "roomID": 151, "x": 238, "y": 126},
+      {"frame": 246, "roomID": 152, "x": 238, "y": 126},
+      {"frame": 252, "roomID": 152, "x": 238, "y": 126},
+      {"frame": 253, "roomID": 152, "x": 0, "y": 126},
+      {"frame": 279, "roomID": 152, "x": 78, "y": 126}
+    ]
+  },
   "checkpoints": [
     {"frame": 67, "roomID": 168, "x": 121, "y": 42},
     {"frame": 68, "roomID": 152, "x": 121, "y": 42},

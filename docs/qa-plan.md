@@ -175,6 +175,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Matching traces render generic markers only while the entity is active and show numeric positions even if inactive. Mismatched replay/trace pairs show an explicit error instead of misleading markers. No enemy AI, collision or original sprite pixels are bundled.
 - **Edge Cases / Variants**: Imported file truncated/oversized, inactive entity kind, switching replay after a trace import, VoiceOver marker labels.
 
+### TC-015: Provisional east return stops before damage
+- **Priority**: P1
+- **Preconditions**: Import the private world and `replay-east-return-279.json` generated from [east-return-schedule.json](../reverse_engineering/analysis/east-return-schedule.json).
+- **Steps**:
+  1. Follow W frames 20–29, E 30–99, Q 180–225, W 233–278, with no input in the gaps.
+  2. Confirm room 151 -> 152 at frame 246 and X=0/Y=126 at frame 253.
+  3. Compare source/manual and native room/X/Y through frame 279; inspect frame 280 privately without extending native parity.
+- **Expected Result**: Native actor matches the manual reference for 279 frames. At frame 280 a moving entity near X=85/Y=130 triggers source player damage; native enemy logic is still absent. The route is **not independently certified** because its earlier westward portion has a different RNG/enemy path in the full emulator.
+- **Edge Cases / Variants**: East edge threshold, seven-frame redraw pause, missing room geometry, early action changes and damage-state timing.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

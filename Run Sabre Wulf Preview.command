@@ -79,7 +79,8 @@ TEMP_HELD="$(mktemp "$ROOT/$PRIVATE/.held-XXXXXXXX.json")"
 TEMP_ROUND="$(mktemp "$ROOT/$PRIVATE/.round-XXXXXXXX.json")"
 TEMP_WEST="$(mktemp "$ROOT/$PRIVATE/.west-XXXXXXXX.json")"
 TEMP_ENTITY="$(mktemp "$ROOT/$PRIVATE/.entity-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY"' EXIT
+TEMP_EAST="$(mktemp "$ROOT/$PRIVATE/.east-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -127,6 +128,19 @@ if [[ -e "$WEST_EXIT" ]]; then
     fi
 else
     mv "$TEMP_WEST" "$WEST_EXIT"
+fi
+
+printf 'Preparing a private provisional east-return reference...\n'
+EAST_RETURN="$ROOT/$PRIVATE/replay-east-return-279.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/east-return-schedule.json 279 > "$TEMP_EAST"
+if [[ -e "$EAST_RETURN" ]]; then
+    if ! cmp -s "$EAST_RETURN" "$TEMP_EAST"; then
+        printf 'Existing private east-return replay differs; refusing to overwrite %s\n' "$EAST_RETURN" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_EAST" "$EAST_RETURN"
 fi
 
 printf 'Comparing a private moving-entity path across both reference runners...\n'
@@ -189,6 +203,7 @@ printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REP
 printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TRANSITION"
 printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"
 printf 'Import %s for a provisional west exit; an enemy changes the independent emulator actor state before late Q.\n' "$WEST_EXIT"
-printf 'After importing that west replay, import %s to compare its private moving-entity paths.\n' "$ENTITY_TRACE"
+printf 'Import %s for a provisional east return; a moving enemy blocks the source at frame 280.\n' "$EAST_RETURN"
+printf 'After importing the west replay, import %s to compare its private moving-entity paths.\n' "$ENTITY_TRACE"
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
 printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'

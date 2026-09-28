@@ -78,7 +78,7 @@ struct WorldReferenceView: View {
                                 .accessibilityLabel("Reset measured movement")
                         }
                         .buttonStyle(.bordered)
-                        Text("Partial movement only: north/return match the independent reference; the provisional west path diverges after an enemy encounter in the full emulator. No enemies, combat, items or other validated exits. Playback pauses on unsupported behavior.")
+                        Text("Partial movement: north/return match the independent reference; west/east passages are provisional because enemy paths differ. No native enemies, combat, items or other validated exits. Playback pauses on unsupported behavior.")
                             .font(.caption)
                     } else {
                         Button("Start measured movement (partial)") { resetMovement() }
