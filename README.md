@@ -14,6 +14,8 @@ For local-only source recovery, use the [private snapshot analysis workflow](doc
 
 The user-supplied [SkoolKit reference cross-check](docs/external-reference.md) now confirms a 16×16 room layout, 48 reusable room templates and their bounded RAM range against **both** local snapshots. Its optional private world-map viewer is structural, not original game artwork; the native prototype remains a separate 2×2 placeholder.
 
+The native apps can now [import the private 16×16 world reference](docs/build.md) for **read-only exploration** of all 256 positions and source placement coordinates. This is a real first data-model slice, not yet faithful character movement, enemy rules, collision or a released game.
+
 To inspect the 160 images linked from its graphics page—or make an **authorized local copy** under ignored `SNAPSHOTS/graphics/downloaded/`—use the [private graphics downloader](docs/download-skoolkit-assets.md). No third-party images are included in this repository.
 
 **Never commit or push disassembly, original instruction bytes, raw RAM dumps or extracted game assets.** The user expressly requires keeping disassembly out of GitHub; `.gitignore` excludes the private analysis directories and common listing formats. Do not distribute original tape, snapshot, Spectrum ROM or game art/audio without confirming applicable rights. A faithful native port still needs source-backed behavioral comparisons.

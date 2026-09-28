@@ -71,6 +71,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Only a verified, authorized source is accepted; failure is actionable and does not appear as a successful import. No private ROM, tape, dump, or extracted assets appear in the public Git history or app bundle.
 - **Edge Cases / Variants**: Read-only original path, revoked file access, repeated import and low disk space.
 
+### TC-006: Private 16x16 source-backed world viewer
+- **Priority**: P1
+- **Preconditions**: Locally generated `reverse_engineering/private/snapshot-803e4197989c-world.json` from both SHA-verified snapshots; app running on macOS, iOS or visionOS.
+- **Steps**:
+  1. Expand the read-only world disclosure and import the JSON through the platform file picker.
+  2. Visit a corner and a far-edge room using the grid and North/West/East/South selection buttons.
+  3. Import a truncated file, an invalid 49th room type and a file claiming another snapshot hash.
+- **Expected Result**: The grid shows 256 selectable positions and the selected template's placement count/markers; navigation stops at world bounds. Invalid files show an error. The separate placeholder gameplay state is unchanged.
+- **Edge Cases / Variants**: Move the private file to iOS/visionOS through an authorized Files provider; verify keyboard/VoiceOver focus and labels. This is source structure, not verified original movement or collision.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |
@@ -81,5 +91,6 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 | RS-004 | Three-target builds and launch | Simulator smoke | High | Builds in CI; launches locally | Every release |
 | RS-005 | Touch, controller, focus, accessibility | Manual | Medium | Partial | Every release |
 | RS-006 | Asset provenance and leak review | Manual | High | Ignore checks + review | Every push/release |
+| RS-007 | Private world JSON import and boundaries | Unit + manual | Medium | Core parsing automated; file picker manual | Each world-format change |
 
 Track the number of passing tests and reference checkpoints explicitly. Add a regression test for each verified bug. The release sign-off requires functional tests for happy paths and errors, app-to-core integration, simulator smoke tests, manual accessibility checks, and a reviewed rights boundary. A generic playable prototype does not pass original-game fidelity.

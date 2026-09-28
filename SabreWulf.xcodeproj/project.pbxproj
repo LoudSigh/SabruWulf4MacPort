@@ -7,13 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0EF8319B4F55AE636E10831C /* WorldReferenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9B88C4106BF9F027845812A /* WorldReferenceView.swift */; };
 		1BE9CA69777F16CCAE51D00B /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = 81380A0D818A9B8D249614F5 /* GameCore */; };
 		3FCF5D507D1DA0B93EFE4E2C /* MacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88AE83957BF798D49B1BFBE2 /* MacApp.swift */; };
+		50B85A7A270AEA7D119EC325 /* WorldReferenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9B88C4106BF9F027845812A /* WorldReferenceView.swift */; };
 		54EA0B735764C8D48FDDA54F /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70BF60AB3A9E766EA48ED1EA /* GameView.swift */; };
 		6B5E5928F8326E7A516F0F4C /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70BF60AB3A9E766EA48ED1EA /* GameView.swift */; };
 		B20F01FB71FB9EEDBD736E37 /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6A3DDD96D3388186B2364D84 /* GameCore */; };
 		C706D221DCE449B15F834F40 /* SpatialApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CD38D058C99BC5B4B247C4E /* SpatialApp.swift */; };
 		CC45A25CFA19977D480F6099 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70BF60AB3A9E766EA48ED1EA /* GameView.swift */; };
+		CE7F49A9BF9E7EFF4A33F13A /* WorldReferenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9B88C4106BF9F027845812A /* WorldReferenceView.swift */; };
 		E0DA7F293ED75C9DFF5F3088 /* MobileApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81641358D14DCDD94CD819F7 /* MobileApp.swift */; };
 		F13A9BBA24D871F866FD3BDE /* GameCore in Frameworks */ = {isa = PBXBuildFile; productRef = 56B9AC07F77D6360CBA0807E /* GameCore */; };
 /* End PBXBuildFile section */
@@ -27,6 +30,7 @@
 		88AE83957BF798D49B1BFBE2 /* MacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacApp.swift; sourceTree = "<group>"; };
 		B5813599A5C81266D5E75C3E /* SabreWulfMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SabreWulfMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C212AF6319AC7ED62531E859 /* SabreWulf4MacPort */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SabreWulf4MacPort; path = .; sourceTree = SOURCE_ROOT; };
+		F9B88C4106BF9F027845812A /* WorldReferenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldReferenceView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				70BF60AB3A9E766EA48ED1EA /* GameView.swift */,
+				F9B88C4106BF9F027845812A /* WorldReferenceView.swift */,
 			);
 			name = Shared;
 			path = Apps/Shared;
@@ -225,6 +230,7 @@
 			files = (
 				6B5E5928F8326E7A516F0F4C /* GameView.swift in Sources */,
 				C706D221DCE449B15F834F40 /* SpatialApp.swift in Sources */,
+				50B85A7A270AEA7D119EC325 /* WorldReferenceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,6 +240,7 @@
 			files = (
 				CC45A25CFA19977D480F6099 /* GameView.swift in Sources */,
 				E0DA7F293ED75C9DFF5F3088 /* MobileApp.swift in Sources */,
+				0EF8319B4F55AE636E10831C /* WorldReferenceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -243,6 +250,7 @@
 			files = (
 				54EA0B735764C8D48FDDA54F /* GameView.swift in Sources */,
 				3FCF5D507D1DA0B93EFE4E2C /* MacApp.swift in Sources */,
+				CE7F49A9BF9E7EFF4A33F13A /* WorldReferenceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

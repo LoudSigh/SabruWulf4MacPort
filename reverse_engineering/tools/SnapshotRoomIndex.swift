@@ -123,6 +123,47 @@ private struct RecordSummary {
     let endExclusive: Int
 }
 
+private struct PrivateWorld: Encodable {
+    let schemaVersion = 1
+    let snapshotSha256: String
+    let width = 16
+    let height = 16
+    let layout: [UInt8]
+    let rooms: [PrivateRoom]
+}
+
+private struct PrivateRoom: Encodable {
+    let placements: [PrivatePlacement]
+}
+
+private struct PrivatePlacement: Encodable {
+    let graphicAddress: Int
+    let x: Int
+    let y: Int
+}
+
+private func roomPlacements(_ ram: [UInt8], address: Int, before next: Int) throws -> PrivateRoom {
+    var cursor = address
+    var placements: [PrivatePlacement] = []
+    while cursor + 1 < next {
+        let offset = cursor - 0x4000
+        let graphic = Int(ram[offset]) | (Int(ram[offset + 1]) << 8)
+        if graphic == 0 {
+            guard cursor + 2 == next else {
+                throw RoomIndexError.nonContiguousRooms(address: address)
+            }
+            return PrivateRoom(placements: placements)
+        }
+        guard cursor + 3 < next else { throw RoomIndexError.unterminatedRoom(address: address) }
+        placements.append(PrivatePlacement(
+            graphicAddress: graphic,
+            x: Int(ram[offset + 2]), y: Int(ram[offset + 3])
+        ))
+        cursor += 4
+    }
+    throw RoomIndexError.unterminatedRoom(address: address)
+}
+
 private func scanRoom(_ ram: [UInt8], address: Int, before next: Int) throws -> RecordSummary {
     var cursor = address
     var count = 0
@@ -244,7 +285,7 @@ private func selfTest() throws {
     print("SnapshotRoomIndex self-test passed")
 }
 
-private func writePrivateMap(layout: [UInt8], snapshotSha: String) throws -> URL {
+private func privateDirectory() throws -> URL {
     let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     let tool = root.appendingPathComponent("reverse_engineering/tools/SnapshotRoomIndex.swift")
     let ignore = root.appendingPathComponent(".gitignore")
@@ -262,6 +303,11 @@ private func writePrivateMap(layout: [UInt8], snapshotSha: String) throws -> URL
         guard values.isSymbolicLink != true else { throw RoomIndexError.unsafeOutput }
     }
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    return directory
+}
+
+private func writePrivateMap(layout: [UInt8], snapshotSha: String) throws -> URL {
+    let directory = try privateDirectory()
     let cells = layout.enumerated().map { index, id in
         let x = index % 16
         let y = index / 16
@@ -295,6 +341,25 @@ private func writePrivateMap(layout: [UInt8], snapshotSha: String) throws -> URL
         }
     } else {
         try bytes.write(to: url, options: [.atomic])
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o600], ofItemAtPath: url.path
+        )
+    }
+    return url
+}
+
+private func writePrivateWorld(_ world: PrivateWorld) throws -> URL {
+    let directory = try privateDirectory()
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+    let data = try encoder.encode(world)
+    let url = directory.appendingPathComponent("snapshot-\(world.snapshotSha256.prefix(12))-world.json")
+    if FileManager.default.fileExists(atPath: url.path) {
+        guard try Data(contentsOf: url) == data else {
+            throw RoomIndexError.existingOutputMismatch
+        }
+    } else {
+        try data.write(to: url, options: .atomic)
         try FileManager.default.setAttributes(
             [.posixPermissions: 0o600], ofItemAtPath: url.path
         )
@@ -351,6 +416,7 @@ private struct SnapshotRoomIndex {
                     == gameplaySummary.roomRecordsSha256
             )
             var privateMap: URL?
+            var privateWorld: URL?
             if CommandLine.arguments.count == 4 {
                 guard report.layoutIdenticalBetweenCaptures,
                       report.roomTableIdenticalBetweenCaptures,
@@ -363,6 +429,20 @@ private struct SnapshotRoomIndex {
                 privateMap = try writePrivateMap(
                     layout: layout, snapshotSha: gameplaySummary.snapshotSha256
                 )
+                let pointers = try pointers(
+                    slice(gameplay.ram48, address: tableStart, length: pointerCount * 2)
+                )
+                let rooms = try pointers.enumerated().map { index, start -> PrivateRoom in
+                    let end = index + 1 < pointers.count ? pointers[index + 1] : 28860
+                    return try roomPlacements(gameplay.ram48, address: start, before: end)
+                }
+                privateWorld = try writePrivateWorld(
+                    PrivateWorld(
+                        snapshotSha256: gameplaySummary.snapshotSha256,
+                        layout: layout,
+                        rooms: rooms
+                    )
+                )
             }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -370,6 +450,9 @@ private struct SnapshotRoomIndex {
             FileHandle.standardOutput.write(Data([0x0A]))
             if let privateMap {
                 fputs("Private local map: \(privateMap.path)\n", stderr)
+            }
+            if let privateWorld {
+                fputs("Private world data: \(privateWorld.path)\n", stderr)
             }
         } catch {
             fputs("SnapshotRoomIndex: \(error)\n", stderr)
