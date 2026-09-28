@@ -34,6 +34,8 @@ With the atlas imported, the source-backed viewer can overlay the captured playe
 
 The iOS target generates a launch screen so modern devices use the full screen rather than a legacy letterboxed viewport. The shared view scrolls when the board and controls do not fit vertically; it caps the board width to the available window. The Xcode project is generated from `project.yml`; rerun `xcodegen generate` after changing target settings. A public build includes only independently authored placeholders and is **not** a faithful Sabre Wulf release.
 
+Local simulator smoke on an iPhone 17 Pro (iOS 26.4) installed and launched the public app, and a private screenshot showed its board, controls and source-world disclosure fitting the screen. Apple Vision Pro (visionOS 26.4) also installed and launched the app process, but this machine's headless Simulator capture showed only the virtual room, not the app window; interactive window visibility and spatial input remain **unverified** without Simulator.app or a device. Neither private screenshot is tracked or bundled.
+
 ## Manual simulator smoke checks
 
 - **Movement and collision:** Move into an interior gray wall and confirm position stays put; move through a teal center gate into a neighboring room. At the outer edge, movement must stop.
