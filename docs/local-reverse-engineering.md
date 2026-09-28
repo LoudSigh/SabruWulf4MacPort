@@ -143,3 +143,19 @@ The divergence tool compares fresh-FE CPU stepping with the unmodified emulator'
 The optional `--trace` records numeric positions for one moving-entity slot and both player positions per frame. Import `replay-west-exit-256.json` with `west-entity-trace-v2.json` to examine the old timing drift; import `replay-west-reference-256.json` with `west-entity-reference.json` to examine aligned positions. The app rejects frame-count, timing-mode and player-path mismatches. Both pairs remain ignored local data and do not simulate enemies.
 
 For a bounded, source-only actor-state/RNG comparison, add `--watch-actor-state` alongside `--reference-timing --require-ram-parity` for each of the three [pre-contact schedules](../reverse_engineering/analysis/reference-fire-encounter.json), writing the JSON reports **only under `reverse_engineering/private/`**. The diagnostic records changed player and slot-12 kind bytes with the executing instruction address, previous/new numeric value and RNG at that write; it also reports each frame's RNG and the numeric addresses and values of changed RNG writes. It never exports the instruction bytes, disassembly, graphics or complete RAM. The three verified paths first diverge in RNG at frame 146 (T) and frame 147 (A) relative to no fire. A private source check shows the frequent RNG update at `0x99D7` mixes in the Z80 refresh register: in frame 146, the same previous RNG value 177 becomes 235 with T and 212 without T. Replicating source RNG parity in an independent high-level core therefore needs a verified replacement for this instruction-path-sensitive input, not just a byte-state formula. At frame 156 the enemy enters kind 108 in all paths, then the random-direction branch changes it to 110 only in the no-fire/A paths (RNG 55/28); T's RNG is 227 with bit 7 set, so it stays 108. Thus the first enemy-state difference is **not evidence of a sword hit**. This alone does not rule out a later hit; trace collisions, enemy damage and scoring independently before promoting combat behavior into `GameCore`.
+
+For a **deliberately altered, non-parity experiment**, run the [RNG intervention probe](../reverse_engineering/tools/RNGIntervention.swift) locally. It accepts the same three source-free schedules, forces a chosen byte on every RNG write starting at zero-based frame 145, and writes only bounded actor positions/kinds/RNG values into ignored private JSON:
+
+```sh
+swiftc -O -parse-as-library "$SPECCY_CORE_DIR"/*.swift \
+  reverse_engineering/tools/RNGIntervention.swift -o "$OUT/RNGIntervention"
+for byte in 0 255; do
+  for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
+    "$OUT/RNGIntervention" "$ROM" SNAPSHOTS/Snapshot_GamePlay.z80 \
+      "reverse_engineering/analysis/$scenario-schedule.json" 190 "$byte" 145 \
+      > "reverse_engineering/private/intervention-$scenario-$byte.json"
+  done
+done
+```
+
+The [numeric summary](../reverse_engineering/analysis/rng-intervention.json) records that fixed RNG **0** prevents the control paths' damage through frame 190 too; fixed **255** retains damage at frame 164 without T/A while T still avoids it. T also changes player animation and execution timing and can alter enemy update cadence even with RNG forced. These **counterfactual runs do not match the unmodified emulator after intervention** and do not establish sword damage or collision rules. Keep them distinct from the three fully reference-verified 190-frame replays.

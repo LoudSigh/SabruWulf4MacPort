@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "mode": "experimental-manual-cpu-rng-intervention-not-reference-parity",
+  "startFrameZeroBased": 145,
+  "framesPerRun": 190,
+  "schedules": [
+    "fire-before-contact-schedule.json",
+    "no-fire-encounter-schedule.json",
+    "unrelated-a-control-schedule.json"
+  ],
+  "interventions": [
+    {
+      "forcedRNGByte": 0,
+      "frame164PlayerKinds": [32, 27, 27],
+      "frame190PlayerKinds": [16, 27, 27],
+      "damageSeenThrough190": [false, false, false]
+    },
+    {
+      "forcedRNGByte": 255,
+      "frame164PlayerKinds": [39, 64, 64],
+      "frame190PlayerKinds": [16, 65, 65],
+      "damageSeenThrough190": [false, true, true]
+    }
+  ],
+  "limits": "The fixed byte is substituted at every write to 0x9695 from zero-based frame 145 onward. These are deliberately altered manual CPU runs, NOT reference-emulator parity results. With fixed zero the control paths avoid damage too; with fixed 255 fire avoids damage while no-fire/A do not. T also changes actor animation/execution timing and can affect enemy updates even when RNG is held fixed. None of these observations identifies a general sword hitbox, enemy kill or collision formula."
+}
