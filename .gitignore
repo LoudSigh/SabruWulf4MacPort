@@ -8,6 +8,7 @@ DerivedData/
 .env
 .env.*
 .specstory/
+.playwright-mcp/
 local-inputs/
 SNAPSHOTS/
 reverse_engineering/generated/
