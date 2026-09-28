@@ -10,6 +10,15 @@
     {"schedule": "unrelated-a-control-schedule.json", "matchingMovingUpdates": 4, "observedMovingUpdates": 4, "countdownOnlyFrames": 2}
   ],
   "totals": {"matchingMovingUpdates": 14, "observedMovingUpdates": 14, "countdownOnlyFrames": 3},
+  "writeTrace": {
+    "timerCountdownInstructionStart": 42346,
+    "kindToggleInstructionStart": 42388,
+    "xPositionInstructionStart": 42391,
+    "kindToggleCounts": [8, 2, 4],
+    "timerCountdownWriteCounts": [11, 2, 4],
+    "pathOrder": ["fire-before-contact", "no-fire-encounter", "unrelated-a-control"],
+    "note": "The fire path includes two additional countdown writes after its active phase expires; source timing depends on the executed instruction path. These numeric PC starts are not disassembly or a frame scheduler."
+  },
   "rule": "In the bounded active encounter, movement toggles kind bit 0; an externally observed countdown event decrements the timer. Countdown and movement may appear in separate displayed frames. The parity gate compares the resulting kind, timer, position and complete emulator RAM against the verified source.",
   "limits": "The model accepts only observed slot-12 kinds 108-111, timer 2-15, room 152 and four verified signed X velocities with Y velocity 80. It does not decide when either event happens, synthesize RNG, handle timer expiry, spawn other actors or apply contact and injury."
 }

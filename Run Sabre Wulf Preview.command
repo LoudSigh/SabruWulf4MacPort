@@ -350,6 +350,18 @@ for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
     else
         mv "$TEMP_CONTACT" "$ACTIVE_ENEMY_REPORT"
     fi
+    ENTITY_WRITES="$ROOT/$PRIVATE/entity-writes-$scenario-190.json"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
+        --reference-timing --require-ram-parity --watch-entity-state \
+        > "$TEMP_CONTACT"
+    if [[ -e "$ENTITY_WRITES" ]]; then
+        if ! cmp -s "$ENTITY_WRITES" "$TEMP_CONTACT"; then
+            printf 'Existing private entity-write trace differs: %s\n' "$ENTITY_WRITES" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_CONTACT" "$ENTITY_WRITES"
+    fi
 done
 printf 'Checking a second RNG-selected enemy heading on the extended T route...\n'
 EXTENDED_FIRE="$ROOT/$PRIVATE/replay-fire-before-contact-250.json"
