@@ -69,9 +69,28 @@
       "lifeByteAtStop": 4,
       "selectedRecordStayedActive": true
     },
+    "cornerClearanceFollowUp": {
+      "eastVelocitySixteenthPixelUnitsAtStall": 32,
+      "actorUpdateEntriesAfterStall": 43,
+      "measuredStalledFrames": 42,
+      "onePixelEastProbeAllowed": true,
+      "twoPixelEastProbeBlockedFrames": 42,
+      "northProbeBlockedAtStall": true,
+      "northwardProgressWithSixPixelInitialEastShift": 50,
+      "northwardClearanceRequired": 97,
+      "northwardClearanceWithInitialEastShiftAtMostOnePixel": true,
+      "revisedTAssistedSourceRun": {
+        "matchingFullRAMFramesThroughExit": 827,
+        "firstRoomTransitionFrame": 827,
+        "exitDirection": "north",
+        "injuryBeforeExit": false,
+        "recordDistanceBeforeExit": 5,
+        "recordDistanceAfterExit": 6
+      }
+    },
     "fullRAMParityFramesPerAttempt": 900,
     "lifeByteStayedFour": true,
     "interventionPerformed": false
   },
-  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. Direct and static-geometry detours remained in the starting room; holding T with movement delayed or avoided other-actor contact in two matched replays but still produced no room edge or record contact. This neither validates the pathfinder as source gameplay nor proves a sword hit or pickup. No actor teleport, record values, instruction bytes, images or disassembly are published."
+  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. An eastward source plateau is consistent with a two-pixel step blocked by one-pixel clearance, not missing actor ticks. Removing a prior east offset produced a safe north exit, but increased target distance. No item room/contact or sword hit is established. No actor teleport, record values, instruction bytes, images or disassembly are published."
 }

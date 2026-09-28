@@ -547,7 +547,8 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   5. Reject an assumption of fixed four-room placement if four room fields differ after the second call; do not label the records as quest pieces until pickup is demonstrated.
   6. Treat a static east-edge route as a proposal only: compare two source input variants through first injury (855/855 and 846/846 RAM frames) and ensure other-actor contact occurs before any claimed room transition or item pickup.
   7. Repeat two bounded routes with simultaneous T/movement keyboard states and full reference RAM parity; distinguish delayed actor contact from crossing a room edge or collecting an item.
-- **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown. Two direct approaches stall; two static detours meet another actor and enter injury before any room transition.
+  8. Reproduce the 42/42 two-pixel east collisions at one-pixel clearance, then remove the initial east offset and verify a T-assisted north transition with 827/827 RAM frames and no injury.
+- **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown. A two-pixel east step stalls at one-pixel clearance; correcting an initial offset permits a source-verified north exit, not a collectible contact.
 - **Edge Cases / Variants**: Different key timing, player count, repeated restart, item disappearance and renderer overlap.
 
 ## Regression cadence and coverage
