@@ -59,7 +59,7 @@ public struct ReferenceReplay: Decodable, Sendable {
             }
         case 2:
             guard replay.input == "schedule",
-                  (1...900).contains(replay.frames.count),
+                  (1...1800).contains(replay.frames.count),
                   let schedule = replay.schedule, !schedule.isEmpty else {
                 throw ReferenceReplayError.unsupportedFormat
             }

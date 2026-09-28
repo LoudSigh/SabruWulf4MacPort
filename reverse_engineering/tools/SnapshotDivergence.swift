@@ -24,7 +24,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1500> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -158,6 +158,11 @@ private struct MenuSequenceComparison: Encodable {
     let menuReturnRoutineFrame: Int
 }
 
+private struct MenuRoutineComparison: Encodable {
+    let setupFrames: [Int]
+    let returnFrames: [Int]
+}
+
 private struct EnemyDirectionComparison: Encodable {
     let calls: Int
     let matchingCalls: Int
@@ -264,6 +269,7 @@ private struct Report: Encodable {
     let contactComparison: ContactComparison?
     let injuryComparison: InjuryComparison?
     let menuSequence: MenuSequenceComparison?
+    let menuRoutineFrames: MenuRoutineComparison?
     let enemyDirectionComparison: EnemyDirectionComparison?
     let activeEnemyComparison: ActiveEnemyComparison?
     let enemyExpiryComparison: EnemyExpiryComparison?
@@ -354,10 +360,10 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...19).contains(arguments.count),
+            guard (5...20).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--watch-entity-state",
-                       "--watch-player-state",
+                       "--watch-player-state", "--watch-menu-routines",
                        "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
@@ -367,7 +373,7 @@ private struct SnapshotDivergence {
                        "--require-enemy-direction-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
-                  let count = Int(arguments[4]), (1...1500).contains(count),
+                  let count = Int(arguments[4]), (1...1800).contains(count),
                   !options.contains("--require-contact-parity")
                     || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")),
@@ -402,6 +408,7 @@ private struct SnapshotDivergence {
             let requireContactParity = options.contains("--require-contact-parity")
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
+            let watchMenuRoutines = options.contains("--watch-menu-routines")
             let requireEnemyDirectionParity = options.contains("--require-enemy-direction-parity")
             let includeCoverage = options.contains("--coverage")
             let requireEntityPhaseParity = options.contains("--require-entity-phase-parity")
@@ -599,7 +606,7 @@ private struct SnapshotDivergence {
                             enemyDirectionFrames.append(observed.frame)
                         }
                     }
-                    if requireMenuSequence {
+                    if requireMenuSequence || watchMenuRoutines {
                         if cpu.pc == 0xAA6A { menuSetupFrames.append(frame + 1) }
                         if cpu.pc == 0xAAAD { menuReturnFrames.append(frame + 1) }
                     }
@@ -959,6 +966,11 @@ private struct SnapshotDivergence {
                         secondContactFrame: positiveContactFrames[1],
                         menuSetupFrame: menuSetupFrames[0],
                         menuReturnRoutineFrame: menuReturnFrames[0]
+                    ) : nil,
+                menuRoutineFrames: watchMenuRoutines
+                    ? MenuRoutineComparison(
+                        setupFrames: menuSetupFrames,
+                        returnFrames: menuReturnFrames
                     ) : nil,
                 enemyDirectionComparison: requireEnemyDirectionParity
                     ? EnemyDirectionComparison(

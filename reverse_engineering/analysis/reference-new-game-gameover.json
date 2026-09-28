@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "menuSnapshotSHA256": "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+  "frameBoundaryMode": "reference-relative",
+  "schedule": "restart-ready-w-q-schedule.json",
+  "matchingFullRAMAndScreenFrames": 1800,
+  "initialReturn": {
+    "menuSetupFrame": 366,
+    "menuReturnRoutineFrame": 497,
+    "firstExactCenterMenuTextFrame": 503
+  },
+  "newGame": {
+    "restartKeyHeldFrames": [531, 535],
+    "observedReadyFrame": 790,
+    "positiveContactFrame": 868,
+    "firstInjuryEntryFrame": 870,
+    "lifeByteChangeFrames": [983, 1131, 1317, 1499]
+  },
+  "secondReturn": {
+    "lastLifeByteFallsToZeroFrame": 1499,
+    "menuSetupFrame": 1596,
+    "menuReturnRoutineFrame": 1728,
+    "firstExactCenterMenuTextFrameAfter1500": 1733,
+    "matchingCenterMenuRGBPixels": 2560
+  },
+  "limits": "This is one source-verified scheduled path, not a native menu compositor, general four-life damage scheduler, full-screen pixel comparison, edition-equivalent tape boot or playable ending. Actor RAM can retain stale game-state bytes after visible menu text returns. The 1800-frame replay and source media remain private."
+}

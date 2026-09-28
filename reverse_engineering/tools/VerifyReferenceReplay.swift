@@ -13,7 +13,7 @@ private enum VerificationError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: VerifyReferenceReplay <48k.rom> <gameplay.z80> <private-reference-replay.json> [--menu <menu.z80> <expected-first-menu-frame>]"
+            "Usage: VerifyReferenceReplay <48k.rom> <gameplay.z80> <private-reference-replay.json> [--menu <menu.z80> <expected-first-menu-frame> | --menu-after <menu.z80> <after-frame> <expected-first-menu-frame>]"
         case .invalidInput:
             "Expected the verified 48K ROM and gameplay snapshot"
         case .invalidReplay:
@@ -75,7 +75,9 @@ private struct VerifyReferenceReplay {
     static func main() {
         do {
             let args = CommandLine.arguments
-            guard args.count == 4 || (args.count == 7 && args[4] == "--menu")
+            guard args.count == 4
+                    || (args.count == 7 && args[4] == "--menu")
+                    || (args.count == 8 && args[4] == "--menu-after")
             else { throw VerificationError.usage }
             let rom = try Data(contentsOf: URL(fileURLWithPath: args[1]))
             let snapshotData = try Data(contentsOf: URL(fileURLWithPath: args[2]))
@@ -96,7 +98,7 @@ private struct VerifyReferenceReplay {
                   replay.romSHA256 == romHash,
                   replay.frameBoundaryMode == "reference-relative",
                   replay.input == "schedule",
-                  (1...900).contains(replay.frames.count),
+                  (1...1800).contains(replay.frames.count),
                   !replay.schedule.isEmpty else {
                 throw VerificationError.invalidReplay
             }
@@ -113,8 +115,12 @@ private struct VerifyReferenceReplay {
 
             let menuSnapshot: Z80Snapshot?
             let expectedMenuFrame: Int?
-            if args.count == 7 {
-                guard let expected = Int(args[6]),
+            let menuAfterFrame: Int
+            if args.count >= 7 {
+                let after = args.count == 8 ? Int(args[6]) : 0
+                let expected = Int(args[args.count - 1])
+                guard let after, let expected,
+                      (0..<expected).contains(after),
                       (1...replay.frames.count).contains(expected) else {
                     throw VerificationError.invalidReplay
                 }
@@ -126,9 +132,11 @@ private struct VerifyReferenceReplay {
                 }
                 menuSnapshot = menu
                 expectedMenuFrame = expected
+                menuAfterFrame = after
             } else {
                 menuSnapshot = nil
                 expectedMenuFrame = nil
+                menuAfterFrame = 0
             }
             let savedOutput = dup(STDOUT_FILENO)
             guard savedOutput >= 0 else { throw VerificationError.invalidInput }
@@ -175,7 +183,8 @@ private struct VerifyReferenceReplay {
                       frame.screenSHA256 == hash(Data(ram.prefix(6912))) else {
                     throw VerificationError.frameMismatch(index: frame.index)
                 }
-                if let menuPixels, firstMenuFrame == nil {
+                if let menuPixels, firstMenuFrame == nil,
+                   frame.index > menuAfterFrame {
                     let current = ULA.render(mem: emulator.mem, flashOn: false)
                     let matches = (72..<88).allSatisfy { row in
                         (48..<208).allSatisfy { column in
@@ -195,7 +204,7 @@ private struct VerifyReferenceReplay {
             }
             print("Verified \(replay.frames.count)/\(replay.frames.count) RAM and screen hashes against the unmodified emulator")
             if let firstMenuFrame {
-                print("First 2560/2560 matching menu-text RGB pixels at frame \(firstMenuFrame)")
+                print("First 2560/2560 matching menu-text RGB pixels after frame \(menuAfterFrame) at frame \(firstMenuFrame)")
             }
         } catch {
             fputs("VerifyReferenceReplay: \(error)\n", stderr)

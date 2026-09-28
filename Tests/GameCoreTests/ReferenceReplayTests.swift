@@ -74,8 +74,8 @@ final class ReferenceReplayTests: XCTestCase {
         ))
     }
 
-    func testScheduledReplayAcceptsBoundedMenuReturnAndRejectsLargerRun() throws {
-        let frames: [[String: Int]] = (1...901).map { index in
+    func testScheduledReplayAcceptsLongMenuReturnAndRejectsLargerRun() throws {
+        let frames: [[String: Int]] = (1...1801).map { index in
             [
                 "index": index, "playerRoomID": 152,
                 "playerX": 121, "playerY": 126,
@@ -99,10 +99,26 @@ final class ReferenceReplayTests: XCTestCase {
         XCTAssertEqual(imported.frames.count, 900)
         XCTAssertEqual(imported.schedule?.map(\.key), ["w", "0"])
         XCTAssertEqual(imported.frames[230].reportedLives, 0)
+        payload["frames"] = Array(frames.prefix(1800))
+        XCTAssertEqual(try ReferenceReplay.load(
+            from: JSONSerialization.data(withJSONObject: payload)
+        ).frames.count, 1800)
         payload["frames"] = frames
         XCTAssertThrowsError(try ReferenceReplay.load(
             from: JSONSerialization.data(withJSONObject: payload)
         ))
+    }
+
+    func testPrivateLongMenuReplayWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_LONG_WQ_REPLAY"]
+        else { throw XCTSkip("Set the ignored 1800-frame W/Q replay") }
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(replay.frames.count, 1800)
+        XCTAssertEqual(replay.frameBoundaryMode, "reference-relative")
+        XCTAssertEqual(replay.schedule?.map(\.key), ["w", "e", "0", "w", "q"])
+        XCTAssertEqual(replay.frames[1799].index, 1800)
     }
 
     func testPrivateFireObservationWhenProvided() throws {

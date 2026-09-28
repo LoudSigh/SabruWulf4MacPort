@@ -15,7 +15,7 @@ private enum ReplayError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space|0|3> [frames: 1...150] [--hold] [--reference-timing] [--actor-kind] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...900> [--reference-timing] [--actor-kind] | --self-test"
+            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space|0|3> [frames: 1...150] [--hold] [--reference-timing] [--actor-kind] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...1800> [--reference-timing] [--actor-kind] | --self-test"
         case .invalidROM:
             return "Expected exactly 16384 reference ROM bytes"
         case .invalidSnapshot:
@@ -156,7 +156,7 @@ private struct SnapshotReplay {
             let options: [String]
             if isSchedule {
                 guard (6...8).contains(arguments.count) else { throw ReplayError.usage }
-                guard let count = Int(arguments[5]), (1...900).contains(count)
+                guard let count = Int(arguments[5]), (1...1800).contains(count)
                 else { throw ReplayError.usage }
                 maxFrames = count
                 options = Array(arguments.dropFirst(6))

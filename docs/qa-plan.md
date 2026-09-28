@@ -493,6 +493,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: **315/315** bounded actor updates match without imposing display-frame cadence or claiming a complete game-over rule.
 - **Edge Cases / Variants**: Cross-frame terminal write ordering, preceding kind-64 duration, different starting life and kind-69 final defeat.
 
+### TC-044: Source restart through second visible menu
+- **Priority**: P1
+- **Preconditions**: Known-hash 48K ROM, gameplay/menu snapshots, W/Q source-free schedule and ignored 1,800-frame replay.
+- **Steps**:
+  1. Require 1,800/1,800 complete RAM and screen hashes against the independent emulator.
+  2. Check initial menu setup/return at 366/497 and second setup/return at 1596/1728, with life byte falling to zero at 1499.
+  3. Independently render the captured menu and replay frames; after frame 1500 require the first exact match across all 2,560 center-menu RGB pixels at 1733.
+  4. Import the private 1,800-frame JSON into the read-only native viewer and scrub both returns; do not treat stale actor RAM bytes as an active player or the inspector as a rendered source screen.
+- **Expected Result**: One verified source restart-to-menu path; its state sequence is a future native parity target, not a finished port.
+- **Edge Cases / Variants**: Earlier menu match at 503, source actor bytes after menu return, skipped keyboard poll and alternate damage paths.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

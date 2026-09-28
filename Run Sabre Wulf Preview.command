@@ -841,6 +841,32 @@ if [[ -e "$REVERSE_LONG_INJURY" ]]; then
 else
     mv "$TEMP_MENU_CONTACT" "$REVERSE_LONG_INJURY"
 fi
+REVERSE_MENU_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-w-q-1800.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule "$REVERSE_SCHEDULE" 1800 --reference-timing --actor-kind \
+    > "$TEMP_MENU"
+if [[ -e "$REVERSE_MENU_REPLAY" ]]; then
+    if ! cmp -s "$REVERSE_MENU_REPLAY" "$TEMP_MENU"; then
+        printf 'Existing private W/Q menu-return replay differs: %s\n' "$REVERSE_MENU_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU" "$REVERSE_MENU_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" \
+    "$REVERSE_MENU_REPLAY" --menu-after "$MENU" 1500 1733
+REVERSE_MENU_ROUTINES="$ROOT/$PRIVATE/restart-ready-w-q-menu-1800.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 1800 \
+    --reference-timing --require-ram-parity --watch-player-state \
+    --watch-menu-routines > "$TEMP_MENU_CONTACT"
+if [[ -e "$REVERSE_MENU_ROUTINES" ]]; then
+    if ! cmp -s "$REVERSE_MENU_ROUTINES" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private W/Q menu-routine comparison differs: %s\n' "$REVERSE_MENU_ROUTINES" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$REVERSE_MENU_ROUTINES"
+fi
 printf 'Checking the native post-setup room, position and sprite ID against all four paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
@@ -876,6 +902,13 @@ if ! SABRE_PRIVATE_INJURY_START_DIR="$ROOT/$PRIVATE" \
     swift test --filter CapturedContactArmingTests \
     > "$ROOT/$PRIVATE/contact-arming-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/contact-arming-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_NEW_GAME_MENU_REPORT="$REVERSE_MENU_ROUTINES" \
+    SABRE_PRIVATE_LONG_WQ_REPLAY="$REVERSE_MENU_REPLAY" \
+    swift test --filter 'CapturedNewGameMenuReturnTests|ReferenceReplayTests/testPrivateLongMenuReplayWhenProvided' \
+    > "$ROOT/$PRIVATE/new-game-menu-return-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/new-game-menu-return-test.log" >&2
     exit 1
 fi
 printf 'Preparing four private 150-frame held-direction references...\n'
