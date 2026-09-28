@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "replays": [
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 800, "matchingRAMFrames": 800, "distinctRAMPCStarts": 2277},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 800, "matchingRAMFrames": 800, "distinctRAMPCStarts": 2279},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 800, "matchingRAMFrames": 800, "distinctRAMPCStarts": 2303},
+    {"schedule": "restart-ready-movement-schedule.json", "frames": 900, "matchingRAMFrames": 900, "distinctRAMPCStarts": 2513},
+    {"schedule": "restart-ready-q-schedule.json", "frames": 900, "matchingRAMFrames": 900, "distinctRAMPCStarts": 2516},
+    {"schedule": "restart-ready-e-schedule.json", "frames": 900, "matchingRAMFrames": 900, "distinctRAMPCStarts": 2504},
+    {"schedule": "restart-ready-r-schedule.json", "frames": 900, "matchingRAMFrames": 900, "distinctRAMPCStarts": 2506},
+    {"schedule": "restart-ready-w-e-schedule.json", "frames": 900, "matchingRAMFrames": 900, "distinctRAMPCStarts": 2513}
+  ],
+  "totals": {
+    "verifiedRAMFrames": 6900,
+    "distinctExecutedRAMPCStartsInUnion": 2589,
+    "minimumExecutedRAMPC": "0x5CB0",
+    "maximumExecutedRAMPC": "0xBF83",
+    "unionLittleEndian16SHA256": "57e51ea3159c8fcb6ffe4d5cbd3e11fb8b944fc04e0f79091b5197ece6bf5098",
+    "executedPCStartsWithinKnownDataIntervals": 0,
+    "executedPCStartsWithinValidatedSpriteRecords": 0
+  },
+  "limits": "The ignored private coverage reports contain sorted numeric PC addresses only, not original opcodes or disassembly. The union hash covers ascending 16-bit addresses encoded little-endian. A PC observed during execution does not establish the static instruction length or prove that the originally captured byte at that address was already code before any RAM writes. The 19,974 unknown snapshot bytes remain unclassified; unvisited game paths and tape-boot equivalence remain unresolved."
+}

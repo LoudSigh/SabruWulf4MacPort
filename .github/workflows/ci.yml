@@ -25,6 +25,10 @@ jobs:
         run: |
           swiftc -parse-as-library Tools/TapeInventory.swift -o "$RUNNER_TEMP/TapeInventory"
           "$RUNNER_TEMP/TapeInventory" --self-test
+      - name: Test source-free PC coverage union
+        run: |
+          swiftc -parse-as-library Sources/GameCore/*.swift reverse_engineering/tools/CoverageUnion.swift -o "$RUNNER_TEMP/CoverageUnion"
+          "$RUNNER_TEMP/CoverageUnion" --self-test
       - name: Validate source-free room evidence
         run: |
           jq -e '.layout.dimensions == [16,16] and .roomTable.pointerCount == 48 and .records.regularRooms.contiguousTerminatedRecords == 48 and .records.regularRooms.placementBoundsByteCount == 6433 and .records.regularRooms.placementBoundsSHA256 == "d3aae958c56e8e1dd8f62e45a27ab8ddd320ed31a36f078ce87f8b792301334f" and .crossSnapshotComparison.regularRoomBytesIdentical' reverse_engineering/analysis/room-index.json
@@ -47,6 +51,7 @@ jobs:
           jq -e '.frames == 900 and .matchingRAMAndScreenFrames == 900 and .matchingContactCalls == 2661 and .nativeReadyAtFrame == 790 and .matchingNativeRoomXYFrames == 110 and .matchingNativeSpriteIDFrames == 76 and .firstUnverifiedNativeSpriteFrame == 867 and [.checkpoints[0].x,.checkpoints[1].y,.checkpoints[3].x,.checkpoints[3].y] == [160,90,208,86] and .matchingCoveredRGBPixelsAt900 == .coveredRGBPixelsAt900 and .coveredRGBPixelsAt900 == 29056' reverse_engineering/analysis/reference-new-game-mixed.json
           jq -e '.entitySlot == 12 and .roomID == 152 and .observedEntityKinds == [108,109,110,111] and [.staticCollisionBox.width,.staticCollisionBox.height] == [16,19] and [.paths[].matchingMovingUpdates] == [2,4,8] and .extendedFire.matchingAdditionalMovingUpdates == 3 and .extendedFire.secondDirectionFrame == 220 and .totals.matchingMovingUpdates == 17 and .totals.observedMovingUpdates == 17' reverse_engineering/analysis/reference-entity-motion.json
           jq -e '.entitySlot == 12 and .roomID == 152 and .kindRange == [108,111] and .choiceVelocities == [-96,-80,-64,-48,48,64,80,96] and .matchingRoutineChoices == 4 and [.boundedChoices[].frame] == [156,156,156,220] and [.boundedChoices[].velocityX] == [96,48,-48,-80]' reverse_engineering/analysis/reference-enemy-direction.json
+          jq -e '.totals.verifiedRAMFrames == 6900 and .totals.distinctExecutedRAMPCStartsInUnion == 2589 and .totals.minimumExecutedRAMPC == "0x5CB0" and .totals.maximumExecutedRAMPC == "0xBF83" and .totals.executedPCStartsWithinKnownDataIntervals == 0 and .totals.executedPCStartsWithinValidatedSpriteRecords == 0 and ([.replays[].matchingRAMFrames]|add) == .totals.verifiedRAMFrames' reverse_engineering/analysis/executed-pc-coverage.json
       - name: Test private image downloader with synthetic inputs
         run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s reverse_engineering/tests -p 'test_download_skoolkit_images.py' -v
 

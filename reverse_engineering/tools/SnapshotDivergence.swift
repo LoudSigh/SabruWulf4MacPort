@@ -17,7 +17,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] | --self-test (source parity flags require reference timing and RAM parity)"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...900> [--trace] [--watch-actor-state] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--coverage] | --self-test (source parity flags require reference timing and RAM parity)"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -134,6 +134,14 @@ private struct EnemyDirectionComparison: Encodable {
     let frames: [Int]
 }
 
+private struct CodeCoverage: Encodable {
+    let distinctROMInstructionStarts: Int
+    let distinctRAMInstructionStarts: Int
+    let ramInstructionStartSHA256: String
+    let ramStartsByPage: [String: Int]
+    let ramInstructionStarts: [Int]
+}
+
 private struct PendingEnemyDirection {
     let frame: Int
     let kind: UInt8
@@ -167,6 +175,7 @@ private struct Report: Encodable {
     let injuryComparison: InjuryComparison?
     let menuSequence: MenuSequenceComparison?
     let enemyDirectionComparison: EnemyDirectionComparison?
+    let codeCoverage: CodeCoverage?
 }
 
 private func hash(_ data: Data) -> String {
@@ -252,11 +261,12 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...13).contains(arguments.count),
+            guard (5...14).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
+                       "--coverage",
                        "--require-enemy-direction-parity"].contains($0)
                   }),
                   Set(options).count == options.count,
@@ -273,6 +283,9 @@ private struct SnapshotDivergence {
                         && options.contains("--require-contact-parity")),
                   !options.contains("--require-enemy-direction-parity")
                     || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--coverage")
+                    || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
@@ -282,6 +295,7 @@ private struct SnapshotDivergence {
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
             let requireEnemyDirectionParity = options.contains("--require-enemy-direction-parity")
+            let includeCoverage = options.contains("--coverage")
             let referenceTiming = options.contains("--reference-timing")
             let rom = try Data(contentsOf: URL(fileURLWithPath: arguments[1]))
             let source = try Data(contentsOf: URL(fileURLWithPath: arguments[2]))
@@ -340,6 +354,8 @@ private struct SnapshotDivergence {
             var pendingEnemyDirection: PendingEnemyDirection?
             var enemyDirectionCalls = 0
             var enemyDirectionFrames: [Int] = []
+            var ramInstructionStarts: Set<UInt16> = []
+            var romInstructionStarts: Set<UInt16> = []
 
             for frame in 0..<count {
                 let pressed = try segments.first(where: {
@@ -458,6 +474,13 @@ private struct SnapshotDivergence {
                         }
                     }
                     let instructionAddress = Int(cpu.pc)
+                    if includeCoverage {
+                        if cpu.pc >= 0x4000 {
+                            ramInstructionStarts.insert(cpu.pc)
+                        } else {
+                            romInstructionStarts.insert(cpu.pc)
+                        }
+                    }
                     let result = cpu.step(
                         read: { memory.read($0) },
                         write: { address, value in
@@ -571,6 +594,26 @@ private struct SnapshotDivergence {
                     throw DivergenceError.menuSequenceMismatch
                 }
             }
+            let coverage: CodeCoverage?
+            if includeCoverage {
+                let starts = ramInstructionStarts.sorted().map(Int.init)
+                var addressBytes = Data()
+                var byPage: [String: Int] = [:]
+                for address in starts {
+                    addressBytes.append(UInt8(truncatingIfNeeded: address))
+                    addressBytes.append(UInt8(truncatingIfNeeded: address >> 8))
+                    byPage[String(format: "0x%02X", address >> 8), default: 0] += 1
+                }
+                coverage = CodeCoverage(
+                    distinctROMInstructionStarts: romInstructionStarts.count,
+                    distinctRAMInstructionStarts: starts.count,
+                    ramInstructionStartSHA256: hash(addressBytes),
+                    ramStartsByPage: byPage,
+                    ramInstructionStarts: starts
+                )
+            } else {
+                coverage = nil
+            }
             let report = Report(
                 snapshotSHA256: hash(source),
                 romSHA256: hash(rom),
@@ -606,7 +649,8 @@ private struct SnapshotDivergence {
                     ? EnemyDirectionComparison(
                         calls: enemyDirectionCalls, matchingCalls: enemyDirectionCalls,
                         frames: enemyDirectionFrames
-                    ) : nil
+                    ) : nil,
+                codeCoverage: coverage
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

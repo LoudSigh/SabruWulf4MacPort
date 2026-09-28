@@ -359,6 +359,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Four observed routine calls and all 250 extended-fire RAM/screen hashes agree with the source. The choice rule is correct for **supplied** values, but source randomness, update cadence and autonomous enemy behavior remain unimplemented.
 - **Edge Cases / Variants**: High RNG bits, signed minimum, source clock offset, zero-life actor state and different entity slot.
 
+### TC-032: Verify executed-PC evidence without publishing disassembly
+- **Priority**: P1
+- **Preconditions**: Hash-checked gameplay snapshot/ROM, eight published source-free schedules, private validated sprite atlas and reference emulator.
+- **Steps**:
+  1. For each schedule, run `SnapshotDivergence --reference-timing --require-ram-parity --coverage`, writing private reports only.
+  2. Run `CoverageUnion` against [byte-coverage.json](../reverse_engineering/analysis/byte-coverage.json), the private atlas and eight reports. Compare [executed-pc-coverage.json](../reverse_engineering/analysis/executed-pc-coverage.json) numeric totals and union hash.
+  3. Supply a corrupted sorted-PC hash, unsorted list or known-data PC to the union checker and require explicit rejection; confirm the public Git index has no RAM, opcode listing or private PC list.
+- **Expected Result**: All 6,900 reference RAM frames agree; 2,589 distinct executed RAM PC starts have zero overlap with known immutable data and validated sprite records. Original instruction lengths and the other 19,974 RAM bytes remain **unclassified**, not inferred from a PC-start count.
+- **Edge Cases / Variants**: Source self-modification, alternate menu path, ROM code versus RAM, omitted schedule and PC at a data interval boundary.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |
