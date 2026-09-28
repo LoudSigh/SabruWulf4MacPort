@@ -362,6 +362,20 @@ for scenario in fire-before-contact no-fire-encounter unrelated-a-control; do
     else
         mv "$TEMP_CONTACT" "$ENTITY_WRITES"
     fi
+    if [[ "$scenario" != fire-before-contact ]]; then
+        PLAYER_ONSET_REPORT="$ROOT/$PRIVATE/player-onset-$scenario-190.json"
+        "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
+            --reference-timing --require-ram-parity --watch-player-state \
+            > "$TEMP_CONTACT"
+        if [[ -e "$PLAYER_ONSET_REPORT" ]]; then
+            if ! cmp -s "$PLAYER_ONSET_REPORT" "$TEMP_CONTACT"; then
+                printf 'Existing private injury-entry trace differs: %s\n' "$PLAYER_ONSET_REPORT" >&2
+                exit 1
+            fi
+        else
+            mv "$TEMP_CONTACT" "$PLAYER_ONSET_REPORT"
+        fi
+    fi
     RNG_REPORT="$ROOT/$PRIVATE/rng-step-$scenario-190.json"
     "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$SCHEDULE" 190 \
         --reference-timing --require-ram-parity --require-rng-step-parity \
@@ -414,6 +428,19 @@ if [[ -e "$EXTENDED_WRITES" ]]; then
     fi
 else
     mv "$TEMP_COMBAT_ENTITY" "$EXTENDED_WRITES"
+fi
+FIRE_ONSET_REPORT="$ROOT/$PRIVATE/player-onset-fire-before-contact-250.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
+    --reference-timing --require-ram-parity --watch-player-state \
+    > "$TEMP_COMBAT_ENTITY"
+if [[ -e "$FIRE_ONSET_REPORT" ]]; then
+    if ! cmp -s "$FIRE_ONSET_REPORT" "$TEMP_COMBAT_ENTITY"; then
+        printf 'Existing extended private injury-entry trace differs: %s\n' "$FIRE_ONSET_REPORT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_COMBAT_ENTITY" "$FIRE_ONSET_REPORT"
 fi
 EXPIRY_REPORT="$ROOT/$PRIVATE/enemy-expiry-fire-before-contact-250.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
@@ -818,6 +845,12 @@ if ! SABRE_PRIVATE_NEW_GAME_INJURY_WRITES="$REVERSE_PLAYER_WRITES" \
     swift test --filter CapturedNewGameInjuryTickTests \
     > "$ROOT/$PRIVATE/new-game-injury-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-injury-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_INJURY_START_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedInjuryStartTests \
+    > "$ROOT/$PRIVATE/injury-start-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/injury-start-test.log" >&2
     exit 1
 fi
 printf 'Preparing four private 150-frame held-direction references...\n'

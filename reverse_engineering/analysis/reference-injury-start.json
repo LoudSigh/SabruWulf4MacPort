@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "observedFirstInjuryEntries": [
+    {"schedule": "no-fire-encounter-schedule.json", "sourceFrame": 164, "framesWithFullRAMParity": 190, "roomID": 152, "lifeByte": 1, "inputKind": 27, "inputVelocityX": 0},
+    {"schedule": "unrelated-a-control-schedule.json", "sourceFrame": 170, "framesWithFullRAMParity": 190, "roomID": 152, "lifeByte": 1, "inputKind": 27, "inputVelocityX": 0},
+    {"schedule": "fire-before-contact-schedule.json", "sourceFrame": 229, "framesWithFullRAMParity": 250, "roomID": 152, "lifeByte": 1, "inputKind": 16, "inputVelocityX": 0},
+    {"schedule": "restart-ready-w-q-schedule.json", "sourceFrame": 870, "framesWithFullRAMParity": 900, "roomID": 168, "lifeByte": 4, "inputKind": 19, "inputVelocityX": -29}
+  ],
+  "predictedWriteResults": {"kind": 64, "timer": 32, "velocityX": 3},
+  "totals": {"matchingInjuryEntries": 4, "observedInjuryEntries": 4, "matchingFullRAMFrames": 1530},
+  "limits": "The player timer was already 1 before each source update; this rule does not produce the contact-triggered timer change, decide when the update runs, generalize to other player kinds/lives, or implement native damage and recovery."
+}

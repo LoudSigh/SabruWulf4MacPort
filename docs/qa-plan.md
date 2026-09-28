@@ -460,6 +460,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Numeric control-flow counts are reproducible, while unexecuted routines and exact routine extents remain unknown and no disassembly appears in Git.
 - **Edge Cases / Variants**: Jump-entered/return-terminated code, RST, extended return, interrupt entry, initial snapshot stack and path-end truncation.
 
+### TC-041: Bounded first-injury entry across lives
+- **Priority**: P1
+- **Preconditions**: Private player-write reports for no-T/A/T and restarted W/Q schedules, with hashed 48K ROM/snapshot.
+- **Steps**:
+  1. Require 190/190 RAM frames on no-T and A, 250/250 on extended T and 900/900 on W/Q.
+  2. At onset frames 164, 170, 229 and 870, verify ordered timer 1→32, player kind →64 and horizontal velocity →+3 writes.
+  3. Feed each previously observed kind, room, life byte, timer and velocity to `CapturedInjuryStart`; reject unobserved player states.
+  4. Keep contact-triggered timer 0→1 and actor-update scheduling external.
+- **Expected Result**: **4/4** source-supplied first-injury entries match; this is not autonomous damage or a generalized contact delay.
+- **Edge Cases / Variants**: Different player kind, other room/life count, prior horizontal velocity and timer not equal to one.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |
