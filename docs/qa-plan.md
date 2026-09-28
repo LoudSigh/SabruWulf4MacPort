@@ -545,7 +545,9 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. Check per-record offsets +0/+1/+3/+4 for sprite/room/X/Y; require all 16 room writes to match the read world-layout indexes and 12 held-out sprite IDs to match per-record predictions.
   4. Compare first- and second-call outputs across the two paths; keep record values private.
   5. Reject an assumption of fixed four-room placement if four room fields differ after the second call; do not label the records as quest pieces until pickup is demonstrated.
-- **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown.
+  6. Treat a static east-edge route as a proposal only: compare two source input variants through first injury (855/855 and 846/846 RAM frames) and ensure other-actor contact occurs before any claimed room transition or item pickup.
+  7. Repeat two bounded routes with simultaneous T/movement keyboard states and full reference RAM parity; distinguish delayed actor contact from crossing a room edge or collecting an item.
+- **Expected Result**: Four source-supported dynamic placement records and lookup relationship are measured, but quest identity, lookup-index generation and coordinate formula remain unknown. Two direct approaches stall; two static detours meet another actor and enter injury before any room transition.
 - **Edge Cases / Variants**: Different key timing, player count, repeated restart, item disappearance and renderer overlap.
 
 ## Regression cadence and coverage

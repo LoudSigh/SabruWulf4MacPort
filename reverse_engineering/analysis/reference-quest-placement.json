@@ -43,8 +43,35 @@
   "pickupProbeReadiness": {
     "playerSharesRecordRoomAtFrame790": false,
     "nearestRecordWorldGridStepsByPath": [5, 4],
-    "recordActivityAtFrame790Verified": false,
+    "selectedRecordActiveAtFrames790And900": true,
+    "directRouteAttempts": [
+      {"direction": "right", "inRoomAdvancePixels": 73, "lastMovementFrame": 819, "roomsCrossed": 0, "bestWorldGridDistanceToRecord": 5},
+      {"direction": "down", "inRoomAdvancePixels": 22, "lastMovementFrame": 802, "roomsCrossed": 0, "bestWorldGridDistanceToRecord": 5}
+    ],
+    "staticDetour": {
+      "staticFootprintPixels": [14, 22],
+      "eastEdgeProposalPixelSteps": 225,
+      "proposalTurns": 2,
+      "southEdgeProposalFound": false,
+      "sourceAttempts": [
+        {"variant": "A", "matchingFullRAMFramesThroughInjury": 855, "eastwardAdvancePixels": 63, "firstPositiveOtherActorContactFrame": 842, "firstInjuryFrame": 855, "roomsCrossed": 0},
+        {"variant": "B", "matchingFullRAMFramesThroughInjury": 846, "eastwardAdvancePixels": 60, "firstPositiveOtherActorContactFrame": 844, "firstInjuryFrame": 846, "roomsCrossed": 0}
+      ],
+      "selectedRecordStayedActive": true,
+      "lifeByteAtStop": 4
+    },
+    "fireAssistedDetour": {
+      "combinedKeyboardMatrixChecked": true,
+      "attempts": [
+        {"variant": "A", "matchingFullRAMFrames": 900, "keyboardPortReadsDuringCombinedInput": 220, "firstPositiveOtherActorContactFrame": null, "firstInjuryFrame": null, "eastwardAdvancePixels": 64, "roomsCrossed": 0},
+        {"variant": "B", "matchingFullRAMFramesThroughInjury": 887, "keyboardPortReadsDuringCombinedInput": 190, "firstPositiveOtherActorContactFrame": 884, "firstInjuryFrame": 887, "eastwardAdvancePixels": 64, "roomsCrossed": 0}
+      ],
+      "lifeByteAtStop": 4,
+      "selectedRecordStayedActive": true
+    },
+    "fullRAMParityFramesPerAttempt": 900,
+    "lifeByteStayedFour": true,
     "interventionPerformed": false
   },
-  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. A pickup test needs a naturally reached active same-room record or complete validated cross-room state; actor-room teleport alone was not attempted. No record values, instruction bytes, images or disassembly are published."
+  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. Direct and static-geometry detours remained in the starting room; holding T with movement delayed or avoided other-actor contact in two matched replays but still produced no room edge or record contact. This neither validates the pathfinder as source gameplay nor proves a sword hit or pickup. No actor teleport, record values, instruction bytes, images or disassembly are published."
 }
