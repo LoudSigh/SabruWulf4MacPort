@@ -74,7 +74,10 @@ if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache
 fi
 REPLAY="$ROOT/$PRIVATE/replay-q-100.json"
 TEMP_REPLAY="$(mktemp "$ROOT/$PRIVATE/.replay-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY"' EXIT
+TEMP_TRANSITION="$(mktemp "$ROOT/$PRIVATE/.transition-XXXXXXXX.json")"
+TEMP_HELD="$(mktemp "$ROOT/$PRIVATE/.held-XXXXXXXX.json")"
+TEMP_ROUND="$(mktemp "$ROOT/$PRIVATE/.round-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -84,6 +87,46 @@ if [[ -e "$REPLAY" ]]; then
 else
     mv "$TEMP_REPLAY" "$REPLAY"
 fi
+
+printf 'Preparing a private two-key replay that crosses the upper room boundary...\n'
+TRANSITION="$ROOT/$PRIVATE/replay-upper-exit-180.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/upper-exit-schedule.json 180 > "$TEMP_TRANSITION"
+if [[ -e "$TRANSITION" ]]; then
+    if ! cmp -s "$TRANSITION" "$TEMP_TRANSITION"; then
+        printf 'Existing private transition replay differs; refusing to overwrite %s\n' "$TRANSITION" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_TRANSITION" "$TRANSITION"
+fi
+
+printf 'Preparing a private 200-frame round-trip reference...\n'
+ROUND_TRIP="$ROOT/$PRIVATE/replay-round-trip-200.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/round-trip-schedule.json 200 > "$TEMP_ROUND"
+if [[ -e "$ROUND_TRIP" ]]; then
+    if ! cmp -s "$ROUND_TRIP" "$TEMP_ROUND"; then
+        printf 'Existing private round-trip replay differs; refusing to overwrite %s\n' "$ROUND_TRIP" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_ROUND" "$ROUND_TRIP"
+fi
+
+printf 'Preparing four private 150-frame held-direction references...\n'
+for key in q w e r; do
+    HELD="$ROOT/$PRIVATE/hold-$key-150.json"
+    "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" "$key" 150 --hold > "$TEMP_HELD"
+    if [[ -e "$HELD" ]]; then
+        if ! cmp -s "$HELD" "$TEMP_HELD"; then
+            printf 'Existing private held-direction replay differs; refusing to overwrite %s\n' "$HELD" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_HELD" "$HELD"
+    fi
+done
 
 MENU_PNG="$ROOT/$PRIVATE/snapshot-${MENU_SHA:0:12}-screen.png"
 GAME_PNG="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-screen.png"
@@ -96,7 +139,7 @@ if ! command -v xcodegen >/dev/null 2>&1; then
     printf 'Missing xcodegen. Reference images are ready in %s, but the native prototype cannot be built.\n' "$PRIVATE" >&2
     exit 1
 fi
-printf 'Building the native macOS prototype (independently authored placeholder gameplay)...\n'
+printf 'Building the native macOS app (placeholder gameplay plus separate measured movement preview)...\n'
 xcodegen generate
 xcodebuild -quiet -project SabreWulf.xcodeproj -scheme SabreWulfMac \
     -configuration Debug -destination 'platform=macOS' \
@@ -109,4 +152,7 @@ open -a Preview "$MENU_PNG" "$GAME_PNG"
 open "$WORLD_MAP"
 printf '\nOpened the native placeholder app, two original static captures, and a private world-type map.\n'
 printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REPLAY"
+printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TRANSITION"
+printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"
+printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
 printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'

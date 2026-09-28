@@ -1,3 +1,4 @@
+import Combine
 import GameCore
 import SwiftUI
 import UniformTypeIdentifiers
@@ -11,6 +12,7 @@ private typealias WorldRaster = UIImage
 #endif
 
 struct WorldReferenceView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @State private var world: WorldReference?
     @State private var selected = WorldReference.capturedGameplayRoom
     @State private var importing = false
@@ -21,6 +23,11 @@ struct WorldReferenceView: View {
     @State private var importingReplay = false
     @State private var replay: ReferenceReplay?
     @State private var replayFrameValue = 0.0
+    @State private var movement: CapturedMovementState?
+    @State private var heldKey = "none"
+    @State private var playingMovement = false
+
+    private let movementTimer = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
 
     private let columns = Array(
         repeating: GridItem(.flexible(minimum: 17), spacing: 2), count: 16
@@ -31,8 +38,8 @@ struct WorldReferenceView: View {
             Text("1984 world structure")
                 .font(.headline)
             Text(
-                "Read-only reference: authentic room types and placement coordinates. "
-                    + "No original art, collision or game rules are in this viewer."
+                "Room structure and recorded replays are read-only. "
+                    + "The separate movement preview implements only a measured subset of original rules."
             )
             .font(.caption)
             Text("Original keyboard reference: Q left · W right · E down · R up · T fire (not bound to this viewer)")
@@ -40,14 +47,53 @@ struct WorldReferenceView: View {
             Button("Import your private world data") { importing = true }
                 .buttonStyle(.bordered)
             if world != nil {
+                if world?.schemaVersion == 2 {
+                    if let movement {
+                        Text(
+                            "Measured movement · frame \(movement.frame) · room "
+                                + "\(movement.room.y * 16 + movement.room.x) "
+                                + "· X \(movement.player.x), Y \(movement.player.y)"
+                                + (movement.transitioning ? " · switching rooms" : "")
+                        )
+                        .font(.caption.monospacedDigit())
+                        Picker("Held original key", selection: $heldKey) {
+                            Text("None").tag("none")
+                            Text("Q · left").tag("q")
+                            Text("W · right").tag("w")
+                            Text("E · down").tag("e")
+                            Text("R · up").tag("r")
+                        }
+                        HStack {
+                            Button("Step frame") { advanceMovement() }
+                                .accessibilityLabel("Step one measured frame")
+                            Button(playingMovement ? "Pause" : "Play") {
+                                playingMovement.toggle()
+                            }
+                            .accessibilityLabel(
+                                playingMovement ? "Pause measured movement" : "Play measured movement"
+                            )
+                            Button("Reset") { resetMovement() }
+                                .accessibilityLabel("Reset measured movement")
+                        }
+                        .buttonStyle(.bordered)
+                        Text("Partial source-backed movement only: no enemies, combat, items or validated exits beyond the captured north passage and return. Playback pauses on unsupported behavior.")
+                            .font(.caption)
+                    } else {
+                        Button("Start measured movement (partial)") { resetMovement() }
+                            .buttonStyle(.bordered)
+                    }
+                }
                 Button("Import a private gameplay replay (optional)") {
                     importingReplay = true
                 }
                 .buttonStyle(.bordered)
                 if let replay {
                     let frame = replay.frames[min(Int(replayFrameValue), replay.frames.count - 1)]
+                    let input = replay.schedule?.first {
+                        $0.startFrame <= frame.index - 1 && frame.index - 1 < $0.endFrame
+                    }.map(\.key) ?? (replay.schedule == nil ? replay.input : "none")
                     Text(
-                        "Recorded \(replay.input.uppercased()) · frame \(frame.index) "
+                        "Recorded \(input.uppercased()) · frame \(frame.index) "
                             + "· room \(frame.playerRoomID) · X \(frame.playerX), Y \(frame.playerY)"
                     )
                     .font(.caption.monospacedDigit())
@@ -61,13 +107,25 @@ struct WorldReferenceView: View {
                         let id = replay.frames[Int(value)].playerRoomID
                         selected = RoomID(id % 16, id / 16)
                     }
+                    if let movement, (1...replay.frames.count).contains(movement.frame) {
+                        let expected = replay.frames[movement.frame - 1]
+                        let matches = expected.playerRoomID == movement.room.y * 16 + movement.room.x
+                            && expected.playerX == movement.player.x
+                            && expected.playerY == movement.player.y
+                        Text(
+                            "Measured frame \(movement.frame) vs imported replay: "
+                                + (matches ? "actor position matches" : "actor position differs")
+                        )
+                        .font(.caption)
+                        .foregroundStyle(matches ? Color.green : Color.orange)
+                    }
                 }
                 Button("Preview private background images (optional)") {
                     importingArtwork = true
                 }
                 .buttonStyle(.bordered)
                 Text(
-                    artStatus ?? "Markers show placement coordinates; no original art is bundled."
+                    artStatus ?? "Markers and measured outlines (if available) show placements; no original art is bundled."
                 )
                 .font(.caption)
             }
@@ -146,6 +204,21 @@ struct WorldReferenceView: View {
                                         y: (CGFloat(placement.y) + 4) * area.size.height / 192
                                     )
                             }
+                            if let width = placement.widthPixels,
+                               let height = placement.heightPixels {
+                                Rectangle()
+                                    .stroke(.orange.opacity(0.8), lineWidth: 1)
+                                    .frame(
+                                        width: CGFloat(width) * area.size.width / 256,
+                                        height: CGFloat(height) * area.size.height / 192
+                                    )
+                                    .position(
+                                        x: (CGFloat(placement.x) + CGFloat(width) / 2)
+                                            * area.size.width / 256,
+                                        y: (CGFloat(placement.y) + CGFloat(height) / 2)
+                                            * area.size.height / 192
+                                    )
+                            }
                         }
                         if let position = markerPosition {
                             Circle()
@@ -159,6 +232,16 @@ struct WorldReferenceView: View {
                                 )
                                 .accessibilityLabel("Recorded player position")
                         }
+                        if let position = movementMarkerPosition {
+                            Circle()
+                                .stroke(.pink, lineWidth: 2)
+                                .frame(width: 16, height: 16)
+                                .position(
+                                    x: CGFloat(position.x) * area.size.width / 256,
+                                    y: CGFloat(position.y) * area.size.height / 192
+                                )
+                                .accessibilityLabel("Measured movement position")
+                        }
                     }
                 }
                 .frame(height: 180)
@@ -166,10 +249,12 @@ struct WorldReferenceView: View {
                     "Room template \(world.roomType(at: selected) ?? 0), "
                         + "\(placements.count) placements. "
                         + (art.isEmpty
-                            ? "Generic markers only."
+                            ? "Generic markers only; orange outlines show measured background bounds when available."
                             : "Optional local image overlay, not verified original composition.")
                         + (markerPosition != nil
                             ? " Cyan ring marks the recorded player position." : "")
+                        + (movementMarkerPosition != nil
+                            ? " Pink ring marks the measured movement position." : "")
                 )
             }
         }
@@ -195,6 +280,9 @@ struct WorldReferenceView: View {
                 artStatus = nil
                 replay = nil
                 replayFrameValue = 0
+                movement = nil
+                playingMovement = false
+                heldKey = "none"
                 importError = nil
             } catch {
                 importError = error.localizedDescription
@@ -262,6 +350,58 @@ struct WorldReferenceView: View {
             } catch {
                 importError = error.localizedDescription
             }
+        }
+        .onReceive(movementTimer) { _ in
+            if scenePhase == .active && playingMovement {
+                advanceMovement()
+            }
+        }
+        .onDisappear { playingMovement = false }
+    }
+
+    private var movementMarkerPosition: GridPoint? {
+        guard let movement, selected == movement.room else { return nil }
+        return movement.player
+    }
+
+    private func resetMovement() {
+        guard let world else { return }
+        do {
+            movement = try CapturedMovementState(world: world)
+            heldKey = "none"
+            playingMovement = false
+            selected = WorldReference.capturedGameplayRoom
+            replayFrameValue = 0
+            importError = nil
+        } catch {
+            importError = error.localizedDescription
+        }
+    }
+
+    private func advanceMovement() {
+        guard var next = movement else { return }
+        let actions: Set<OriginalAction>
+        if heldKey == "none" {
+            actions = []
+        } else if heldKey.count == 1, let character = heldKey.first,
+                  let action = OriginalAction.fromSpectrumKey(character) {
+            actions = [action]
+        } else {
+            importError = "Unrecognized original key: \(heldKey)"
+            playingMovement = false
+            return
+        }
+        do {
+            try next.advance(holding: actions)
+            movement = next
+            selected = next.room
+            if let replay {
+                replayFrameValue = Double(min(max(next.frame - 1, 0), replay.frames.count - 1))
+            }
+            importError = nil
+        } catch {
+            importError = error.localizedDescription
+            playingMovement = false
         }
     }
 

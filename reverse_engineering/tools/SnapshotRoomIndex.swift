@@ -124,7 +124,7 @@ private struct RecordSummary {
 }
 
 private struct PrivateWorld: Encodable {
-    let schemaVersion = 1
+    let schemaVersion = 2
     let snapshotSha256: String
     let width = 16
     let height = 16
@@ -140,6 +140,8 @@ private struct PrivatePlacement: Encodable {
     let graphicAddress: Int
     let x: Int
     let y: Int
+    let widthPixels: Int
+    let heightPixels: Int
 }
 
 private func roomPlacements(_ ram: [UInt8], address: Int, before next: Int) throws -> PrivateRoom {
@@ -155,9 +157,19 @@ private func roomPlacements(_ ram: [UInt8], address: Int, before next: Int) thro
             return PrivateRoom(placements: placements)
         }
         guard cursor + 3 < next else { throw RoomIndexError.unterminatedRoom(address: address) }
+        let graphicOffset = graphic - 0x4000
+        guard graphicOffset >= 0, graphicOffset + 1 < ram.count else {
+            throw RoomIndexError.invalidTable
+        }
+        let height = Int(ram[graphicOffset])
+        let width = Int(ram[graphicOffset + 1]) * 8
+        guard (8...248).contains(width), (1...192).contains(height) else {
+            throw RoomIndexError.invalidTable
+        }
         placements.append(PrivatePlacement(
             graphicAddress: graphic,
-            x: Int(ram[offset + 2]), y: Int(ram[offset + 3])
+            x: Int(ram[offset + 2]), y: Int(ram[offset + 3]),
+            widthPixels: width, heightPixels: height
         ))
         cursor += 4
     }
@@ -353,7 +365,7 @@ private func writePrivateWorld(_ world: PrivateWorld) throws -> URL {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     let data = try encoder.encode(world)
-    let url = directory.appendingPathComponent("snapshot-\(world.snapshotSha256.prefix(12))-world.json")
+    let url = directory.appendingPathComponent("snapshot-\(world.snapshotSha256.prefix(12))-world-v2.json")
     if FileManager.default.fileExists(atPath: url.path) {
         guard try Data(contentsOf: url) == data else {
             throw RoomIndexError.existingOutputMismatch

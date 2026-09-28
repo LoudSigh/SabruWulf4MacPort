@@ -10,11 +10,12 @@ private enum ReplayError: Error, CustomStringConvertible {
     case stepBudget
     case unimplemented(pc: UInt16)
     case outputRedirection
+    case invalidSchedule
 
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space> [frames: 1...150] [--hold] | --self-test"
+            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space> [frames: 1...150] [--hold] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...600> | --self-test"
         case .invalidROM:
             return "Expected exactly 16384 reference ROM bytes"
         case .invalidSnapshot:
@@ -27,8 +28,31 @@ private enum ReplayError: Error, CustomStringConvertible {
             return String(format: "Unimplemented Z80 instruction at 0x%04X", pc)
         case .outputRedirection:
             return "Could not separate emulator diagnostics from JSON output"
+        case .invalidSchedule:
+            return "Expected nonoverlapping zero-based key intervals within the requested frame count"
         }
     }
+}
+
+private struct ScheduledInput: Codable {
+    let key: String
+    let startFrame: Int
+    let endFrame: Int
+}
+
+private func validatedSchedule(_ data: Data, frames: Int) throws -> [ScheduledInput] {
+    guard data.count <= 64_000 else { throw ReplayError.invalidSchedule }
+    let entries = try JSONDecoder().decode([ScheduledInput].self, from: data)
+    guard !entries.isEmpty else { throw ReplayError.invalidSchedule }
+    var previousEnd = 0
+    for entry in entries {
+        guard entry.startFrame >= previousEnd, entry.endFrame > entry.startFrame,
+              entry.endFrame <= frames, try key(entry.key) != nil else {
+            throw ReplayError.invalidSchedule
+        }
+        previousEnd = entry.endFrame
+    }
+    return entries
 }
 
 private struct FrameReport: Encodable {
@@ -52,6 +76,7 @@ private struct ReplayReport: Encodable {
     let snapshotSHA256: String
     let romSHA256: String
     let input: String
+    let schedule: [ScheduledInput]?
     let pressedAtFrame: Int?
     let releasedAtFrame: Int?
     let frames: [FrameReport]
@@ -91,30 +116,51 @@ private struct SnapshotReplay {
                     _ = try key("invalid")
                     throw ReplayError.unsupportedKey
                 } catch ReplayError.unsupportedKey {}
+                let sample = Data("""
+                    [{"key":"w","startFrame":20,"endFrame":46},
+                     {"key":"e","startFrame":46,"endFrame":120}]
+                    """.utf8)
+                guard try validatedSchedule(sample, frames: 120).count == 2 else {
+                    throw ReplayError.invalidSchedule
+                }
+                do {
+                    _ = try validatedSchedule(sample, frames: 100)
+                    throw ReplayError.invalidSchedule
+                } catch ReplayError.invalidSchedule {}
                 print("SnapshotReplay self-test passed")
                 return
             }
-            guard (4...6).contains(CommandLine.arguments.count),
-                  CommandLine.arguments.count != 6
-                    || CommandLine.arguments[5] == "--hold"
+            let arguments = CommandLine.arguments
+            let isSchedule = arguments.count > 3 && arguments[3] == "--schedule"
+            guard (4...6).contains(arguments.count),
+                  isSchedule
+                    ? arguments.count == 6
+                    : arguments.count != 6 || arguments[5] == "--hold"
             else {
                 throw ReplayError.usage
             }
             let maxFrames: Int
-            if CommandLine.arguments.count == 5 {
-                guard let count = Int(CommandLine.arguments[4]), (1...150).contains(count)
+            if isSchedule {
+                guard let count = Int(arguments[5]), (1...600).contains(count)
+                else { throw ReplayError.usage }
+                maxFrames = count
+            } else if arguments.count >= 5 {
+                guard let count = Int(arguments[4]), (1...150).contains(count)
                 else { throw ReplayError.usage }
                 maxFrames = count
             } else {
                 maxFrames = 100
             }
-            let input = CommandLine.arguments[3]
-            let heldKey = try key(input)
-            let holdToEnd = CommandLine.arguments.count == 6
-            let rom = try [UInt8](Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
+            let input = isSchedule ? "schedule" : arguments[3]
+            let heldKey = isSchedule ? nil : try key(input)
+            let schedule = isSchedule
+                ? try validatedSchedule(Data(contentsOf: URL(fileURLWithPath: arguments[4])), frames: maxFrames)
+                : []
+            let holdToEnd = !isSchedule && arguments.count == 6
+            let rom = try [UInt8](Data(contentsOf: URL(fileURLWithPath: arguments[1])))
             guard rom.count == 16384 else { throw ReplayError.invalidROM }
             let source = try [UInt8](
-                Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[2]))
+                Data(contentsOf: URL(fileURLWithPath: arguments[2]))
             )
             let snapshot = try Z80Snapshot.load(from: Data(source))
             guard snapshot.ram128Banks == nil, snapshot.ram48.count == 49152 else {
@@ -141,10 +187,20 @@ private struct SnapshotReplay {
             var cycles = 0
             var nextInterrupt = 69_888
             var frames: [FrameReport] = []
+            var previousKey: KeyboardMatrix.Key?
             for frame in 0..<maxFrames {
-                if frame == 20, let heldKey { emulator.keyboard.press(heldKey) }
-                if frame == 40 && !holdToEnd, let heldKey {
-                    emulator.keyboard.release(heldKey)
+                let frameKey: KeyboardMatrix.Key?
+                if isSchedule {
+                    frameKey = try schedule.first(where: {
+                        $0.startFrame <= frame && frame < $0.endFrame
+                    }).flatMap { try key($0.key) }
+                } else {
+                    frameKey = frame >= 20 && (frame < 40 || holdToEnd) ? heldKey : nil
+                }
+                if previousKey != frameKey {
+                    if let previousKey { emulator.keyboard.release(previousKey) }
+                    if let frameKey { emulator.keyboard.press(frameKey) }
+                    previousKey = frameKey
                 }
                 let boundary = (frame + 1) * 69_888
                 var steps = 0
@@ -206,10 +262,11 @@ private struct SnapshotReplay {
             }
             guard let last = frames.last else { throw ReplayError.usage }
             let report = ReplayReport(
-                schemaVersion: 1,
+                schemaVersion: isSchedule ? 2 : 1,
                 snapshotSHA256: sha256(source),
                 romSHA256: sha256(rom),
                 input: input,
+                schedule: isSchedule ? schedule : nil,
                 pressedAtFrame: heldKey == nil ? nil : 20,
                 releasedAtFrame: heldKey == nil || holdToEnd ? nil : 40,
                 frames: frames,

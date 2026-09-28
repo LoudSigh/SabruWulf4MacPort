@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "schedule": "upper-exit-schedule.json",
+  "framesCompared": 180,
+  "independentActorMatches": 180,
+  "independentScreenMatches": 174,
+  "screenMismatchFrames": [68, 69, 70, 71, 72, 73],
+  "unimplementedReferenceInstructions": 0,
+  "heldDirectionParity": {
+    "directions": ["q", "w", "e", "r"],
+    "framesPerDirection": 150,
+    "nativeActorMatches": 600
+  },
+  "roundTripParity": {
+    "schedule": "round-trip-schedule.json",
+    "framesCompared": 200,
+    "independentActorMatches": 200,
+    "nativeActorMatches": 200,
+    "independentScreenMatches": 184,
+    "screenMismatchFrames": [68, 69, 70, 71, 72, 73, 88, 89, 90, 91, 92, 93, 142, 155, 159, 196],
+    "checkpoints": [
+      {"frame": 87, "roomID": 152, "x": 121, "y": 190},
+      {"frame": 88, "roomID": 168, "x": 121, "y": 190},
+      {"frame": 93, "roomID": 168, "x": 121, "y": 190},
+      {"frame": 94, "roomID": 168, "x": 120, "y": 39},
+      {"frame": 95, "roomID": 168, "x": 120, "y": 39},
+      {"frame": 200, "roomID": 168, "x": 120, "y": 135}
+    ]
+  },
+  "checkpoints": [
+    {"frame": 67, "roomID": 168, "x": 121, "y": 42},
+    {"frame": 68, "roomID": 152, "x": 121, "y": 42},
+    {"frame": 74, "roomID": 152, "x": 121, "y": 42},
+    {"frame": 75, "roomID": 152, "x": 121, "y": 191},
+    {"frame": 96, "roomID": 152, "x": 121, "y": 128},
+    {"frame": 180, "roomID": 152, "x": 121, "y": 128}
+  ]
+}

@@ -1,6 +1,6 @@
 # Release test plan
 
-Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; macOS, iOS and visionOS apps were launched, with visible layouts inspected on iOS and visionOS simulators. User-captured 48K `.z80` snapshots provide verified **menu and in-game screen/RAM images**, but **continuous gameplay input replay, original-game parity and control-interaction UI tests remain unverified**. XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
+Status: release gates. The placeholder core's XCTest tests and all three native app builds passed locally; macOS, iOS and visionOS apps were launched, with visible layouts inspected on iOS and visionOS simulators. User-captured 48K `.z80` snapshots provide verified **menu and in-game screen/RAM images**; a bounded, independently checked replay now crosses one room boundary. **Full original-game parity, a native original-game simulator and control-interaction UI tests remain unverified.** XCTest is the selected automated framework. Source-specific cases require authorized local media and reproducible reference state; public CI uses synthetic fixtures.
 
 ## Functional and integration cases
 
@@ -40,7 +40,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   1. Restore each independently with the same reference ROM and compare screen/48K RAM hashes.
   2. Count changed bytes in the bitmap, attributes, system area and remaining RAM without publishing the bytes.
   3. Test replay only if the emulator continues in game-owned code and input changes game-state markers.
-- **Expected Result**: The first two steps yield the baseline counts in `gameplay-reference.json`; otherwise the source revision has changed. The third step remains unresolved until gameplay actually advances under controlled inputs.
+- **Expected Result**: The first two steps yield the baseline counts in `gameplay-reference.json`; otherwise the source revision has changed. Bounded gameplay replay now advances with scheduled input, but tape-boot parity is unresolved.
 - **Edge Cases / Variants**: Snapshot taken during interrupt, display FLASH and RAM self-modification.
 
 ### TC-002C: Input-driven reference replay diagnostic
@@ -83,12 +83,12 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 
 ### TC-006: Private 16x16 source-backed world viewer
 - **Priority**: P1
-- **Preconditions**: Locally generated `reverse_engineering/private/snapshot-803e4197989c-world.json` from both SHA-verified snapshots; app running on macOS, iOS or visionOS.
+- **Preconditions**: Locally generated `reverse_engineering/private/snapshot-803e4197989c-world-v2.json` from both SHA-verified snapshots; app running on macOS, iOS or visionOS.
 - **Steps**:
   1. Expand the read-only world disclosure and import the JSON through the platform file picker.
   2. Visit a corner and a far-edge room using the grid and North/West/East/South selection buttons.
   3. Import a truncated file, an invalid 49th room type and a file claiming another snapshot hash.
-- **Expected Result**: The grid shows 256 selectable positions and the selected template's placement count/markers; navigation stops at world bounds. Invalid files show an error. The separate placeholder gameplay state is unchanged.
+- **Expected Result**: The grid shows 256 selectable positions and the selected template's placement count/markers; version-2 imports also show measured orange bounds. Navigation stops at world bounds. Invalid files show an error. The separate placeholder gameplay state is unchanged.
 - **Edge Cases / Variants**: Move the private file to iOS/visionOS through an authorized Files provider; verify keyboard/VoiceOver focus and labels. This is source structure, not verified original movement or collision.
 
 ### TC-007: Optional private background overlay
@@ -131,6 +131,28 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   4. Import malformed JSON, a different snapshot hash, or nonsequential frame numbers.
 - **Expected Result**: A read-only actor marker follows the imported frame data; invalid inputs report errors. The separate prototype gameplay state is unaffected. No original media is bundled.
 - **Edge Cases / Variants**: iOS/visionOS Files provider permissions, VoiceOver slider labels, last-frame clamping, incomplete artwork coverage.
+
+### TC-011: Scrub a controlled transition between source rooms
+- **Priority**: P1
+- **Preconditions**: Import version-2 private world data; use the preview launcher to create `replay-upper-exit-180.json` from [upper-exit-schedule.json](../reverse_engineering/analysis/upper-exit-schedule.json).
+- **Steps**:
+  1. Import the scheduled private replay in the read-only viewer.
+  2. Scrub between frame 67 (room 168) and frame 68 (room 152); compare reported X=121/Y=42.
+  3. Confirm the selected grid cell follows the new room, the cyan marker stays visible, and the input label changes from W to E or NONE as appropriate.
+  4. Attempt import of overlapping intervals, an invalid key, or an interval extending beyond the last frame.
+- **Expected Result**: The actor path crosses the room boundary at frame 68 without changing the separately playable placeholder. Core tests reject invalid scheduled metadata. Manual CPU stepping and the unmodified emulator agree on room/X/Y for all 180 frames, but six transient redraw screen hashes differ; do not demand pixel identity for frames 68–73.
+- **Edge Cases / Variants**: Scrub backward across the boundary; import old single-key schema-1 replay; missing bounds in a version-1 world.
+
+### TC-012: Run the captured native movement slice
+- **Priority**: P0
+- **Preconditions**: Version-2 private world and scheduled transition replay imported; partial measured movement selected (pink marker).
+- **Steps**:
+  1. Advance 20 frames with no key, 10 with W, and 150 with E; use the step button for exact timing.
+  2. Compare the pink measured marker against the cyan source replay marker and numerical room/X/Y for every frame.
+  3. At frames 67–75 verify the north exit moves to room 152, freezes the actor for the redraw, then rebases to Y=191.
+  4. Try an unverified exit and verify playback pauses with an explicit error; reset and confirm frame zero is restored.
+- **Expected Result**: Room/X/Y matches all 180 north-exit frames, 200 round-trip frames and 600 held-direction frames; the separate placeholder remains unaffected. Locally run `SABRE_PRIVATE_WORLD=<private-world-v2.json> SABRE_PRIVATE_REPLAY=<private-replay-upper-exit-180.json> SABRE_PRIVATE_ROUND_TRIP=<private-replay-round-trip-200.json> SABRE_PRIVATE_HELD_REPLAY_DIR=<private-directory> swift test --filter CapturedMovementTests` for automated parity. This gate does not validate attacks, enemies, score or most room exits.
+- **Edge Cases / Variants**: Play at 50 Hz versus single-step, app background/resume, missing version-2 bounds and alternate inputs that reach an unsupported exit.
 
 ## Regression cadence and coverage
 

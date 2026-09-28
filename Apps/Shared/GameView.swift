@@ -62,7 +62,7 @@ struct GameView: View {
           Text("Move with arrow buttons. On Mac: arrow keys or WASD. P pauses; R resets.")
             .font(.caption)
             .multilineTextAlignment(.center)
-          DisclosureGroup("Explore source-backed 16 × 16 world (read-only)") {
+          DisclosureGroup("Explore source-backed 16 × 16 world") {
             WorldReferenceView()
               .padding(.top, 12)
           }
