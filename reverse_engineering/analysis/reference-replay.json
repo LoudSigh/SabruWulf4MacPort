@@ -7,15 +7,31 @@
   "scenario": "100 frame replay; key down at frame index 20, key up at frame index 40; compare to no-input baseline",
   "reproducibleRunVerified": "q replay repeated with byte-for-byte identical JSON",
   "noInputFinalScreenSha256": "deeaf6de1b7d1c7eaafb45cdad718e6ee5e6753b1e2fc5672578d6ec26394bc4",
+  "sourceControlRow": {
+    "externalReference": "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/asm/45306.html",
+    "actionReference": "https://skoolkit.arcadegeek.co.uk/ultimate/sabrewulf/dec/asm/45219.html",
+    "verifiedAgainstSnapshot": "Keyboard read routine signature at decimal address 45306 matches the private gameplay snapshot; no source instructions are published.",
+    "keys": {
+      "q": "left",
+      "w": "right",
+      "e": "down",
+      "r": "up",
+      "t": "fire"
+    }
+  },
   "inputs": [
     {"key": "q", "firstScreenDifferenceFrame": 23, "finalScreenSha256": "3e93dc3bd4e8f4b8bcd62b22ddba1b97e0a0ca1cf4354fe94714e0395b334c9a"},
+    {"key": "w", "firstScreenDifferenceFrame": 23, "finalScreenSha256": "1a417f947405c5f696400dcd5a92fdd54297e7b659b5cdf3c57362ebf250ee41"},
+    {"key": "e", "firstScreenDifferenceFrame": 23, "finalScreenSha256": "cf6651315a36dc3465a57aeb46e05a24320cc80b50183d820a932652499458f7"},
+    {"key": "r", "firstScreenDifferenceFrame": 23, "finalScreenSha256": "e579fa66c85585c86b999c3b35e2dfb0e10fba10f755371fbe6d0c4f2b589479"},
+    {"key": "t", "firstScreenDifferenceFrame": 21, "finalScreenSha256": "9464d34b00c7ce821ce1b25b76453b69e28a800587a361fd3501455647e0d702"},
     {"key": "a", "firstScreenDifferenceFrame": 63, "finalScreenSha256": "7d6a047dffb8da0eb669a1837f804ce15d0fec3188a2e9286bf008a1f31ab6bf"},
     {"key": "o", "firstScreenDifferenceFrame": 62, "finalScreenSha256": "4a588adb0bbdc883e9cc9cfc53c959392a51dea7a81049da626e6ed787142f6d"},
     {"key": "p", "firstScreenDifferenceFrame": 63, "finalScreenSha256": "7d6a047dffb8da0eb669a1837f804ce15d0fec3188a2e9286bf008a1f31ab6bf"},
     {"key": "space", "firstScreenDifferenceFrame": 63, "finalScreenSha256": "ee0388a01f898f47ed540f15ba9c9bf723e61967765e04bba6eb69e3b7e50c37"}
   ],
   "limits": [
-    "The first differences establish a response to keys under this replay, not exact movement, attack or item semantics.",
+    "The external control mapping and independently matching keyboard-row routine identify expected action keys; changed frame hashes do not alone establish movement, combat or item outcomes.",
     "ROM keyboard, ULA timing and audio are simplified outside the main CPU; verify against the user's working emulator before using as faithful-game golden tests.",
     "No raw frames, artwork, disassembly or snapshot bytes are committed."
   ]

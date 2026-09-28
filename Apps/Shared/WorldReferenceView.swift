@@ -32,6 +32,8 @@ struct WorldReferenceView: View {
                     + "No original art, collision or game rules are in this viewer."
             )
             .font(.caption)
+            Text("Original keyboard reference: Q left · W right · E down · R up · T fire (not bound to this viewer)")
+                .font(.caption)
             Button("Import your private world data") { importing = true }
                 .buttonStyle(.bordered)
             if world != nil {

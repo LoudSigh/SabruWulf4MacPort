@@ -14,13 +14,13 @@ private enum ReplayError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|a|o|p|space> [frames: 1...150] | --self-test"
+            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space> [frames: 1...150] | --self-test"
         case .invalidROM:
             return "Expected exactly 16384 reference ROM bytes"
         case .invalidSnapshot:
             return "Expected a 48K snapshot containing 49152 RAM bytes"
         case .unsupportedKey:
-            return "Supported inputs: none, q, a, o, p, space"
+            return "Supported inputs: none, q, w, e, r, t, a, o, p, space"
         case .stepBudget:
             return "Replay exceeded 100000 CPU steps in a frame"
         case let .unimplemented(pc):
@@ -38,6 +38,10 @@ private struct FrameReport: Encodable {
     let executedRAMInstructions: Int
     let keyboardPortReads: Int
     let screenWriteEvents: Int
+    let savedActorX: Int
+    let savedActorY: Int
+    let savedRoom: Int
+    let reportedLives: Int
 }
 
 private struct ReplayReport: Encodable {
@@ -60,6 +64,10 @@ private func key(_ input: String) throws -> KeyboardMatrix.Key? {
     switch input {
     case "none": nil
     case "q": .q
+    case "w": .w
+    case "e": .e
+    case "r": .r
+    case "t": .t
     case "a": .a
     case "o": .o
     case "p": .p
@@ -176,7 +184,11 @@ private struct SnapshotReplay {
                     ramSHA256: sha256(ram),
                     executedRAMInstructions: ramSteps,
                     keyboardPortReads: feReads,
-                    screenWriteEvents: screenWrites
+                    screenWriteEvents: screenWrites,
+                    savedActorX: Int(memory.read(38560)),
+                    savedActorY: Int(memory.read(38561)),
+                    savedRoom: Int(memory.read(38562)),
+                    reportedLives: Int(memory.read(38589))
                 ))
             }
             guard let last = frames.last else { throw ReplayError.usage }
