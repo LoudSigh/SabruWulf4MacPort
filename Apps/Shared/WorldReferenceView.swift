@@ -45,6 +45,8 @@ struct WorldReferenceView: View {
     @State private var spriteSamples: [Int: WorldRaster] = [:]
     @State private var importingAtlas = false
     @State private var spriteAtlas: SpriteAtlas?
+    @State private var importingPlacement = false
+    @State private var placementState: CapturedPlacementState?
     @State private var showActorSprite = true
     @State private var spriteID = 16.0
     @State private var importingReplay = false
@@ -284,6 +286,20 @@ struct WorldReferenceView: View {
                     }
                     Text("Private monochrome bitmap only; palette and animation order are unverified.")
                         .font(.caption)
+                    Button("Import four private actor records (optional)") {
+                        importingPlacement = true
+                    }
+                    .buttonStyle(.bordered)
+                    if let placementState {
+                        Text("Four unidentified actor records captured at source frame \(placementState.sourceFrame). Purple markers show that recorded placement only; these are not proven amulet pieces or live inventory.")
+                            .font(.caption)
+                        ForEach(placementState.records, id: \.id) { record in
+                            Button("Inspect private record \(record.id + 1) · room \(record.roomID)") {
+                                selected = RoomID(record.roomID % 16, record.roomID / 16)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
                 }
             }
             if let importError {
@@ -305,17 +321,26 @@ struct WorldReferenceView: View {
                         Button {
                             selected = position
                         } label: {
-                            Rectangle()
-                                .fill(
-                                    position == selected
-                                        ? Color.yellow : Color.teal.opacity(0.3 + Double(roomType % 4) * 0.12)
-                                )
-                                .aspectRatio(1, contentMode: .fit)
+                            ZStack {
+                                Rectangle()
+                                    .fill(
+                                        position == selected
+                                            ? Color.yellow : Color.teal.opacity(0.3 + Double(roomType % 4) * 0.12)
+                                    )
+                                if hasPrivateRecord(in: position) {
+                                    Circle()
+                                        .fill(.purple)
+                                        .padding(4)
+                                }
+                            }
+                            .aspectRatio(1, contentMode: .fit)
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(
                             "Column \(position.x + 1), row \(position.y + 1), "
                                 + "template \(roomType)"
+                                + (hasPrivateRecord(in: position)
+                                    ? ", unidentified private record at imported frame" : "")
                         )
                     }
                 }
@@ -365,6 +390,18 @@ struct WorldReferenceView: View {
                         }
                         recordedPlayerSprite(in: area.size)
                         measuredPlayerSprite(in: area.size)
+                        ForEach(selectedPrivateRecords, id: \.id) { record in
+                            Circle()
+                                .stroke(.purple, lineWidth: 2)
+                                .frame(width: 12, height: 12)
+                                .position(
+                                    x: CGFloat(record.x) * area.size.width / 256,
+                                    y: screenY(record.y) * area.size.height / 192
+                                )
+                                .accessibilityLabel(
+                                    "Unidentified record \(record.id + 1) at source X \(record.x), Y \(record.y), from imported frame"
+                                )
+                        }
                         if let position = markerPosition {
                             Circle()
                                 .stroke(.cyan, lineWidth: 2)
@@ -434,6 +471,7 @@ struct WorldReferenceView: View {
                 sourceAttributeColors = false
                 spriteSamples = [:]
                 spriteAtlas = nil
+                placementState = nil
                 spriteID = 16
                 replay = nil
                 entityTrace = nil
@@ -582,7 +620,36 @@ struct WorldReferenceView: View {
                     throw SpriteAtlasError.unsupportedFormat
                 }
                 spriteAtlas = try SpriteAtlas.load(from: Data(contentsOf: url))
+                placementState = nil
                 spriteID = 16
+                importError = nil
+            } catch {
+                importError = error.localizedDescription
+            }
+        }
+        .fileImporter(
+            isPresented: $importingPlacement,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first, let world else {
+                    throw CocoaError(.fileNoSuchFile)
+                }
+                guard let spriteAtlas else {
+                    throw CapturedPlacementError.missingSprite
+                }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                if let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+                   size > 32_000 {
+                    throw CapturedPlacementError.unsupportedFormat
+                }
+                let imported = try CapturedPlacementState.load(
+                    from: Data(contentsOf: url), world: world
+                )
+                try imported.validate(spriteAtlas: spriteAtlas)
+                placementState = imported
                 importError = nil
             } catch {
                 importError = error.localizedDescription
@@ -708,6 +775,18 @@ struct WorldReferenceView: View {
     private var currentEntityFrame: ReferenceEntityFrame? {
         guard let entityTrace else { return nil }
         return entityTrace.trace[min(Int(replayFrameValue), entityTrace.trace.count - 1)]
+    }
+
+    private func hasPrivateRecord(in room: RoomID) -> Bool {
+        placementState?.records.contains {
+            $0.roomID == room.y * 16 + room.x
+        } ?? false
+    }
+
+    private var selectedPrivateRecords: [CapturedPlacementRecord] {
+        placementState?.records.filter {
+            $0.roomID == selected.y * 16 + selected.x
+        } ?? []
     }
 
     @ViewBuilder

@@ -155,7 +155,8 @@ TEMP_MENU_CONTACT="$(mktemp "$ROOT/$PRIVATE/.menu-contact-XXXXXXXX.json")"
 TEMP_RESTART_SCREEN="$(mktemp "$ROOT/$PRIVATE/.restart-screen-XXXXXXXX.json")"
 TEMP_KEYBOARD_SCREEN="$(mktemp "$ROOT/$PRIVATE/.keyboard-screen-XXXXXXXX.json")"
 TEMP_READY_SCREEN="$(mktemp "$ROOT/$PRIVATE/.ready-screen-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN"' EXIT
+TEMP_PLACEMENT="$(mktemp "$ROOT/$PRIVATE/.placement-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -702,6 +703,36 @@ else
 fi
 "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$READY_REPLAY" \
     --menu "$MENU" 503
+printf 'Extracting four private, unidentified frame-656 actor records...\n'
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift Sources/GameCore/*.swift \
+    reverse_engineering/tools/SnapshotPlacementExport.swift \
+    -o "$ROOT/$PRIVATE/SnapshotPlacementExport" \
+    > "$ROOT/$PRIVATE/placement-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/placement-build.log" >&2
+    exit 1
+fi
+PLACEMENT="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-placement-frame656-v1.json"
+"$ROOT/$PRIVATE/SnapshotPlacementExport" "$ROM" "$GAME" "$READY_REPLAY" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-sprite-atlas-v1.json" \
+    > "$TEMP_PLACEMENT"
+if [[ -e "$PLACEMENT" ]]; then
+    if ! cmp -s "$PLACEMENT" "$TEMP_PLACEMENT"; then
+        printf 'Existing private placement export differs: %s\n' "$PLACEMENT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_PLACEMENT" "$PLACEMENT"
+fi
+if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
+    SABRE_PRIVATE_ATLAS="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-sprite-atlas-v1.json" \
+    SABRE_PRIVATE_PLACEMENT="$PLACEMENT" \
+    swift test --filter CapturedPlacementStateTests \
+    > "$ROOT/$PRIVATE/placement-import-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/placement-import-test.log" >&2
+    exit 1
+fi
 READY_CONTACT="$ROOT/$PRIVATE/restart-ready-contact-900.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$READY_SCHEDULE" 900 \
     --reference-timing --require-ram-parity --require-contact-parity \

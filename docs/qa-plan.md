@@ -593,6 +593,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: These three gameplay-snapshot paths need no re-baselining after the private RRA fix; no claim is made about other states, hardware accuracy or successful tape boot.
 - **Edge Cases / Variants**: Alternate keyboard paths, zero-life menu, tape ROM loader and other Z80 flag instructions.
 
+### TC-052: Import private unidentified actor placement safely
+- **Priority**: P1
+- **Preconditions**: Hashed 48K ROM/gameplay snapshot, verified frame-656 restart replay, private version-2 world and sprite atlas.
+- **Steps**:
+  1. Run `SnapshotPlacementExport` through frame 656, requiring every RAM/screen hash to match the independent source replay before emitting ignored JSON.
+  2. Compare its four record fields with an independently measured private oracle; validate distinct IDs, rooms, bounded coordinates and nonempty source sprite masks.
+  3. Import world, atlas and placement in the native viewer; inspect purple room/position markers and VoiceOver labels without changing game state.
+  4. Try wrong source hash, duplicate room, bad sprite ID and missing/changed atlas. Require explicit errors and clear stale placements when world/atlas is replaced.
+- **Expected Result**: Four private observations are browseable on macOS/iOS/visionOS builds without bundling copyrighted values or claiming verified amulet/pickup behavior.
+- **Edge Cases / Variants**: Files provider permissions, empty sentinel sprite, malformed JSON, dynamic relocation after frame 656 and source edition mismatch.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

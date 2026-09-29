@@ -40,6 +40,14 @@
     "directClockGlobalReadsPerCall": 0,
     "mutableGlobalPairReadsAndRewritesPerCall": 8
   },
+  "privateFrame656Importer": {
+    "sourceFramesRecheckedAgainstReferenceReplay": 656,
+    "recordCount": 4,
+    "matchingFieldsAgainstIndependentPrivateOracle": 20,
+    "validatedWorldRooms": 4,
+    "validatedNonemptySpriteMasks": 4,
+    "bundledRecordValues": false
+  },
   "pickupProbeReadiness": {
     "playerSharesRecordRoomAtFrame790": false,
     "nearestRecordWorldGridStepsByPath": [5, 4],
