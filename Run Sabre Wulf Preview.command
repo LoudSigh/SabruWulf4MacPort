@@ -214,7 +214,8 @@ TEMP_READY_SCREEN="$(mktemp "$ROOT/$PRIVATE/.ready-screen-XXXXXXXX.json")"
 TEMP_PLACEMENT="$(mktemp "$ROOT/$PRIVATE/.placement-XXXXXXXX.json")"
 TEMP_ATTR="$(mktemp "$ROOT/$PRIVATE/.attribute-write-XXXXXXXX.json")"
 TEMP_OVERLAP="$(mktemp "$ROOT/$PRIVATE/.overlap-viewer-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT" "$TEMP_ATTR" "$TEMP_OVERLAP"' EXIT
+TEMP_BEEPER="$(mktemp "$ROOT/$PRIVATE/.beeper-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT" "$TEMP_ATTR" "$TEMP_OVERLAP" "$TEMP_BEEPER"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -452,6 +453,59 @@ if ! SABRE_PRIVATE_OVERLAP_TRACE="$OVERLAP_TRACE" \
     swift test --filter ReferenceEntityTraceTests \
     > "$ROOT/$PRIVATE/w-overlap-import-tests.log" 2>&1; then
     cat "$ROOT/$PRIVATE/w-overlap-import-tests.log" >&2
+    exit 1
+fi
+printf 'Checking five bounded 48K beeper-edge observations...\n'
+for entry in \
+    'w100|actor-screen-w-schedule.json|100|20|228' \
+    't100|fire-observation-schedule.json|100|13|180' \
+    'fire190|fire-before-contact-schedule.json|190|20|184' \
+    'no-fire190|no-fire-encounter-schedule.json|190|26|408' \
+    'unrelated190|unrelated-a-control-schedule.json|190|25|408'; do
+    IFS='|' read -r name schedule frames active toggles <<< "$entry"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+        "reverse_engineering/analysis/$schedule" "$frames" \
+        --reference-timing --require-ram-parity --watch-beeper > "$TEMP_BEEPER"
+    if ! jq -e --argjson frames "$frames" --argjson active "$active" \
+        --argjson toggles "$toggles" '
+        .framesCompared == $frames and .matchingRAMFrames == $frames
+        and (.beeperFrames | length) == $active
+        and ([.beeperFrames[].evenPortWrites] | add) == $toggles
+        and ([.beeperFrames[].manualToggles] | add) == $toggles
+        and ([.beeperFrames[].fullEmulatorToggles] | add) == $toggles
+        and ([.beeperFrames[] |
+            select(.manualToggles != .fullEmulatorToggles)] | length) == 0
+    ' "$TEMP_BEEPER" >/dev/null; then
+        printf 'Source beeper parity changed for %s.\n' "$name" >&2
+        exit 1
+    fi
+    REPORT="$ROOT/$PRIVATE/beeper-$name.json"
+    if [[ -e "$REPORT" ]]; then
+        if ! cmp -s "$REPORT" "$TEMP_BEEPER"; then
+            printf 'Existing private beeper report differs: %s\n' "$REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_BEEPER" "$REPORT"
+    fi
+done
+if ! jq -s -e '
+    def countAt($report; $frame):
+        ([$report.beeperFrames[] | select(.frame == $frame) | .manualToggles][0] // 0);
+    def togglesIn($report; $start; $end):
+        ([ $report.beeperFrames[] |
+            select(.frame >= $start and .frame <= $end) | .manualToggles ] | add // 0);
+    .[0] as $fire | .[1] as $noFire | .[2] as $other |
+    ([range(1; 191) as $frame |
+        select(countAt($fire; $frame) != countAt($noFire; $frame)) |
+        $frame][0]) == 153
+    and togglesIn($noFire; 163; 168) == 224
+    and togglesIn($other; 169; 174) == 224
+    and togglesIn($fire; 163; 168) == 0
+' "$ROOT/$PRIVATE/beeper-fire190.json" \
+    "$ROOT/$PRIVATE/beeper-no-fire190.json" \
+    "$ROOT/$PRIVATE/beeper-unrelated190.json" >/dev/null; then
+    printf 'Bounded contact-adjacent beeper observations changed.\n' >&2
     exit 1
 fi
 ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace-v2.json"

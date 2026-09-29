@@ -652,6 +652,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   2. Import a local WAV using the native audio picker, play only on explicit action, check looping and volume adjustment, and verify Pause/Resume plus scene/background deactivation stop playback until the user starts it again.
   3. Repeat playback and lifecycle checks with VoiceOver on iOS and visionOS using an authorized private device file-provider transfer. Verify no soundtrack is bundled or uploaded.
   4. Try a corrupt audio file and a file over 20 MB; require visible import errors. The `.ay` is not directly playable in the app, and no original gameplay sound cue is claimed.
+  5. Separately run five reference-relative `--watch-beeper` probes, requiring 760/760 complete RAM frames and 1,408/1,408 manual/full edge-count matches with zero frame-level disagreements. Check that no-T and unrelated-A each have 224 toggles in their six-frame contact-adjacent windows while T has zero in no-T's window; do not infer sound-cue causality or interpret the imported tracks as this source schedule.
 - **Expected Result**: Local opt-in audio works without altering `GameCore` state, presenting the four beeper tracks as newer AY-chip music, or assuming they match the supplied snapshot's event timing.
 - **Edge Cases / Variants**: Provider permission denial, audio-session interruption, silent mode, game over/reset, app backgrounding and multiple imports.
 

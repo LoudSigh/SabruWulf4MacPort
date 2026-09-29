@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "speakerBit": 4,
+  "initialState": "Low, as in the restored reference emulator",
+  "paths": [
+    {"schedule": "actor-screen-w-schedule.json", "frames": 100, "framesWithWrites": 20, "evenPortWrites": 228, "matchingBeeperToggles": 228},
+    {"schedule": "fire-observation-schedule.json", "frames": 100, "framesWithWrites": 13, "evenPortWrites": 180, "matchingBeeperToggles": 180},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 190, "framesWithWrites": 20, "evenPortWrites": 184, "matchingBeeperToggles": 184},
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 190, "framesWithWrites": 26, "evenPortWrites": 408, "matchingBeeperToggles": 408},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 190, "framesWithWrites": 25, "evenPortWrites": 408, "matchingBeeperToggles": 408}
+  ],
+  "totals": {
+    "matchingCompleteRAMFrames": 760,
+    "sourceFrames": 760,
+    "framesWithWrites": 104,
+    "evenPortWrites": 1408,
+    "matchingManualAndFullBeeperToggles": 1408,
+    "frameLevelToggleMismatches": 0
+  },
+  "contactControl": {
+    "firstFireVersusNoFireSoundDifferenceFrame": 153,
+    "noFireVerifiedContactFrame": 162,
+    "noFireSixFrameSoundWindowInclusive": [163, 168],
+    "noFireWindowToggles": 224,
+    "unrelatedKeyVerifiedContactFrame": 169,
+    "unrelatedKeySixFrameSoundWindowInclusive": [169, 174],
+    "unrelatedKeyWindowToggles": 224,
+    "fireWindow163Through168Toggles": 0
+  },
+  "limits": "For these five bounded restored-gameplay replays, manual CPU even-port bit-4 transitions agree with the unmodified emulator's public per-frame edge counts. Two six-frame, 224-toggle bursts lie near separately verified contacts, while the T path lacks the first burst; the first T/no-T sound difference precedes their enemy-direction difference. Input also alters RNG and execution timing, so this temporal association does not prove the source trigger, a fixed latency or waveform equivalence. No audio waveform, original register/code bytes or per-frame event trace is public. The result does not map four optional AY-container beeper songs to gameplay, establish tape/snapshot edition equivalence, or schedule native sound effects."
+}
