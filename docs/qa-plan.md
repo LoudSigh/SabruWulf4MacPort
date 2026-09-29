@@ -569,7 +569,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   2. Require 25/25 matching calls and 2,430/2,430 full RAM frames; keep all score buffers/point samples private.
   3. Test decimal carry, six-digit overflow, invalid BCD rejection and synthetic 2UP selection without claiming 2UP source parity.
   4. Treat pickup point values, award triggers and visual rendering as separate source tests.
-- **Expected Result**: Pure source-backed arithmetic matches; no claim that the score calls during injury paths represent item pickups.
+- **Expected Result**: Pure source-backed arithmetic matches; no claim that the score calls during injury paths represent item pickups. A separate private 1,800-frame score replay validates score metadata per frame and labels selector 255 as unclassified rather than 1UP/2UP.
 - **Edge Cases / Variants**: Active player switch, leading zeros, low/middle carry, maximum score, non-BCD input and score update after zero lives.
 
 ### TC-050: Collision bounds and entry poses must match the source

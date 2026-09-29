@@ -21,6 +21,21 @@ public struct ReferenceFrame: Decodable, Sendable {
     public let playerY: Int
     public let playerKind: Int?
     public let reportedLives: Int
+    public let firstScoreBCD: CapturedPackedScore?
+    public let secondScoreBCD: CapturedPackedScore?
+    public let activeScorePlayer: UInt8?
+
+    public var recordedScoreSummary: String? {
+        guard let firstScoreBCD, let secondScoreBCD, let activeScorePlayer else {
+            return nil
+        }
+        let selection = activeScorePlayer == 255
+            ? "selector 255 (unclassified)" : "active \(Int(activeScorePlayer) + 1)UP"
+        return String(format:
+            "Recorded score RAM · 1UP %06d · 2UP %06d · ",
+            firstScoreBCD.decimalValue, secondScoreBCD.decimalValue
+        ) + selection
+    }
 }
 
 public struct ReferenceInputInterval: Decodable, Sendable {
@@ -83,6 +98,14 @@ public struct ReferenceReplay: Decodable, Sendable {
                 && (0..<192).contains(frame.playerY)
                 && (frame.playerKind.map { (0...255).contains($0) } ?? true)
                 && (0...9).contains(frame.reportedLives)
+                && (
+                    (frame.firstScoreBCD == nil && frame.secondScoreBCD == nil
+                        && frame.activeScorePlayer == nil)
+                    || (frame.firstScoreBCD != nil && frame.secondScoreBCD != nil
+                        && (frame.activeScorePlayer == 0
+                            || frame.activeScorePlayer == 1
+                            || frame.activeScorePlayer == 255))
+                )
         })
         else {
             throw ReferenceReplayError.invalidFrames

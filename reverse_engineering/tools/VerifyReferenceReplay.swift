@@ -38,6 +38,9 @@ private struct Frame: Decodable {
     let index: Int
     let ramSHA256: String
     let screenSHA256: String
+    let firstScoreBCD: [UInt8]?
+    let secondScoreBCD: [UInt8]?
+    let activeScorePlayer: UInt8?
 }
 
 private struct Replay: Decodable {
@@ -166,6 +169,18 @@ private struct VerifyReferenceReplay {
                 guard frame.index == offset + 1 else {
                     throw VerificationError.invalidReplay
                 }
+                let includesScore = frame.firstScoreBCD != nil
+                    || frame.secondScoreBCD != nil
+                    || frame.activeScorePlayer != nil
+                if includesScore {
+                    guard frame.firstScoreBCD?.count == 3,
+                          frame.secondScoreBCD?.count == 3,
+                          frame.activeScorePlayer == 0
+                            || frame.activeScorePlayer == 1
+                            || frame.activeScorePlayer == 255 else {
+                        throw VerificationError.invalidReplay
+                    }
+                }
                 let next = try replay.schedule.first(where: {
                     $0.startFrame <= offset && offset < $0.endFrame
                 }).map { try inputKey($0.key) }
@@ -182,6 +197,19 @@ private struct VerifyReferenceReplay {
                 guard frame.ramSHA256 == hash(Data(ram)),
                       frame.screenSHA256 == hash(Data(ram.prefix(6912))) else {
                     throw VerificationError.frameMismatch(index: frame.index)
+                }
+                if let first = frame.firstScoreBCD,
+                   let second = frame.secondScoreBCD,
+                   let active = frame.activeScorePlayer {
+                    guard first == (0x9698...0x969A).map({
+                              emulator.mem.read(UInt16($0))
+                          }),
+                          second == (0x969B...0x969D).map({
+                              emulator.mem.read(UInt16($0))
+                          }),
+                          active == emulator.mem.read(0x969E) else {
+                        throw VerificationError.frameMismatch(index: frame.index)
+                    }
                 }
                 if let menuPixels, firstMenuFrame == nil,
                    frame.index > menuAfterFrame {

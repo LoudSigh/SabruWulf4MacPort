@@ -158,6 +158,9 @@ struct WorldReferenceView: View {
                             + (frame.playerKind.map { " · actor state \($0)" } ?? "")
                     )
                     .font(.caption.monospacedDigit())
+                    if let score = frame.recordedScoreSummary {
+                        Text(score).font(.caption.monospacedDigit())
+                    }
                     Text("After a return to the menu, these retained RAM bytes are not an active player or a rendered replay screen.")
                         .font(.caption)
                     Slider(

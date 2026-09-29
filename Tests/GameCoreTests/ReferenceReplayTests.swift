@@ -109,6 +109,53 @@ final class ReferenceReplayTests: XCTestCase {
         ))
     }
 
+    func testScheduledScoreMetadataIsCompleteAndBCD() throws {
+        let frame: [String: Any] = [
+            "index": 1, "playerRoomID": 168, "playerX": 57,
+            "playerY": 112, "reportedLives": 4,
+            "firstScoreBCD": [0, 0x14, 0],
+            "secondScoreBCD": [0, 0, 0],
+            "activeScorePlayer": 0,
+        ]
+        var payload: [String: Any] = [
+            "schemaVersion": 2,
+            "snapshotSHA256": WorldReference.supportedSnapshotSHA256,
+            "input": "schedule",
+            "schedule": [["key": "q", "startFrame": 0, "endFrame": 1]],
+            "frames": [frame],
+        ]
+        let replay = try ReferenceReplay.load(
+            from: JSONSerialization.data(withJSONObject: payload)
+        )
+        XCTAssertEqual(replay.frames[0].firstScoreBCD?.decimalValue, 1400)
+        XCTAssertEqual(replay.frames[0].activeScorePlayer, 0)
+        XCTAssertNotNil(replay.frames[0].recordedScoreSummary)
+        var incomplete = frame
+        incomplete.removeValue(forKey: "secondScoreBCD")
+        payload["frames"] = [incomplete]
+        XCTAssertThrowsError(try ReferenceReplay.load(
+            from: JSONSerialization.data(withJSONObject: payload)
+        ))
+        var invalid = frame
+        invalid["firstScoreBCD"] = [0, 0x1A, 0]
+        payload["frames"] = [invalid]
+        XCTAssertThrowsError(try ReferenceReplay.load(
+            from: JSONSerialization.data(withJSONObject: payload)
+        ))
+        var inactive = frame
+        inactive["activeScorePlayer"] = 255
+        payload["frames"] = [inactive]
+        XCTAssertTrue(try ReferenceReplay.load(
+            from: JSONSerialization.data(withJSONObject: payload)
+        ).frames[0].recordedScoreSummary?.contains("selector 255 (unclassified)") == true)
+        var unsupported = frame
+        unsupported["activeScorePlayer"] = 2
+        payload["frames"] = [unsupported]
+        XCTAssertThrowsError(try ReferenceReplay.load(
+            from: JSONSerialization.data(withJSONObject: payload)
+        ))
+    }
+
     func testPrivateLongMenuReplayWhenProvided() throws {
         guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_LONG_WQ_REPLAY"]
         else { throw XCTSkip("Set the ignored 1800-frame W/Q replay") }
@@ -119,6 +166,21 @@ final class ReferenceReplayTests: XCTestCase {
         XCTAssertEqual(replay.frameBoundaryMode, "reference-relative")
         XCTAssertEqual(replay.schedule?.map(\.key), ["w", "e", "0", "w", "q"])
         XCTAssertEqual(replay.frames[1799].index, 1800)
+    }
+
+    func testPrivateLongScoreReplayWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_LONG_SCORE_REPLAY"]
+        else { throw XCTSkip("Set the ignored 1800-frame score replay") }
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(replay.frames.count, 1800)
+        XCTAssertTrue(replay.frames.allSatisfy {
+            $0.firstScoreBCD != nil && $0.secondScoreBCD != nil
+                && ($0.activeScorePlayer == 0 || $0.activeScorePlayer == 255)
+        })
+        XCTAssertEqual(replay.frames.filter { $0.activeScorePlayer == 255 }.count, 113)
+        XCTAssertNotNil(replay.frames[1799].recordedScoreSummary)
     }
 
     func testPrivateFireObservationWhenProvided() throws {

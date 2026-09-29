@@ -880,6 +880,20 @@ else
 fi
 "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" \
     "$REVERSE_MENU_REPLAY" --menu-after "$MENU" 1500 1733
+REVERSE_SCORE_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-w-q-score-1800.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule "$REVERSE_SCHEDULE" 1800 --reference-timing --actor-kind --score \
+    > "$TEMP_MENU"
+if [[ -e "$REVERSE_SCORE_REPLAY" ]]; then
+    if ! cmp -s "$REVERSE_SCORE_REPLAY" "$TEMP_MENU"; then
+        printf 'Existing private W/Q score replay differs: %s\n' "$REVERSE_SCORE_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU" "$REVERSE_SCORE_REPLAY"
+fi
+"$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" \
+    "$REVERSE_SCORE_REPLAY" --menu-after "$MENU" 1500 1733
 REVERSE_MENU_ROUTINES="$ROOT/$PRIVATE/restart-ready-w-q-menu-1800.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$REVERSE_SCHEDULE" 1800 \
     --reference-timing --require-ram-parity --watch-player-state \
@@ -957,7 +971,8 @@ if ! SABRE_PRIVATE_INJURY_START_DIR="$ROOT/$PRIVATE" \
 fi
 if ! SABRE_PRIVATE_NEW_GAME_MENU_REPORT="$REVERSE_MENU_ROUTINES" \
     SABRE_PRIVATE_LONG_WQ_REPLAY="$REVERSE_MENU_REPLAY" \
-    swift test --filter 'CapturedNewGameMenuReturnTests|ReferenceReplayTests/testPrivateLongMenuReplayWhenProvided' \
+    SABRE_PRIVATE_LONG_SCORE_REPLAY="$REVERSE_SCORE_REPLAY" \
+    swift test --filter 'CapturedNewGameMenuReturnTests|ReferenceReplayTests/testPrivateLong(Menu|Score)ReplayWhenProvided' \
     > "$ROOT/$PRIVATE/new-game-menu-return-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-menu-return-test.log" >&2
     exit 1

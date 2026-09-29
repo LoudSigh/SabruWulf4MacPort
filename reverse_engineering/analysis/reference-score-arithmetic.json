@@ -22,5 +22,12 @@
     "secondPlayerCalls": 0,
     "matchingFullRAMFrames": 2430
   },
-  "limits": "These are supplied-operand BCD arithmetic checks on 25 executing source calls; they do not establish why points were awarded, which items score, scoring cadence, 2-player source parity, displayed numeral rendering or victory bonuses. Invalid BCD inputs fail explicitly. No source instruction bytes, recorded point values or private RAM arrays are published."
+  "privateReplayScoreMetadata": {
+    "framesWithIndependentRAMScreenAndScoreByteParity": 1800,
+    "firstPlayerSelectedFrames": 1687,
+    "unclassifiedSelector255Frames": 113,
+    "firstExactCenterMenuTextFrameAfter1500": 1733,
+    "scoreBuffersValidPackedBCDInAllFrames": true
+  },
+  "limits": "These are supplied-operand BCD arithmetic checks on 25 executing source calls; they do not establish why points were awarded, which items score, scoring cadence, 2-player source parity, displayed numeral rendering or victory bonuses. The private viewer can show recorded numeric score RAM, labeling observed selector 255 as unclassified rather than assigning it 1UP/2UP meaning; no score call was observed with 255 in these paths. It does not render source score glyphs. Invalid BCD inputs fail explicitly. No source instruction bytes, recorded point values or private RAM arrays are published."
 }

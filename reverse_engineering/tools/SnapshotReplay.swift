@@ -15,7 +15,7 @@ private enum ReplayError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space|0|3> [frames: 1...150] [--hold] [--reference-timing] [--actor-kind] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...1800> [--reference-timing] [--actor-kind] | --self-test"
+            return "Usage: SnapshotReplay <48k.rom> <gameplay.z80> <none|q|w|e|r|t|a|o|p|space|0|3> [frames: 1...150] [--hold] [--reference-timing] [--actor-kind] [--score] | <48k.rom> <gameplay.z80> --schedule <private.json> <frames: 1...1800> [--reference-timing] [--actor-kind] [--score] | --self-test"
         case .invalidROM:
             return "Expected exactly 16384 reference ROM bytes"
         case .invalidSnapshot:
@@ -70,6 +70,9 @@ private struct FrameReport: Encodable {
     let playerX: Int
     let playerY: Int
     let playerKind: Int?
+    let firstScoreBCD: [UInt8]?
+    let secondScoreBCD: [UInt8]?
+    let activeScorePlayer: UInt8?
 }
 
 private struct ReplayReport: Encodable {
@@ -155,13 +158,13 @@ private struct SnapshotReplay {
             let maxFrames: Int
             let options: [String]
             if isSchedule {
-                guard (6...8).contains(arguments.count) else { throw ReplayError.usage }
+                guard (6...9).contains(arguments.count) else { throw ReplayError.usage }
                 guard let count = Int(arguments[5]), (1...1800).contains(count)
                 else { throw ReplayError.usage }
                 maxFrames = count
                 options = Array(arguments.dropFirst(6))
             } else {
-                guard (4...8).contains(arguments.count) else { throw ReplayError.usage }
+                guard (4...9).contains(arguments.count) else { throw ReplayError.usage }
                 let trailing = Array(arguments.dropFirst(4))
                 if let first = trailing.first, let count = Int(first) {
                     guard (1...150).contains(count) else { throw ReplayError.usage }
@@ -174,11 +177,12 @@ private struct SnapshotReplay {
             }
             guard Set(options).count == options.count,
                   options.allSatisfy({
-                      isSchedule ? ["--reference-timing", "--actor-kind"].contains($0)
-                          : ["--hold", "--reference-timing", "--actor-kind"].contains($0)
+                      isSchedule ? ["--reference-timing", "--actor-kind", "--score"].contains($0)
+                          : ["--hold", "--reference-timing", "--actor-kind", "--score"].contains($0)
                   }) else { throw ReplayError.usage }
             let referenceTiming = options.contains("--reference-timing")
             let includeActorKind = options.contains("--actor-kind")
+            let includeScore = options.contains("--score")
             let input = isSchedule ? "schedule" : arguments[3]
             let heldKey = isSchedule ? nil : try key(input)
             let schedule = isSchedule
@@ -288,7 +292,12 @@ private struct SnapshotReplay {
                     playerRoomID: Int(memory.read(playerBase &+ 1)),
                     playerX: Int(memory.read(playerBase &+ 3)),
                     playerY: Int(memory.read(playerBase &+ 4)),
-                    playerKind: includeActorKind ? Int(memory.read(playerBase)) : nil
+                    playerKind: includeActorKind ? Int(memory.read(playerBase)) : nil,
+                    firstScoreBCD: includeScore
+                        ? (0x9698...0x969A).map { memory.read(UInt16($0)) } : nil,
+                    secondScoreBCD: includeScore
+                        ? (0x969B...0x969D).map { memory.read(UInt16($0)) } : nil,
+                    activeScorePlayer: includeScore ? memory.read(0x969E) : nil
                 ))
             }
             guard let last = frames.last else { throw ReplayError.usage }

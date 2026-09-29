@@ -8,7 +8,7 @@ public enum CapturedScoreError: Error, LocalizedError {
     }
 }
 
-public struct CapturedPackedScore: Equatable, Sendable {
+public struct CapturedPackedScore: Decodable, Equatable, Sendable {
     public let high: UInt8
     public let middle: UInt8
     public let low: UInt8
@@ -23,15 +23,21 @@ public struct CapturedPackedScore: Equatable, Sendable {
     }
 
     public var bytes: [UInt8] { [high, middle, low] }
+    public var decimalValue: Int {
+        Self.decimal(high) * 10_000
+            + Self.decimal(middle) * 100 + Self.decimal(low)
+    }
+
+    public init(from decoder: Decoder) throws {
+        try self.init(bytes: decoder.singleValueContainer().decode([UInt8].self))
+    }
 
     func adding(upper: UInt8, lower: UInt8) throws -> Self {
         guard Self.isBCD(upper), Self.isBCD(lower) else {
             throw CapturedScoreError.unsupportedState
         }
-        let score = Self.decimal(high) * 10_000
-            + Self.decimal(middle) * 100 + Self.decimal(low)
         let points = Self.decimal(upper) * 100 + Self.decimal(lower)
-        let next = (score + points) % 1_000_000
+        let next = (decimalValue + points) % 1_000_000
         return try Self(bytes: [
             Self.bcd(next / 10_000),
             Self.bcd((next / 100) % 100),
