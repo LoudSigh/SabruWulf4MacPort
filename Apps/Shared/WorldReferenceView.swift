@@ -205,13 +205,19 @@ struct WorldReferenceView: View {
                         .font(.caption)
                         .foregroundStyle(matches ? Color.green : Color.orange)
                     }
-                    Button("Import private enemy route comparison (optional)") {
+                    Button("Import private actor route comparison (optional)") {
                         importingEntityTrace = true
                     }
                     .buttonStyle(.bordered)
                     if let entityFrame = currentEntityFrame {
                         Text(entitySummary(entityFrame))
                             .font(.caption.monospacedDigit())
+                        if entityTrace?.observedSlot == 18 {
+                            Text(spriteAtlas == nil
+                                ? "Import the matching private sprite atlas to see the recorded W-frame actor overlap."
+                                : "In W frames 43–53, the recorded player bitmap uses a source-checked two-actor XOR silhouette. Color and general sprite layering remain unverified; this is not native actor AI.")
+                                .font(.caption)
+                        }
                     }
                 }
                 Button("Preview private background images (optional)") {
@@ -427,12 +433,12 @@ struct WorldReferenceView: View {
                         referenceEntityMarker(
                             currentEntityFrame?.manualEntity, in: selected,
                             size: area.size, color: .orange,
-                            label: "Manual CPU moving entity"
+                            label: "Manual CPU recorded actor"
                         )
                         referenceEntityMarker(
                             currentEntityFrame?.fullEmulatorEntity, in: selected,
                             size: area.size, color: .purple,
-                            label: "Unmodified emulator moving entity"
+                            label: "Unmodified emulator recorded actor"
                         )
                     }
                 }
@@ -798,10 +804,42 @@ struct WorldReferenceView: View {
             if let kind {
                 switch Result(catching: { try spriteAtlas.mask(at: kind) }) {
                 case .success(let mask?):
-                    placedPlayerSprite(
-                        mask: mask, at: point, in: size, color: .white,
-                        label: "Recorded player bitmap at X \(point.x), Y \(point.y)"
-                    )
+                    if entityTrace?.observedSlot == 18, let replay,
+                       let entityFrame = currentEntityFrame,
+                       (43...53).contains(replay.frames[
+                           min(Int(replayFrameValue), replay.frames.count - 1)
+                       ].index) {
+                        switch Result(catching: {
+                            guard let otherMask = try spriteAtlas.mask(
+                                at: entityFrame.manualEntity.kind
+                            ) else {
+                                throw ReferenceEntityTraceError.invalidFrames
+                            }
+                            return CapturedOverlapBitmap.xorPlayerRectangle(
+                                player: CapturedActorSprite(mask: mask, actorAt: point),
+                                overlapping: CapturedActorSprite(
+                                    mask: otherMask,
+                                    actorAt: GridPoint(
+                                        entityFrame.manualEntity.x, entityFrame.manualEntity.y
+                                    )
+                                )
+                            )
+                        }) {
+                        case .success(let pixels):
+                            placedPlayerPixels(
+                                pixels: pixels, width: mask.width, height: mask.height,
+                                at: point, in: size, color: .white,
+                                label: "Recorded two-actor XOR bitmap at X \(point.x), Y \(point.y); color approximate"
+                            )
+                        case .failure(let error):
+                            Text(error.localizedDescription).foregroundStyle(.red)
+                        }
+                    } else {
+                        placedPlayerSprite(
+                            mask: mask, at: point, in: size, color: .white,
+                            label: "Recorded player bitmap at X \(point.x), Y \(point.y)"
+                        )
+                    }
                 case .success(nil):
                     EmptyView()
                 case .failure(let error):
@@ -833,15 +871,26 @@ struct WorldReferenceView: View {
         mask: SpriteMask, at point: GridPoint, in size: CGSize,
         color: Color, label: String
     ) -> some View {
-        let sprite = CapturedActorSprite(mask: mask, actorAt: point)
-        return NativeSpritePixels(mask: mask, color: color)
+        placedPlayerPixels(
+            pixels: CapturedActorSprite(mask: mask, actorAt: point).screenPixels(),
+            width: mask.width, height: mask.height, at: point, in: size,
+            color: color, label: label
+        )
+    }
+
+    private func placedPlayerPixels(
+        pixels: [Bool], width: Int, height: Int, at point: GridPoint,
+        in size: CGSize, color: Color, label: String
+    ) -> some View {
+        NativeSpritePixels(pixels: pixels, width: width, height: height, color: color)
             .frame(
-                width: CGFloat(mask.width) * size.width / 256,
-                height: CGFloat(mask.height) * size.height / 192
+                width: CGFloat(width) * size.width / 256,
+                height: CGFloat(height) * size.height / 192
             )
             .position(
-                x: (CGFloat(sprite.topLeft.x) + CGFloat(mask.width) / 2) * size.width / 256,
-                y: (CGFloat(sprite.topLeft.y) + CGFloat(mask.height) / 2) * size.height / 192
+                x: (CGFloat(point.x) + CGFloat(width) / 2) * size.width / 256,
+                y: (CGFloat(point.y - height + 1) + CGFloat(height) / 2)
+                    * size.height / 192
             )
             .accessibilityLabel(label)
     }
@@ -849,7 +898,7 @@ struct WorldReferenceView: View {
     private func entitySummary(_ frame: ReferenceEntityFrame) -> String {
         let manual = frame.manualEntity
         let full = frame.fullEmulatorEntity
-        return "Moving slot 12 · manual room \(manual.roomID), X \(manual.x), Y \(manual.y)"
+        return "Actor slot \(entityTrace?.observedSlot ?? 12) · manual room \(manual.roomID), X \(manual.x), Y \(manual.y)"
             + " · unmodified room \(full.roomID), X \(full.x), Y \(full.y)"
             + " (orange/purple rings when active; read-only)"
     }
@@ -1006,19 +1055,34 @@ private struct NativeSpritePreview: View {
 }
 
 private struct NativeSpritePixels: View {
-    let mask: SpriteMask
+    let pixels: [Bool]
+    let width: Int
+    let height: Int
     let color: Color
 
-    var body: some View {
-        let pixels = CapturedActorSprite(
+    init(mask: SpriteMask, color: Color) {
+        self.pixels = CapturedActorSprite(
             mask: mask, actorAt: GridPoint(0, mask.height - 1)
         ).screenPixels()
+        self.width = mask.width
+        self.height = mask.height
+        self.color = color
+    }
+
+    init(pixels: [Bool], width: Int, height: Int, color: Color) {
+        self.pixels = pixels
+        self.width = width
+        self.height = height
+        self.color = color
+    }
+
+    var body: some View {
         Canvas { context, size in
-            let scaleX = size.width / CGFloat(mask.width)
-            let scaleY = size.height / CGFloat(mask.height)
+            let scaleX = size.width / CGFloat(width)
+            let scaleY = size.height / CGFloat(height)
             for index in pixels.indices where pixels[index] {
-                let x = CGFloat(index % mask.width) * scaleX
-                let y = CGFloat(index / mask.width) * scaleY
+                let x = CGFloat(index % width) * scaleX
+                let y = CGFloat(index / width) * scaleY
                 context.fill(
                     Path(CGRect(x: x, y: y, width: scaleX, height: scaleY)),
                     with: .color(color)

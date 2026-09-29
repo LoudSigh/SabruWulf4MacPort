@@ -27,7 +27,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--watch-score-entries] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--trace-overlap-actor (100-frame W source path)] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--watch-score-entries] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .unsupportedOverlapSchedule:
@@ -88,8 +88,8 @@ private struct EntityMarker: Encodable {
     let x: Int
     let y: Int
 
-    init(_ memory: Memory) {
-        let base: UInt16 = 0x9702 + 12 * 12
+    init(_ memory: Memory, slot: Int = 12) {
+        let base = UInt16(0x9702 + slot * 12)
         kind = Int(memory.read(base))
         roomID = Int(memory.read(base &+ 1))
         x = Int(memory.read(base &+ 3))
@@ -307,6 +307,7 @@ private struct Report: Encodable {
     let firstPlayerStateDifference: Difference?
     let firstPlayerPositionDifference: Difference?
     let trace: [TraceFrame]?
+    let entitySlot: Int?
     let actorStateWrites: [ActorStateWrite]?
     let entityStateWrites: [EntityStateWrite]?
     let playerStateWrites: [EntityStateWrite]?
@@ -410,9 +411,10 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...24).contains(arguments.count),
+            guard (5...25).contains(arguments.count),
                   options.allSatisfy({
-                      ["--trace", "--watch-actor-state", "--watch-entity-state",
+                      ["--trace", "--trace-overlap-actor",
+                       "--watch-actor-state", "--watch-entity-state",
                        "--watch-player-state", "--watch-menu-routines",
                        "--watch-score-entries", "--watch-overlap-attributes",
                        "--watch-overlap-registers",
@@ -458,10 +460,15 @@ private struct SnapshotDivergence {
                   (!options.contains("--watch-overlap-attributes")
                     && !options.contains("--watch-overlap-registers"))
                     || (count == 100 && options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--trace-overlap-actor")
+                    || (count == 100 && options.contains("--trace")
+                        && options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
             let includeTrace = options.contains("--trace")
+            let traceOverlapActor = options.contains("--trace-overlap-actor")
             let watchActorState = options.contains("--watch-actor-state")
             let watchEntityState = options.contains("--watch-entity-state")
             let watchPlayerState = options.contains("--watch-player-state")
@@ -485,7 +492,7 @@ private struct SnapshotDivergence {
             let segments = try schedule(
                 Data(contentsOf: URL(fileURLWithPath: arguments[3])), frames: count
             )
-            if watchOverlapAttributes {
+            if watchOverlapAttributes || traceOverlapActor {
                 guard segments.count == 1, segments[0].key == "w",
                       segments[0].startFrame == 20,
                       segments[0].endFrame == 40 else {
@@ -1063,8 +1070,12 @@ private struct SnapshotDivergence {
                 if includeTrace {
                     trace.append(TraceFrame(
                         index: index,
-                        manualEntity: EntityMarker(memory),
-                        fullEmulatorEntity: EntityMarker(reference),
+                        manualEntity: EntityMarker(
+                            memory, slot: traceOverlapActor ? 18 : 12
+                        ),
+                        fullEmulatorEntity: EntityMarker(
+                            reference, slot: traceOverlapActor ? 18 : 12
+                        ),
                         manualPlayer: ActorMarker(memory),
                         fullEmulatorPlayer: ActorMarker(reference)
                     ))
@@ -1137,6 +1148,7 @@ private struct SnapshotDivergence {
                 firstPlayerStateDifference: firstState,
                 firstPlayerPositionDifference: firstPosition,
                 trace: includeTrace ? trace : nil,
+                entitySlot: traceOverlapActor ? 18 : nil,
                 actorStateWrites: watchActorState ? actorStateWrites : nil,
                 entityStateWrites: watchEntityState ? entityStateWrites : nil,
                 playerStateWrites: watchPlayerState ? playerStateWrites : nil,

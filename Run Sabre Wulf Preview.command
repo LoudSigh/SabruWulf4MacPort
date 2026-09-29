@@ -213,7 +213,8 @@ TEMP_KEYBOARD_SCREEN="$(mktemp "$ROOT/$PRIVATE/.keyboard-screen-XXXXXXXX.json")"
 TEMP_READY_SCREEN="$(mktemp "$ROOT/$PRIVATE/.ready-screen-XXXXXXXX.json")"
 TEMP_PLACEMENT="$(mktemp "$ROOT/$PRIVATE/.placement-XXXXXXXX.json")"
 TEMP_ATTR="$(mktemp "$ROOT/$PRIVATE/.attribute-write-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT" "$TEMP_ATTR"' EXIT
+TEMP_OVERLAP="$(mktemp "$ROOT/$PRIVATE/.overlap-viewer-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT" "$TEMP_ATTR" "$TEMP_OVERLAP"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -397,6 +398,61 @@ if [[ -e "$ATTR_CONTEXT" ]]; then
     fi
 else
     mv "$TEMP_ATTR" "$ATTR_CONTEXT"
+fi
+OVERLAP_REPLAY="$ROOT/$PRIVATE/replay-w-overlap-100-with-kind.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule reverse_engineering/analysis/actor-screen-w-schedule.json 100 \
+    --reference-timing --actor-kind > "$TEMP_OVERLAP"
+if [[ -e "$OVERLAP_REPLAY" ]]; then
+    if ! cmp -s "$OVERLAP_REPLAY" "$TEMP_OVERLAP"; then
+        printf 'Existing private W overlap replay differs: %s\n' "$OVERLAP_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_OVERLAP" "$OVERLAP_REPLAY"
+fi
+if ! "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$OVERLAP_REPLAY" \
+    > "$ROOT/$PRIVATE/w-overlap-replay-parity.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/w-overlap-replay-parity.log" >&2
+    exit 1
+fi
+if ! grep -Fx 'Verified 100/100 RAM and screen hashes against the unmodified emulator' \
+    "$ROOT/$PRIVATE/w-overlap-replay-parity.log" >/dev/null; then
+    printf 'Private W overlap replay has an unexpected verification result.\n' >&2
+    exit 1
+fi
+OVERLAP_TRACE="$ROOT/$PRIVATE/trace-w-overlap-slot18-100.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/actor-screen-w-schedule.json 100 \
+    --trace --trace-overlap-actor --reference-timing --require-ram-parity \
+    > "$TEMP_OVERLAP"
+if ! jq -e '
+    .framesCompared == 100 and .matchingRAMFrames == 100
+    and .frameBoundaryMode == "reference-relative" and .entitySlot == 18
+    and (.trace | length) == 100
+    and ([.trace[] | select(.manualEntity == .fullEmulatorEntity)] | length) == 100
+    and ([.trace[] | select(.index >= 43 and .index <= 53
+        and .manualEntity.kind > 0
+        and .manualEntity.roomID == .manualPlayer.roomID)] | length) == 11
+' "$TEMP_OVERLAP" >/dev/null; then
+    printf 'Private W overlap actor trace changed.\n' >&2
+    exit 1
+fi
+if [[ -e "$OVERLAP_TRACE" ]]; then
+    if ! cmp -s "$OVERLAP_TRACE" "$TEMP_OVERLAP"; then
+        printf 'Existing private W overlap actor trace differs: %s\n' "$OVERLAP_TRACE" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_OVERLAP" "$OVERLAP_TRACE"
+fi
+if ! SABRE_PRIVATE_OVERLAP_TRACE="$OVERLAP_TRACE" \
+    SABRE_PRIVATE_OVERLAP_REPLAY="$OVERLAP_REPLAY" \
+    SABRE_PRIVATE_SPRITE_ATLAS="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-sprite-atlas-v1.json" \
+    swift test --filter ReferenceEntityTraceTests \
+    > "$ROOT/$PRIVATE/w-overlap-import-tests.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/w-overlap-import-tests.log" >&2
+    exit 1
 fi
 ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace-v2.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \

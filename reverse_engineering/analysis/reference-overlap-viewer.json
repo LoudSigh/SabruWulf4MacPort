@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "sourceFrames": 100,
+  "matchingCompleteRAMAndScreenFrames": 100,
+  "inputSchedule": "W held in zero-based frames 20 through 39",
+  "frameBoundaryMode": "reference-relative",
+  "playerActorIDsIncluded": true,
+  "trackedActorSlot": 18,
+  "matchingManualAndFullActorRecords": 100,
+  "semanticIntegrity": {
+    "actorAndPlayerTraceSHA256": "f293a184e935767f69631bbccc25bc27468d12adfa8eafccf5c06c58ac8e669b",
+    "playerBitmapIDSequenceSHA256": "f911149f989670815f3f306426b154262da713fd3e8f2193ebc69593acea31c9",
+    "actorTraceBytesChecked": 700,
+    "playerBitmapIDsChecked": 100
+  },
+  "boundedOverlap": {
+    "framesInclusive": [43, 53],
+    "activeSameRoomFrames": 11,
+    "playerRectangleBitmapPixelsChecked": 3776,
+    "matchingXorBitmapPixels": 3776,
+    "changedBitsVersusPlayerMask": 64
+  },
+  "limits": "The importer's formatting-independent numeric actor-state and bitmap-ID digests guard this one source-verified replay/trace pair; modifying these private states requires independent remeasurement, not merely copying a snapshot SHA label. The 11 player-rectangle XOR silhouettes are read-only. Actor selection, movement cadence, color/attribute compositing, sprite layering outside this pair, contact and autonomous gameplay remain unverified. Original bitmap data and the replay/trace are ignored."
+}
