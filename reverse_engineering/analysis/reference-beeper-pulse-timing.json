@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "paths": [
+    {"schedule": "fire-before-contact-schedule.json", "frames": 190, "sourceHighLowPairs": 92},
+    {"schedule": "no-fire-encounter-schedule.json", "frames": 190, "sourceHighLowPairs": 204},
+    {"schedule": "unrelated-a-control-schedule.json", "frames": 190, "sourceHighLowPairs": 204}
+  ],
+  "model": {
+    "operation": "One high-to-low speaker transition duration from a supplied unsigned delay counter",
+    "zeroCounterIterations": 256,
+    "zeroCounterObservedInThesePaths": false,
+    "uninterruptedTStates": "13 times the effective counter plus 18",
+    "observedAdditionalTStates": [0, 895, 1124]
+  },
+  "totals": {
+    "matchingCompleteRAMFrames": 570,
+    "speakerWritesExamined": 1000,
+    "highLowPairsCompared": 500,
+    "matchedWithoutAdditionalDelay": 494,
+    "matchedWith895ExtraTStates": 5,
+    "matchedWith1124ExtraTStates": 1,
+    "matchingBoundedPureResults": 500
+  },
+  "limits": "The source supplies speaker writer timing, delay counter and any intervening extra cycles. Counter zero follows the tested Z80 loop arithmetic but did not occur in these source replays. Six excess-duration cases are measured, but their exact causes and general interrupt/call handling remain unverified. A matched high half-wave is not a full low/high waveform, event scheduler, original sound effect, AY-song equivalence, or native game audio implementation. Original port values, instruction bytes and detailed speaker events stay private."
+}

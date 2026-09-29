@@ -701,6 +701,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: One structurally proven data table advances RAM classification without promoting unknown or mutable bytes to code.
 - **Edge Cases / Variants**: Altered menu capture, handler target in image data, table byte also fetched as an instruction, later self-modifying overlays and non-48K edition.
 
+### TC-061: Bounded beeper high-half-wave arithmetic
+- **Priority**: P1
+- **Preconditions**: SHA-verified gameplay snapshot/ROM, three reference-relative 190-frame fire/no-fire/unrelated-key source paths and private speaker-writer counter reports.
+- **Steps**:
+  1. Independently require 570/570 full RAM frames and capture 1,000 ordered high/low speaker writes at the two source writer sites; reject missing counters, nonalternating speaker levels and malformed report lengths.
+  2. Supply each private high-write delay counter and observed extra-cycle value to `CapturedBeeperPulse`. Require **500/500** exact high→low T-state durations: 494 with no extra delay, five with +895 T-states and one with +1124. Reject unmeasured extra-cycle values.
+  3. Check the zero-counter 256-iteration edge, one-count duration, and that changed source operand/timing reports fail rather than being treated as a successful score or complete sound effect.
+  4. Keep writer addresses, original beeper waveform/port values and AY media private. Do not wire a player damage or movement cue from this half-wave rule.
+- **Expected Result**: One externally supplied CPU-timing primitive is measured without falsely claiming native original sound playback.
+- **Edge Cases / Variants**: Frame-crossing pulses, interrupt work other than 895/1124 cycles, audio-session interruption, another ROM/snapshot revision and low-half-wave timing.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

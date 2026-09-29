@@ -594,6 +594,40 @@ if ! jq -s -e '
     printf 'Contact-adjacent beeper pulse-gap comparison changed.\n' >&2
     exit 1
 fi
+for entry in \
+    'fire190|fire-before-contact-schedule.json|92' \
+    'no-fire190|no-fire-encounter-schedule.json|204' \
+    'unrelated190|unrelated-a-control-schedule.json|204'; do
+    IFS='|' read -r name schedule pairs <<< "$entry"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+        "reverse_engineering/analysis/$schedule" 190 \
+        --reference-timing --require-ram-parity \
+        --watch-beeper --watch-beeper-writers --watch-beeper-counters \
+        > "$TEMP_BEEPER"
+    if ! jq -e --argjson count "$((pairs * 2))" '
+        .framesCompared == 190 and .matchingRAMFrames == 190
+        and (.beeperWrites | length) == $count
+        and ([.beeperWrites[] | select(.delayCounter == null)] | length) == 0
+    ' "$TEMP_BEEPER" >/dev/null; then
+        printf 'Source beeper counter capture changed for %s.\n' "$name" >&2
+        exit 1
+    fi
+    REPORT="$ROOT/$PRIVATE/beeper-counter-$name.json"
+    if [[ -e "$REPORT" ]]; then
+        if ! cmp -s "$REPORT" "$TEMP_BEEPER"; then
+            printf 'Existing private beeper counter report differs: %s\n' "$REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_BEEPER" "$REPORT"
+    fi
+done
+if ! SABRE_PRIVATE_BEEPER_COUNTER_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedBeeperPulseTests \
+    > "$ROOT/$PRIVATE/beeper-pulse-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/beeper-pulse-test.log" >&2
+    exit 1
+fi
 ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace-v2.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
     reverse_engineering/analysis/west-exit-schedule.json 256 --trace > "$TEMP_ENTITY"

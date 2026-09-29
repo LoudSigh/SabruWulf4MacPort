@@ -11,6 +11,7 @@
 5. Follow the [release QA plan](docs/qa-plan.md). Public CI uses only synthetic tape fixtures and original placeholder UI; no source game media is uploaded.
 
 **Optional local audio:** The supplied `.ay` is a four-track **beeper** container, not verified newer AY-chip music. [Render Local AY Audio.command](./Render%20Local%20AY%20Audio.command) can convert each song privately after you build the external MIT-licensed SlopAY tool; [build and import instructions](docs/build.md) explain the steps. The native apps loop only the user-selected imported WAV (or other supported audio). Original game sound triggers and timing are not ported, and no audio is bundled.
+Separately, one [pure source-supplied beeper timing rule](Sources/GameCore/CapturedBeeperPulse.swift) matches 500/500 observed high half-wave durations after accounting for six measured extra-cycle cases. It neither reproduces the original effect waveform nor decides when the game should play a sound.
 
 The Vision Pro simulator now visibly renders the native placeholder window and controls in a private smoke capture; controller/gaze/tap interaction remains a release test, not a verified result.
 
