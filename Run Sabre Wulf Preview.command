@@ -872,6 +872,26 @@ if [[ -e "$EXTENDED_WRITES" ]]; then
 else
     mv "$TEMP_COMBAT_ENTITY" "$EXTENDED_WRITES"
 fi
+for entry in \
+    'fire-before-contact|fire-before-contact-schedule.json|190' \
+    'no-fire-encounter|no-fire-encounter-schedule.json|190' \
+    'unrelated-a-control|unrelated-a-control-schedule.json|190' \
+    'fire-before-contact|fire-before-contact-schedule.json|250'; do
+    IFS='|' read -r scenario schedule frames <<< "$entry"
+    DISPATCH_REPORT="$ROOT/$PRIVATE/enemy-dispatch-verified-$scenario-$frames.json"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+        "reverse_engineering/analysis/$schedule" "$frames" \
+        --reference-timing --require-ram-parity --watch-enemy-dispatch \
+        > "$TEMP_COMBAT_ENTITY"
+    if [[ -e "$DISPATCH_REPORT" ]]; then
+        if ! cmp -s "$DISPATCH_REPORT" "$TEMP_COMBAT_ENTITY"; then
+            printf 'Existing private enemy-dispatch trace differs: %s\n' "$DISPATCH_REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_COMBAT_ENTITY" "$DISPATCH_REPORT"
+    fi
+done
 FIRE_ONSET_REPORT="$ROOT/$PRIVATE/player-onset-fire-before-contact-250.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
     reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
@@ -943,6 +963,7 @@ if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json
 fi
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
+    SABRE_PRIVATE_ENEMY_DISPATCH_DIR="$ROOT/$PRIVATE" \
     SABRE_PRIVATE_FIRE_EXTENDED_WRITES="$EXTENDED_WRITES" \
     swift test --filter CapturedActiveEnemyStateTests \
     > "$ROOT/$PRIVATE/active-enemy-test.log" 2>&1; then

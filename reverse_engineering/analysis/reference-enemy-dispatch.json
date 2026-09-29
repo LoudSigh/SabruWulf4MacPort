@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "sourceEdition": "hashed 48K gameplay snapshot",
+  "actorSlot": 12,
+  "handlerPointerDerivedFromPrivateSnapshot": true,
+  "paths": [
+    {
+      "name": "fire-before-contact",
+      "frames": 190,
+      "matchingFullRAMFrames": 190,
+      "handlerEntries": 11,
+      "entryFrames": [160, 163, 166, 170, 173, 176, 179, 182, 184, 187, 189]
+    },
+    {
+      "name": "no-fire-encounter",
+      "frames": 190,
+      "matchingFullRAMFrames": 190,
+      "handlerEntries": 2,
+      "entryFrames": [159, 162]
+    },
+    {
+      "name": "unrelated-a-control",
+      "frames": 190,
+      "matchingFullRAMFrames": 190,
+      "handlerEntries": 4,
+      "entryFrames": [159, 162, 165, 168]
+    },
+    {
+      "name": "fire-before-contact-extended",
+      "frames": 250,
+      "matchingFullRAMFrames": 250,
+      "handlerEntries": 25,
+      "entryFrames": [160, 163, 166, 170, 173, 176, 179, 182, 184, 187, 189,
+        191, 194, 196, 199, 202, 205, 208, 212, 215, 217, 220, 224, 227, 234]
+    }
+  ],
+  "limits": "These are source actor-handler entry events in four input schedules, not an autonomous timing rule. Each path has branch-internal full RAM parity with the reference emulator; the 190-frame fire path is a prefix of the 250-frame fire path. Only the ignored local reports contain source timer, RNG, refresh, cycle and actor values. The native enemy helpers still require externally selected events."
+}

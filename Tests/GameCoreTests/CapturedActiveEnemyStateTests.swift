@@ -332,4 +332,66 @@ final class CapturedActiveEnemyStateTests: XCTestCase {
             XCTAssertEqual(enemy.velocityY, observedVY, "frame \(frame)")
         }
     }
+
+    func testPrivateEnemyDispatchCadenceWhenProvided() throws {
+        guard let directory = ProcessInfo.processInfo.environment[
+            "SABRE_PRIVATE_ENEMY_DISPATCH_DIR"
+        ] else { throw XCTSkip("Set the ignored RAM-checked enemy dispatch reports") }
+        struct Dispatch: Decodable {
+            let frame: Int
+            let cycle: Int
+            let kind: Int
+            let timer: Int
+            let rng: Int
+            let refresh: Int
+        }
+        struct Report: Decodable {
+            let snapshotSHA256: String
+            let framesCompared: Int
+            let matchingRAMFrames: Int
+            let enemyDispatches: [Dispatch]
+        }
+        let base = URL(fileURLWithPath: directory)
+        var fireFrames: [Int] = []
+        for (scenario, count, expected) in [
+            ("fire-before-contact", 190,
+             [160, 163, 166, 170, 173, 176, 179, 182, 184, 187, 189]),
+            ("no-fire-encounter", 190, [159, 162]),
+            ("unrelated-a-control", 190, [159, 162, 165, 168]),
+            ("fire-before-contact", 250,
+             [160, 163, 166, 170, 173, 176, 179, 182, 184, 187, 189,
+              191, 194, 196, 199, 202, 205, 208, 212, 215, 217, 220,
+              224, 227, 234]),
+        ] {
+            let file = base.appendingPathComponent(
+                "enemy-dispatch-verified-\(scenario)-\(count).json"
+            )
+            let report = try JSONDecoder().decode(
+                Report.self, from: Data(contentsOf: file)
+            )
+            XCTAssertEqual(report.snapshotSHA256, WorldReference.supportedSnapshotSHA256)
+            XCTAssertEqual(report.framesCompared, count)
+            XCTAssertEqual(report.matchingRAMFrames, count)
+            XCTAssertEqual(report.enemyDispatches.map(\.frame), expected)
+            XCTAssertTrue(report.enemyDispatches.allSatisfy {
+                (108...111).contains($0.kind)
+                    && (0...255).contains($0.timer)
+                    && (0...255).contains($0.rng)
+                    && (0...255).contains($0.refresh)
+            })
+            XCTAssertTrue(zip(report.enemyDispatches, report.enemyDispatches.dropFirst())
+                .allSatisfy { $0.0.cycle < $0.1.cycle })
+            if scenario == "fire-before-contact" {
+                if count == 190 {
+                    fireFrames = report.enemyDispatches.map(\.frame)
+                } else {
+                    XCTAssertEqual(Array(report.enemyDispatches.prefix(11).map(\.frame)),
+                                   fireFrames)
+                    XCTAssertEqual(report.enemyDispatches.map(\.timer),
+                                   [9, 8, 7, 6, 5, 4, 3, 2, 1, 13, 12, 11, 10,
+                                    9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 255, 254])
+                }
+            }
+        }
+    }
 }
