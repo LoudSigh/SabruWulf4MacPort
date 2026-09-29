@@ -753,6 +753,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Four externally selected nonzero-progress awards match the source; this does not prove original-input sequential collection, other bit combinations or a natural win.
 - **Edge Cases / Variants**: Duplicate bit, nonzero high bits, source timing after frame 820 and alternative record editions.
 
+### TC-066: Post-motion slot-12 kind changes
+- **Priority**: P1
+- **Preconditions**: Verified 250-frame fire-control replay, actor trace and isolated source write report in ignored private storage.
+- **Steps**:
+  1. Check 250/250 source RAM frames and 20/20 manual/full slot-12 actor states for frames 231–250; require its room/X/Y remain 152/53/135 with no timer/position writes in this window.
+  2. Check seven source kind writes at 235/238/240/243/245/248/250 and compare `CapturedSlot12KindSequence` against each externally selected next byte: 8/9/10/11/12/13/0.
+  3. Reject the same sequence in another room, position or timer and reject unmeasured kinds; do not trigger the sequence from sword input or infer an enemy kill.
+- **Expected Result**: The bounded kind-only progression is reproducible without extending the movement helper or fabricating combat.
+- **Edge Cases / Variants**: Delayed display-frame boundaries, other actor slots, different timer, and alternative source edition.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

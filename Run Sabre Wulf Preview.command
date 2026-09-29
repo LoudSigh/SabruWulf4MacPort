@@ -970,6 +970,12 @@ if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json
     cat "$ROOT/$PRIVATE/active-enemy-test.log" >&2
     exit 1
 fi
+if ! SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedSlot12KindSequenceTests \
+    > "$ROOT/$PRIVATE/slot12-kind-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/slot12-kind-test.log" >&2
+    exit 1
+fi
 if ! SABRE_PRIVATE_ENEMY_EXPIRY_REPORT="$EXPIRY_REPORT" \
     swift test --filter CapturedEnemyExpiryTests \
     > "$ROOT/$PRIVATE/enemy-expiry-test.log" 2>&1; then

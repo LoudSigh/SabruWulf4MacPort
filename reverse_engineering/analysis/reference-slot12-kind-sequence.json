@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "sourcePath": "250-frame fire-before-contact control",
+  "matchingCompleteRAMFrames": 250,
+  "trackedActorSlot": 12,
+  "observationFramesInclusive": [231, 250],
+  "manualAndFullActorFrameMatches": 20,
+  "roomID": 152,
+  "constantPosition": [53, 135],
+  "changedActorWritesInWindow": 7,
+  "kindChangeFrames": [235, 238, 240, 243, 245, 248, 250],
+  "kindBeforeChanges": [109, 8, 9, 10, 11, 12, 13],
+  "kindAfterChanges": [8, 9, 10, 11, 12, 13, 0],
+  "matchingExternallySelectedPureResults": 7,
+  "sourceTimerOrPositionWritesInWindow": 0,
+  "limits": "The source and manual emulator agree on this 20-frame actor-kind sequence. No source actor-update scheduler, sword hit, kill cause, score event, other actor kind, or general removal rule has been verified by this sequence. Kind zero is the observed final actor byte, not a native combat victory."
+}
