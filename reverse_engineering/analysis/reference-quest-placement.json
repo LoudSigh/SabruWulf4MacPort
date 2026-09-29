@@ -300,5 +300,22 @@
     "playerTeleports": 0,
     "firstNaturalPickupMeasured": false
   },
-  "limits": "Each of four dynamic records passed both an edited-RAM same-room positive intervention and a separate same-room out-of-reach negative control. The distinct item-specific contact predicate matched 4 positive and 72 negative source returns; positives cleared kinds 144-147, set final progress bits 1/2/4/8 and each awarded 7500 packed-BCD 1UP points. All eight edited branches matched their own manual/full emulator, NOT the original-input source after intervention. This supports a four-record collectible progress mechanism and a bounded geometric contact condition, but not a naturally reached item room, the handler's scheduling/other preconditions, a definitive amulet label, multi-piece source progression or win condition. Room lookup does not explain placement-index generation; a sampled static graph's negative result is not gameplay inaccessibility. The generic Remove Entity site and verified enemy-contact predicate did not explain the handler. No player teleport, original record values, instruction bytes, images or disassembly are published."
+  "nonzeroProgressCounterfactual": {
+    "forkFrame": 790,
+    "branches": 4,
+    "selectedRecordKinds": [145, 146, 147, 144],
+    "syntheticProgressBefore": [1, 3, 7, 14],
+    "finalProgressAfterEditedPickup": [3, 7, 15, 15],
+    "newBitsPerBranch": [2, 4, 8, 1],
+    "recordRemovalFramePerBranch": [792, 792, 792, 792],
+    "matchingManualFullRAMFramesPerControl": [30, 30, 30, 30],
+    "matchingManualFullRAMFramesPerEditedBranch": [30, 30, 30, 30],
+    "matchingManualFullCPUFramesPerEditedBranch": [30, 30, 30, 30],
+    "matchingPureScoreCallsPerEditedBranch": [1, 1, 1, 1],
+    "controlScoreCalls": 0,
+    "lifeBytesChanged": 0,
+    "progressSeededByOriginalInput": false,
+    "naturalMultiPieceReplay": false
+  },
+  "limits": "Each of four dynamic records passed an edited-RAM same-room positive intervention and a separate same-room out-of-reach negative control; the item-specific predicate matched 4 positive and 72 negative source returns. Four additional edited initial-progress branches independently seeded bits 1/3/7/14 before moving a distinct record into contact, yielding final bits 3/7/15/15 and one matching score call each. All interventions matched manual and full emulators internally, NOT original-input source after mutation. The four progress states were not collected in sequence by normal input; this supports bounded bit accumulation only when the handler is selected, not a natural quest, verified room route, polling cadence, definitive amulet label or earned win. Room lookup does not explain placement-index generation; a sampled static graph's negative result is not gameplay inaccessibility. The generic Remove Entity site and verified enemy-contact predicate did not explain the handler. No player teleport, original record values, instruction bytes, images or disassembly are published."
 }

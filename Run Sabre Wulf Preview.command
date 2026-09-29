@@ -1549,6 +1549,20 @@ else
     unset SABRE_PRIVATE_RECORD_AWARD_DIR
     printf 'Optional four edited-RAM record/progress oracles absent; testing synthetic results only.\n'
 fi
+ACCUMULATION_REPORTS_PRESENT=1
+for spec in '2 1' '1 3' '0 7' '3 14'; do
+    read -r id progress <<< "$spec"
+    if [[ ! -f "$ROOT/$PRIVATE/quest-accumulation-id-$id-progress-$progress.json"
+        || ! -f "$ROOT/$PRIVATE/quest-relocation-score-operands-id-$id-progress-$progress-private.json" ]]; then
+        ACCUMULATION_REPORTS_PRESENT=0
+    fi
+done
+if [[ "$ACCUMULATION_REPORTS_PRESENT" == 1 ]]; then
+    export SABRE_PRIVATE_RECORD_ACCUMULATION_DIR="$ROOT/$PRIVATE"
+else
+    unset SABRE_PRIVATE_RECORD_ACCUMULATION_DIR
+    printf 'Optional edited nonzero-progress branch reports absent; testing synthetic accumulation only.\n'
+fi
 if ! swift test --filter CapturedRecordAwardTests \
     > "$ROOT/$PRIVATE/record-award-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/record-award-test.log" >&2
@@ -1556,6 +1570,7 @@ if ! swift test --filter CapturedRecordAwardTests \
 fi
 unset SABRE_PRIVATE_RECORD_AWARD
 unset SABRE_PRIVATE_RECORD_AWARD_DIR
+unset SABRE_PRIVATE_RECORD_ACCUMULATION_DIR
 ITEM_REPORTS_PRESENT=1
 for id in 0 1 2 3; do
     if [[ ! -f "$ROOT/$PRIVATE/quest-item-contact-id-$id.json"

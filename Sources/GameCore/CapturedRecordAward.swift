@@ -14,7 +14,7 @@ public struct CapturedRecordAwardResult: Equatable, Sendable {
     public let scores: CapturedScoreState
 }
 
-/// Four counterfactual zero-progress results; accumulated bits are inferred, and collection timing is external.
+/// Edited zero- and nonzero-progress handler results; natural collection timing remains unknown.
 public enum CapturedRecordAward {
     public static func applyOnObservedHandler(
         recordKind: UInt8, activePlayer: UInt8,

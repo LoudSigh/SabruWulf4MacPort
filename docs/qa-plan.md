@@ -743,6 +743,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Local data loads atomically for viewing, while the playable four-room prototype remains explicitly separate. No source bytes or imported assets are bundled or tracked.
 - **Edge Cases / Variants**: Security-scoped folder access, deleted files, unreadable files, reimport after replay selection, and simulator permission prompts.
 
+### TC-065: Nonzero-progress record award interventions
+- **Priority**: P1
+- **Preconditions**: Ignored phase-preserving frame-790 W/Q branch runner, hashed snapshot/ROM and four private record placements.
+- **Steps**:
+  1. Independently seed progress 1/3/7/14 with record kinds 145/146/147/144 and move only that record near the player; retain an equally seeded untouched control for each.
+  2. Require 30/30 manual/full RAM and CPU frames per branch, record removal at frame 792 only on the relocated branch, control progress unchanged, and final progress 3/7/15/15 respectively.
+  3. Require one matching 7,500-point score result in each relocated branch, none in controls, no life-byte changes and matching `CapturedRecordAward` results. Never compare an edited branch against original-input RAM as if it were parity.
+- **Expected Result**: Four externally selected nonzero-progress awards match the source; this does not prove original-input sequential collection, other bit combinations or a natural win.
+- **Edge Cases / Variants**: Duplicate bit, nonzero high bits, source timing after frame 820 and alternative record editions.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |
