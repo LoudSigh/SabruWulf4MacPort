@@ -712,6 +712,27 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: One externally supplied CPU-timing primitive is measured without falsely claiming native original sound playback.
 - **Edge Cases / Variants**: Frame-crossing pulses, interrupt work other than 895/1124 cycles, audio-session interruption, another ROM/snapshot revision and low-half-wave timing.
 
+### TC-062: Source-selected player fire entry, not sword combat
+- **Priority**: P1
+- **Preconditions**: Hash-verified gameplay snapshot/ROM, reference-relative T100 and four Q/W/E/R20–40→T40–60 schedules, isolated source player-write traces.
+- **Steps**:
+  1. Require **500/500 full-RAM frame matches** and one source fire entry per path, at frame 21 for T alone and frame 41 after movement. Compare all five player-kind changes and the auxiliary source byte with `CapturedFireStart`; require 5/5.
+  2. Reject source events for kind outside 16–31 and the unready player byte; keep the `GameCore` method externally selected instead of using physical T input as an automatic trigger.
+  3. Import the private T replay to inspect recorded actor silhouettes, but do not assert sword hits, enemy damage, audio cues or a completed native T action from this entry test.
+- **Expected Result**: The first bounded state change is reproducible without promoting a recorded animation into a combat system.
+- **Edge Cases / Variants**: Held T across multiple actor updates, simultaneous movement/fire keys, damaged player, different facing phase and RNG-dependent later bitmap selection.
+
+### TC-063: Spatial completion entry after a controlled guard bypass
+- **Priority**: P1
+- **Preconditions**: Hashed gameplay/menu snapshots and ROM; separate ignored edited snapshots placing the **normal** captured player in or outside room 136, with progress 0/15 and Y at 112/127/128.
+- **Steps**:
+  1. Require 100/100 manual/full emulator RAM and CPU frames in each of five branches. The edited-room/progress branches are *not* original-input parity; preserve the unmodified guardian actor and every other player/global field.
+  2. Require exactly one candidate completion entry on room 136/Y=112 with zero or 15 progress and on room 136/Y=127; require zero entries for room 136/Y=128 and room 168/Y=112. Check `CapturedCompletionEntry` against those 5/5 source-selected results.
+  3. Privately compare the three entered screens at frame 100: require identical full-screen hashes, a screen different from both nonentry branches, and **2,414/2,560** matching center pixels against the separately captured menu. Never publish the edited screenshot, game words or ROM.
+  4. Do not equate an artificial teleport past the guardian with a natural four-piece quest win or make the main app show a fabricated historical victory screen.
+- **Expected Result**: The bounded spatial transition is represented separately from the four-bit guardian gate; original route, audiovisual ending, timing and rights remain release blockers.
+- **Edge Cases / Variants**: High player/action kinds, multiple life phases, exactly Y=128, FLASH attributes, real guardian movement and edition/tape differences.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

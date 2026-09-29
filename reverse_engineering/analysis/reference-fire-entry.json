@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "sourceFrameChecks": 500,
+  "matchingFullRAMFrames": 500,
+  "sourceSelectedFireCalls": 5,
+  "matchingPureFireEntryResults": 5,
+  "auxiliaryStateByteWritten": 24,
+  "inputs": [
+    {"schedule": "fire-observation-schedule.json", "sourceFrame": 21, "playerKindBefore": 21, "playerKindAfter": 42},
+    {"schedule": "fire-from-q-schedule.json", "sourceFrame": 41, "playerKindBefore": 18, "playerKindAfter": 36},
+    {"schedule": "fire-from-w-schedule.json", "sourceFrame": 41, "playerKindBefore": 23, "playerKindAfter": 46},
+    {"schedule": "fire-from-e-schedule.json", "sourceFrame": 41, "playerKindBefore": 27, "playerKindAfter": 38},
+    {"schedule": "fire-from-r-schedule.json", "sourceFrame": 41, "playerKindBefore": 30, "playerKindAfter": 44}
+  ],
+  "limits": "The pure fire-start helper accepts a source-selected event for a ready normal player and reproduces the observed kind/auxiliary byte. These five replayed starts do not establish the source's keyboard polling cadence, attack-frame sequence, weapon collision, enemy hit/removal, beeper effect or general native T control. No original sprite bitmap, instruction bytes, RAM dump or disassembly is published."
+}

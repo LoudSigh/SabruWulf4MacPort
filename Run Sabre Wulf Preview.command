@@ -249,7 +249,8 @@ TEMP_PLACEMENT="$(mktemp "$ROOT/$PRIVATE/.placement-XXXXXXXX.json")"
 TEMP_ATTR="$(mktemp "$ROOT/$PRIVATE/.attribute-write-XXXXXXXX.json")"
 TEMP_OVERLAP="$(mktemp "$ROOT/$PRIVATE/.overlap-viewer-XXXXXXXX.json")"
 TEMP_BEEPER="$(mktemp "$ROOT/$PRIVATE/.beeper-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT" "$TEMP_ATTR" "$TEMP_OVERLAP" "$TEMP_BEEPER"' EXIT
+TEMP_FIRE_ENTRY="$(mktemp "$ROOT/$PRIVATE/.fire-entry-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT" "$TEMP_ATTR" "$TEMP_OVERLAP" "$TEMP_BEEPER" "$TEMP_FIRE_ENTRY"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -626,6 +627,70 @@ if ! SABRE_PRIVATE_BEEPER_COUNTER_DIR="$ROOT/$PRIVATE" \
     swift test --filter CapturedBeeperPulseTests \
     > "$ROOT/$PRIVATE/beeper-pulse-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/beeper-pulse-test.log" >&2
+    exit 1
+fi
+printf 'Checking five player fire-entry states without assuming an enemy hit...\n'
+for entry in \
+    't100|fire-observation-schedule.json|21|21|42' \
+    'q|fire-from-q-schedule.json|41|18|36' \
+    'w|fire-from-w-schedule.json|41|23|46' \
+    'e|fire-from-e-schedule.json|41|27|38' \
+    'r|fire-from-r-schedule.json|41|30|44'; do
+    IFS='|' read -r name schedule fireFrame before after <<< "$entry"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+        "reverse_engineering/analysis/$schedule" 100 \
+        --reference-timing --require-ram-parity --require-fire-entry-parity \
+        > "$TEMP_FIRE_ENTRY"
+    if ! jq -e --argjson frame "$fireFrame" '
+        .framesCompared == 100 and .matchingRAMFrames == 100
+        and .fireEntryComparison.calls == 1
+        and .fireEntryComparison.matchingCalls == 1
+        and .fireEntryComparison.frames == [$frame]
+    ' "$TEMP_FIRE_ENTRY" >/dev/null; then
+        printf 'Source fire-entry state differs for %s.\n' "$name" >&2
+        exit 1
+    fi
+    REPORT="$ROOT/$PRIVATE/fire-entry-parity-$name-100.json"
+    if [[ -e "$REPORT" ]]; then
+        if ! cmp -s "$REPORT" "$TEMP_FIRE_ENTRY"; then
+            printf 'Existing fire-entry report differs: %s\n' "$REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_FIRE_ENTRY" "$REPORT"
+    fi
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+        "reverse_engineering/analysis/$schedule" 100 \
+        --reference-timing --require-ram-parity --watch-player-state \
+        > "$TEMP_FIRE_ENTRY"
+    if ! jq -e --argjson frame "$fireFrame" --argjson before "$before" \
+        --argjson after "$after" '
+        .framesCompared == 100 and .matchingRAMFrames == 100
+        and ([.playerStateWrites[] | select(
+            .address == 38658 and .instructionAddress == 44487
+        )] | length) == 1
+        and ([.playerStateWrites[] | select(
+            .address == 38658 and .instructionAddress == 44487
+            and .frame == $frame and .previous == $before and .value == $after
+        )] | length) == 1
+    ' "$TEMP_FIRE_ENTRY" >/dev/null; then
+        printf 'Source fire-entry kind write differs for %s.\n' "$name" >&2
+        exit 1
+    fi
+    REPORT="$ROOT/$PRIVATE/fire-from-$name-writes-100.json"
+    if [[ -e "$REPORT" ]]; then
+        if ! cmp -s "$REPORT" "$TEMP_FIRE_ENTRY"; then
+            printf 'Existing player fire-kind report differs: %s\n' "$REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_FIRE_ENTRY" "$REPORT"
+    fi
+done
+if ! SABRE_PRIVATE_FIRE_ENTRY_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedFireStartTests \
+    > "$ROOT/$PRIVATE/fire-entry-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/fire-entry-test.log" >&2
     exit 1
 fi
 ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace-v2.json"
@@ -1496,6 +1561,19 @@ if ! swift test --filter CapturedGuardianGateTests \
     exit 1
 fi
 unset SABRE_PRIVATE_GUARD_GATE
+COMPLETION_ORACLE="$ROOT/$PRIVATE/completion-region-100.json"
+if [[ -f "$COMPLETION_ORACLE" ]]; then
+    export SABRE_PRIVATE_COMPLETION_REGION="$COMPLETION_ORACLE"
+else
+    unset SABRE_PRIVATE_COMPLETION_REGION
+    printf 'Optional edited-room completion oracle absent; testing synthetic entry only.\n'
+fi
+if ! swift test --filter CapturedCompletionEntryTests \
+    > "$ROOT/$PRIVATE/completion-entry-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/completion-entry-test.log" >&2
+    exit 1
+fi
+unset SABRE_PRIVATE_COMPLETION_REGION
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"

@@ -14,6 +14,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case stepBudget
     case attributeWriteBudget
     case beeperWriteBudget
+    case fireEntryMismatch(frame: Int)
     case unimplemented
     case ramMismatch(matching: Int, total: Int)
     case contactMismatch(frame: Int, predicted: Bool, actual: Bool)
@@ -28,7 +29,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--trace-overlap-actor (100-frame W source path)] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-beeper (<=250 frames)] [--watch-beeper-writers (requires --watch-beeper)] [--watch-beeper-counters (requires --watch-beeper-writers)] [--watch-menu-routines] [--watch-score-entries] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--trace-overlap-actor (100-frame W source path)] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-beeper (<=250 frames)] [--watch-beeper-writers (requires --watch-beeper)] [--watch-beeper-counters (requires --watch-beeper-writers)] [--watch-menu-routines] [--watch-score-entries] [--require-fire-entry-parity (<=250 frames)] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .unsupportedOverlapSchedule:
@@ -49,6 +50,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "Attribute-write probe exceeded its bounded 4096-event window"
         case .beeperWriteBudget:
             "Beeper-write probe exceeded its bounded 250000-event window"
+        case .fireEntryMismatch(let frame):
+            "Fire-entry actor/state bytes differ from the bounded source event at frame \(frame)"
         case .unimplemented:
             "The reference CPU did not implement an instruction in this replay"
         case .ramMismatch(let matching, let total):
@@ -159,6 +162,17 @@ private struct BeeperWrite: Encodable {
     let instructionAddress: Int
     let speakerHigh: Bool
     let delayCounter: UInt8?
+}
+
+private struct FireEntryComparison: Encodable {
+    let calls: Int
+    let matchingCalls: Int
+    let frames: [Int]
+}
+
+private struct PendingFireEntry {
+    let frame: Int
+    let expected: CapturedFireEntry
 }
 
 private struct CPURegisterTriplet {
@@ -333,6 +347,7 @@ private struct Report: Encodable {
     let overlapRegisterContext: [OverlapRegisterContext]?
     let beeperFrames: [BeeperFrame]?
     let beeperWrites: [BeeperWrite]?
+    let fireEntryComparison: FireEntryComparison?
     let scoreEntries: [ScoreEntry]?
     let scoreComparison: ScoreComparison?
     let rngFrames: [Int]?
@@ -431,7 +446,7 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...28).contains(arguments.count),
+            guard (5...29).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--trace-overlap-actor",
                        "--watch-actor-state", "--watch-entity-state",
@@ -439,6 +454,7 @@ private struct SnapshotDivergence {
                        "--watch-score-entries", "--watch-overlap-attributes",
                        "--watch-overlap-registers", "--watch-beeper",
                        "--watch-beeper-writers", "--watch-beeper-counters",
+                       "--require-fire-entry-parity",
                        "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
@@ -492,7 +508,10 @@ private struct SnapshotDivergence {
                   !options.contains("--watch-beeper-writers")
                     || options.contains("--watch-beeper"),
                   !options.contains("--watch-beeper-counters")
-                    || options.contains("--watch-beeper-writers") else {
+                    || options.contains("--watch-beeper-writers"),
+                  !options.contains("--require-fire-entry-parity")
+                    || (count <= 250 && options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
             let includeTrace = options.contains("--trace")
@@ -507,6 +526,8 @@ private struct SnapshotDivergence {
             let watchBeeper = options.contains("--watch-beeper")
             let watchBeeperWriters = options.contains("--watch-beeper-writers")
             let watchBeeperCounters = options.contains("--watch-beeper-counters")
+            let requireFireEntryParity =
+                options.contains("--require-fire-entry-parity")
             let requireContactParity = options.contains("--require-contact-parity")
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
@@ -588,6 +609,9 @@ private struct SnapshotDivergence {
             var beeperWriteBudgetExceeded = false
             var scoreEntries: [ScoreEntry] = []
             var pendingScore: PendingScore?
+            var pendingFireEntry: PendingFireEntry?
+            var matchingFireEntries = 0
+            var fireEntryFrames: [Int] = []
             var matchingScoreCalls = 0
             var firstPlayerScoreCalls = 0
             var secondPlayerScoreCalls = 0
@@ -645,6 +669,31 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    if requireFireEntryParity {
+                        if cpu.pc == 0xADBF, cpu.ix == 0x9702 {
+                            guard pendingFireEntry == nil else {
+                                throw DivergenceError.fireEntryMismatch(frame: frame + 1)
+                            }
+                            pendingFireEntry = PendingFireEntry(
+                                frame: frame + 1,
+                                expected: try CapturedFireStart.begin(
+                                    playerKind: memory.read(0x9702),
+                                    playerByte5: memory.read(0x9707)
+                                )
+                            )
+                        } else if cpu.pc == 0xAF66, let pending = pendingFireEntry {
+                            guard memory.read(0x9702) == pending.expected.kind,
+                                  memory.read(0x96AD)
+                                    == pending.expected.sourceByte96AD else {
+                                throw DivergenceError.fireEntryMismatch(
+                                    frame: pending.frame
+                                )
+                            }
+                            matchingFireEntries += 1
+                            fireEntryFrames.append(pending.frame)
+                            pendingFireEntry = nil
+                        }
+                    }
                     if requireScoreParity, cpu.pc == 0xB5A9 {
                         guard pendingScore == nil else {
                             throw DivergenceError.scoreMismatch(frame: frame + 1)
@@ -1178,7 +1227,9 @@ private struct SnapshotDivergence {
             }
             guard (!requireContactParity || pendingContacts.isEmpty),
                   (!requireInjuryParity || pendingInjury == nil),
-                  (!requireEnemyDirectionParity || pendingEnemyDirection == nil) else {
+                  (!requireEnemyDirectionParity || pendingEnemyDirection == nil),
+                  (!requireFireEntryParity
+                    || (pendingFireEntry == nil && matchingFireEntries > 0)) else {
                 throw DivergenceError.invalidInput
             }
             if requireMenuSequence {
@@ -1229,6 +1280,11 @@ private struct SnapshotDivergence {
                     ? overlapRegisterContext : nil,
                 beeperFrames: watchBeeper ? beeperFrames : nil,
                 beeperWrites: watchBeeperWriters ? beeperWrites : nil,
+                fireEntryComparison: requireFireEntryParity
+                    ? FireEntryComparison(
+                        calls: matchingFireEntries, matchingCalls: matchingFireEntries,
+                        frames: fireEntryFrames
+                    ) : nil,
                 scoreEntries: watchScoreEntries ? scoreEntries : nil,
                 scoreComparison: requireScoreParity
                     ? ScoreComparison(
