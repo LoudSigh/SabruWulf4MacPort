@@ -101,6 +101,33 @@ for key in q w e r t; do
     fi
 done
 rm -f "$ACTOR_TEMP"
+ACTOR_DIAGNOSTIC="$ROOT/$PRIVATE/actor-screen-w-overlap-v1.json"
+DIAGNOSTIC_TEMP="$(mktemp "$ROOT/$PRIVATE/.actor-overlap-XXXXXXXX.json")"
+trap 'rm -f "$DIAGNOSTIC_TEMP"' EXIT
+"$ROOT/$PRIVATE/VerifyActorScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-sprite-atlas-v1.json" \
+    w --diagnose > "$DIAGNOSTIC_TEMP"
+if ! jq -e '
+    .report.nonmatchingFrames == [range(43;54)]
+    and (.mismatchDetails | length) == 11
+    and ([.mismatchDetails[].pixelCount] | add) == 124
+    and ([.mismatchDetails[].pixelsInsideOverlappingActorBounds] | add) == 98
+    and ([.mismatchDetails[].pixelsOnOverlappingActorMasks] | add) == 48
+    and ([.mismatchDetails[].pixelsInOverlappingActorAttributeCells] | add) == 124
+    and all(.mismatchDetails[]; .overlappingActorSlots == [18])
+' "$DIAGNOSTIC_TEMP" >/dev/null; then
+    printf 'Player/actor overlap diagnosis changed; stop before claiming layer fidelity.\n' >&2
+    exit 1
+fi
+if [[ -e "$ACTOR_DIAGNOSTIC" ]]; then
+    if ! cmp -s "$ACTOR_DIAGNOSTIC" "$DIAGNOSTIC_TEMP"; then
+        printf 'Existing private actor overlap diagnosis differs: %s\n' "$ACTOR_DIAGNOSTIC" >&2
+        exit 1
+    fi
+else
+    mv "$DIAGNOSTIC_TEMP" "$ACTOR_DIAGNOSTIC"
+fi
+rm -f "$DIAGNOSTIC_TEMP"
 
 printf 'Checking the captured room against source background pixels...\n'
 if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \

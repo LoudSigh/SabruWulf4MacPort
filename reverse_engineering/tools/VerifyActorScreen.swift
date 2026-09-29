@@ -11,7 +11,7 @@ private enum ActorScreenError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: VerifyActorScreen <48k.rom> <gameplay.z80> <private-sprite-atlas.json> <q|w|e|r|t>"
+            "Usage: VerifyActorScreen <48k.rom> <gameplay.z80> <private-sprite-atlas.json> <q|w|e|r|t> [--diagnose]"
         case .invalidInput:
             "Expected the verified 48K ROM, gameplay snapshot and private sprite atlas"
         case .unimplemented:
@@ -31,6 +31,22 @@ private struct Report: Encodable {
     let nonmatchingFrames: [Int]
 }
 
+private struct MismatchDetail: Encodable {
+    let frame: Int
+    let pixelCount: Int
+    let xBounds: [Int]
+    let yBounds: [Int]
+    let overlappingActorSlots: [Int]
+    let pixelsInsideOverlappingActorBounds: Int
+    let pixelsOnOverlappingActorMasks: Int
+    let pixelsInOverlappingActorAttributeCells: Int
+}
+
+private struct DiagnosticReport: Encodable {
+    let report: Report
+    let mismatchDetails: [MismatchDetail]
+}
+
 private func digest(_ data: Data) -> String {
     SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
 }
@@ -40,7 +56,13 @@ private struct VerifyActorScreen {
     static func main() {
         do {
             let args = CommandLine.arguments
-            guard args.count == 5 else { throw ActorScreenError.usage }
+            guard args.count == 5 || args.count == 6 else {
+                throw ActorScreenError.usage
+            }
+            let diagnose = args.count == 6
+            if diagnose && args[5] != "--diagnose" {
+                throw ActorScreenError.usage
+            }
             let key: KeyboardMatrix.Key
             switch args[4] {
             case "q": key = .q
@@ -80,6 +102,7 @@ private struct VerifyActorScreen {
             var matching = 0
             var total = 0
             var nonmatching: [Int] = []
+            var details: [MismatchDetail] = []
             for frame in 0..<100 {
                 if frame == 20 { emulator.keyboard.press(key) }
                 if frame == 40 { emulator.keyboard.release(key) }
@@ -101,6 +124,7 @@ private struct VerifyActorScreen {
                 let pixels = sprite.screenPixels()
                 var frameMatching = 0
                 var frameTotal = 0
+                var mismatches: [GridPoint] = []
                 for row in 0..<mask.height {
                     let screenY = sprite.topLeft.y + row
                     for column in 0..<mask.width {
@@ -122,6 +146,8 @@ private struct VerifyActorScreen {
                             && color.red == color.green && color.red == color.blue
                         if pixels[row * mask.width + column] == white {
                             frameMatching += 1
+                        } else {
+                            mismatches.append(GridPoint(screenX, screenY))
                         }
                         frameTotal += 1
                     }
@@ -130,6 +156,69 @@ private struct VerifyActorScreen {
                     exact += 1
                 } else {
                     nonmatching.append(frame + 1)
+                    var overlapping: [Int] = []
+                    var coveredBounds = Set<GridPoint>()
+                    var coveredMasks = Set<GridPoint>()
+                    var coveredAttributeCells = Set<GridPoint>()
+                    for slot in 1..<25 {
+                        let base = UInt16(0x9702 + slot * 12)
+                        let actorKind = Int(memory.read(base))
+                        guard actorKind > 0, actorKind < SpriteAtlas.spriteCount,
+                              memory.read(base &+ 1) == 168,
+                              let actorMask = try atlas.mask(at: actorKind) else {
+                            continue
+                        }
+                        let otherX = Int(memory.read(base &+ 3))
+                        let otherY = Int(memory.read(base &+ 4))
+                        let otherTop = otherY - actorMask.height + 1
+                        if otherX < x + mask.width, x < otherX + actorMask.width,
+                           otherTop <= y, sprite.topLeft.y <= otherY {
+                            overlapping.append(slot)
+                            let otherSprite = CapturedActorSprite(
+                                mask: actorMask, actorAt: GridPoint(otherX, otherY)
+                            )
+                            let otherPixels = otherSprite.screenPixels()
+                            var actorAttributeCells = Set<GridPoint>()
+                            for row in 0..<actorMask.height {
+                                for column in 0..<actorMask.width
+                                where otherPixels[row * actorMask.width + column] {
+                                    actorAttributeCells.insert(
+                                        GridPoint((otherX + column) / 8, (otherTop + row) / 8)
+                                    )
+                                }
+                            }
+                            for point in mismatches {
+                                if actorAttributeCells.contains(GridPoint(point.x / 8, point.y / 8)) {
+                                    coveredAttributeCells.insert(point)
+                                }
+                                let column = point.x - otherX
+                                let row = point.y - otherTop
+                                guard (0..<actorMask.width).contains(column),
+                                      (0..<actorMask.height).contains(row) else {
+                                    continue
+                                }
+                                coveredBounds.insert(point)
+                                if otherPixels[row * actorMask.width + column] {
+                                    coveredMasks.insert(point)
+                                }
+                            }
+                        }
+                    }
+                    guard let minX = mismatches.map(\.x).min(),
+                          let maxX = mismatches.map(\.x).max(),
+                          let minY = mismatches.map(\.y).min(),
+                          let maxY = mismatches.map(\.y).max() else {
+                        throw ActorScreenError.mismatch
+                    }
+                    details.append(MismatchDetail(
+                        frame: frame + 1, pixelCount: mismatches.count,
+                        xBounds: [minX, maxX],
+                        yBounds: [minY, maxY],
+                        overlappingActorSlots: overlapping,
+                        pixelsInsideOverlappingActorBounds: coveredBounds.count,
+                        pixelsOnOverlappingActorMasks: coveredMasks.count,
+                        pixelsInOverlappingActorAttributeCells: coveredAttributeCells.count
+                    ))
                 }
                 matching += frameMatching
                 total += frameTotal
@@ -152,7 +241,10 @@ private struct VerifyActorScreen {
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            FileHandle.standardOutput.write(try encoder.encode(report))
+            let output = try diagnose
+                ? encoder.encode(DiagnosticReport(report: report, mismatchDetails: details))
+                : encoder.encode(report)
+            FileHandle.standardOutput.write(output)
             FileHandle.standardOutput.write(Data([0x0A]))
         } catch {
             fputs("VerifyActorScreen: \(error)\n", stderr)
