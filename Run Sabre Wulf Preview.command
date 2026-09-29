@@ -128,6 +128,35 @@ else
     mv "$DIAGNOSTIC_TEMP" "$ACTOR_DIAGNOSTIC"
 fi
 rm -f "$DIAGNOSTIC_TEMP"
+BIT_DIAGNOSTIC="$ROOT/$PRIVATE/actor-screen-w-bits-v2.json"
+DIAGNOSTIC_TEMP="$(mktemp "$ROOT/$PRIVATE/.actor-bits-XXXXXXXX.json")"
+"$ROOT/$PRIVATE/VerifyActorScreen" "$ROM" "$GAME" \
+    "$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-sprite-atlas-v1.json" \
+    w --diagnose-bits > "$DIAGNOSTIC_TEMP"
+if ! jq -e '
+    .bitmapXorSourceFrames == 11
+    and .checkedBitmapXorPixels == 3776
+    and .matchingBitmapXorPixels == 3776
+    and .bitmapDifferencesAllFrames == 64
+    and .bitmapDifferencesMismatchFrames == 64
+    and .bitmapDifferencesOnOtherActorMasks == 64
+    and .otherActorMaskPixelsInsidePlayer == 64
+    and .bitmapXorMismatchPixels == 0
+    and .playerOffSourceOn == 38
+    and .playerOnSourceOff == 26
+' "$DIAGNOSTIC_TEMP" >/dev/null; then
+    printf 'Observed two-actor bitmap XOR parity changed.\n' >&2
+    exit 1
+fi
+if [[ -e "$BIT_DIAGNOSTIC" ]]; then
+    if ! cmp -s "$BIT_DIAGNOSTIC" "$DIAGNOSTIC_TEMP"; then
+        printf 'Existing private bitmap diagnosis differs: %s\n' "$BIT_DIAGNOSTIC" >&2
+        exit 1
+    fi
+else
+    mv "$DIAGNOSTIC_TEMP" "$BIT_DIAGNOSTIC"
+fi
+rm -f "$DIAGNOSTIC_TEMP"
 
 printf 'Checking the captured room against source background pixels...\n'
 if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \

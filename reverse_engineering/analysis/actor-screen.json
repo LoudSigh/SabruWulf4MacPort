@@ -21,5 +21,15 @@
     "mismatchesOnOtherActorBitmapMask": 48,
     "mismatchesInOtherActorBitmapOccupiedAttributeCells": 124
   },
-  "limits": "The 124 white/off mismatches occur in 11 W frames (43–53): 48 also differ in the bitmap bit and 76 have the expected bitmap bit but not the expected white color. There are 16 additional bitmap-bit differences whose white/off color still agrees (64 bitmap-bit differences total). All 124 white/off mismatches fall in 8x8 attribute cells occupied by another active actor's bitmap; 98 are inside that actor's rectangle and 48 are on set mask pixels. This is spatial correlation, not proof of draw order, attribute writes or a general overlap rule; redraw phase remains possible. This verifies orientation, bottom anchoring and white color only in matching states, not general layering or combat."
+  "wBitmapOverlap": {
+    "sourceFrames": 11,
+    "playerRectangleBitmapPixelsChecked": 3776,
+    "playerRectangleBitmapPixelsMatchingXorProjection": 3776,
+    "bitmapDifferencesVersusPlayerAlone": 64,
+    "differencesOnOverlappingActorSetMask": 64,
+    "otherActorSetMaskPixelsInsidePlayerRectangle": 64,
+    "playerBitOffSourceBitOn": 38,
+    "playerBitOnSourceBitOff": 26
+  },
+  "limits": "The 124 white/off mismatches occur in 11 W frames (43–53): 48 also differ in the bitmap bit and 76 have the expected bitmap bit but not the expected white color. There are 16 additional bitmap-bit differences whose white/off color still agrees (64 bitmap-bit differences total). An externally selected two-mask XOR projection matches all 3776 source bitmap pixels in those 11 player rectangles, including all 64 bit changes. All 124 white/off mismatches fall in 8x8 attribute cells occupied by the other actor's bitmap. This is one measured pair and timing path, not a general source draw order, actor scheduler or color/attribute rule. The remaining 76 white/off-only mismatches still need attribute/write tracing; the result does not establish general layering or combat."
 }

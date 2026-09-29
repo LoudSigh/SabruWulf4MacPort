@@ -255,10 +255,11 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Steps**:
   1. Run `VerifyActorScreen` for Q/W/E/R/T and require the exact frame and pixel counts in [actor-screen.json](../reverse_engineering/analysis/actor-screen.json).
   2. On W, run its opt-in `--diagnose` mode and require 11/11 mismatching frames with an overlapping same-room actor, 124/124 white/off mismatches in that actor's bitmap-occupied attribute cells, 98 within its rectangle and 48 on set mask pixels; keep its private coordinates out of Git.
-  3. Import world and private sprite atlas in the app; without a replay, inspect actor-state 21 at X=57/Y=112 in room 168. Hide and show the recorded-player overlay.
-  4. Import a replay with actor-state IDs, scrub T at frame 21 (kind 42), then movement and W frames 43–53. Resize the room and exercise VoiceOver's silhouette label.
-  5. Replace the private world, then import a replay without actor-state IDs; verify the old atlas clears and no fabricated animated sprite appears.
-- **Expected Result**: Source mask rows are reversed for screen orientation and bottom-aligned at actor Y; the verifier finds 489/500 exact frame rectangles and 173,348/173,472 matching white/off pixels. W frames 43–53 correlate with another actor's attribute tiles, but remain explicitly qualified: 48 bit-and-white, 76 white-only and 16 additional bit-only disagreements have no proven draw-order cause. The white overlay shows a recorded silhouette only when the matching private atlas and state exist; it never becomes native animation or combat.
+  3. Run `--diagnose-bits` on W and require 3,776/3,776 raw source bitmap matches for the externally selected two-mask XOR in 11 frames; assert all 64 bit differences coincide with the other set mask (38 gained and 26 lost). Test the pure helper's offset/nonoverlap behavior with synthetic bitmaps.
+  4. Import world and private sprite atlas in the app; without a replay, inspect actor-state 21 at X=57/Y=112 in room 168. Hide and show the recorded-player overlay.
+  5. Import a replay with actor-state IDs, scrub T at frame 21 (kind 42), then movement and W frames 43–53. Resize the room and exercise VoiceOver's silhouette label.
+  6. Replace the private world, then import a replay without actor-state IDs; verify the old atlas clears and no fabricated animated sprite appears.
+- **Expected Result**: Source mask rows are reversed and bottom-aligned; the verifier finds 489/500 exact white/off rectangles and 173,348/173,472 matching pixels. The bounded XOR projection matches the 11 W-frame **bitmaps**, not their colors: 76 white-only mismatches still have no proven attribute cause. The white overlay remains a recorded silhouette, not native two-actor animation or combat.
 - **Edge Cases / Variants**: Empty pointer sentinel, invalid actor ID, missing private atlas, recorded room different from selected room, small windows and other platforms' file providers.
 
 ### TC-023: Source contact carry versus native predicate

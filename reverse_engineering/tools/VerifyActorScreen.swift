@@ -11,7 +11,7 @@ private enum ActorScreenError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: VerifyActorScreen <48k.rom> <gameplay.z80> <private-sprite-atlas.json> <q|w|e|r|t> [--diagnose]"
+            "Usage: VerifyActorScreen <48k.rom> <gameplay.z80> <private-sprite-atlas.json> <q|w|e|r|t> [--diagnose|--diagnose-bits]"
         case .invalidInput:
             "Expected the verified 48K ROM, gameplay snapshot and private sprite atlas"
         case .unimplemented:
@@ -47,6 +47,28 @@ private struct DiagnosticReport: Encodable {
     let mismatchDetails: [MismatchDetail]
 }
 
+private struct BitDifference {
+    let point: GridPoint
+    let playerOn: Bool
+    let sourceOn: Bool
+}
+
+private struct BitReport: Encodable {
+    let report: Report
+    let bitmapDifferencesAllFrames: Int
+    let bitmapDifferencesMismatchFrames: Int
+    let bitmapDifferencesOnOtherActorMasks: Int
+    let otherActorMaskPixelsInsidePlayer: Int
+    let bitmapXorMismatchPixels: Int
+    let playerOffSourceOn: Int
+    let playerOnSourceOff: Int
+    let playerOffSourceOnOnOtherActorMask: Int
+    let playerOnSourceOffOnOtherActorMask: Int
+    let bitmapXorSourceFrames: Int
+    let matchingBitmapXorPixels: Int
+    let checkedBitmapXorPixels: Int
+}
+
 private func digest(_ data: Data) -> String {
     SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
 }
@@ -59,8 +81,9 @@ private struct VerifyActorScreen {
             guard args.count == 5 || args.count == 6 else {
                 throw ActorScreenError.usage
             }
-            let diagnose = args.count == 6
-            if diagnose && args[5] != "--diagnose" {
+            let diagnose = args.count == 6 && args[5] == "--diagnose"
+            let diagnoseBits = args.count == 6 && args[5] == "--diagnose-bits"
+            if args.count == 6 && !diagnose && !diagnoseBits {
                 throw ActorScreenError.usage
             }
             let key: KeyboardMatrix.Key
@@ -103,6 +126,18 @@ private struct VerifyActorScreen {
             var total = 0
             var nonmatching: [Int] = []
             var details: [MismatchDetail] = []
+            var bitmapDifferencesAllFrames = 0
+            var bitmapDifferencesMismatchFrames = 0
+            var bitmapDifferencesOnOtherActorMasks = 0
+            var otherActorMaskPixelsInsidePlayer = 0
+            var bitmapXorMismatchPixels = 0
+            var playerOffSourceOn = 0
+            var playerOnSourceOff = 0
+            var playerOffSourceOnOnOtherActorMask = 0
+            var playerOnSourceOffOnOtherActorMask = 0
+            var bitmapXorSourceFrames = 0
+            var matchingBitmapXorPixels = 0
+            var checkedBitmapXorPixels = 0
             for frame in 0..<100 {
                 if frame == 20 { emulator.keyboard.press(key) }
                 if frame == 40 { emulator.keyboard.release(key) }
@@ -122,9 +157,31 @@ private struct VerifyActorScreen {
                     mask: mask, actorAt: GridPoint(x, y)
                 )
                 let pixels = sprite.screenPixels()
+                var projectedXor: [Bool]?
+                if diagnoseBits && args[4] == "w" && (43...53).contains(frame + 1) {
+                    let otherBase: UInt16 = 0x9702 + 18 * 12
+                    let otherKind = Int(memory.read(otherBase))
+                    guard memory.read(otherBase &+ 1) == 168,
+                          otherKind > 0, otherKind < SpriteAtlas.spriteCount,
+                          let otherMask = try atlas.mask(at: otherKind) else {
+                        throw ActorScreenError.mismatch
+                    }
+                    let other = CapturedActorSprite(
+                        mask: otherMask,
+                        actorAt: GridPoint(
+                            Int(memory.read(otherBase &+ 3)),
+                            Int(memory.read(otherBase &+ 4))
+                        )
+                    )
+                    projectedXor = CapturedOverlapBitmap.xorPlayerRectangle(
+                        player: sprite, overlapping: other
+                    )
+                    bitmapXorSourceFrames += 1
+                }
                 var frameMatching = 0
                 var frameTotal = 0
                 var mismatches: [GridPoint] = []
+                var bitmapDifferences: [BitDifference] = []
                 for row in 0..<mask.height {
                     let screenY = sprite.topLeft.y + row
                     for column in 0..<mask.width {
@@ -136,6 +193,12 @@ private struct VerifyActorScreen {
                             + ((screenY & 0x38) << 2) + screenX / 8
                         let on = memory.read(UInt16(bitmapAddress))
                             & (0x80 >> (screenX & 7)) != 0
+                        if let projectedXor {
+                            checkedBitmapXorPixels += 1
+                            if projectedXor[row * mask.width + column] == on {
+                                matchingBitmapXorPixels += 1
+                            }
+                        }
                         let attribute = memory.read(UInt16(
                             0x5800 + (screenY / 8) * 32 + screenX / 8
                         ))
@@ -144,7 +207,14 @@ private struct VerifyActorScreen {
                         let color = SpectrumPalette.colors[Int(paletteIndex)]
                         let white = color.red >= 0xD7
                             && color.red == color.green && color.red == color.blue
-                        if pixels[row * mask.width + column] == white {
+                        let playerOn = pixels[row * mask.width + column]
+                        if playerOn != on {
+                            bitmapDifferences.append(BitDifference(
+                                point: GridPoint(screenX, screenY),
+                                playerOn: playerOn, sourceOn: on
+                            ))
+                        }
+                        if playerOn == white {
                             frameMatching += 1
                         } else {
                             mismatches.append(GridPoint(screenX, screenY))
@@ -152,6 +222,7 @@ private struct VerifyActorScreen {
                         frameTotal += 1
                     }
                 }
+                bitmapDifferencesAllFrames += bitmapDifferences.count
                 if frameMatching == frameTotal {
                     exact += 1
                 } else {
@@ -160,6 +231,15 @@ private struct VerifyActorScreen {
                     var coveredBounds = Set<GridPoint>()
                     var coveredMasks = Set<GridPoint>()
                     var coveredAttributeCells = Set<GridPoint>()
+                    var coveredBitmapDifferences = Set<GridPoint>()
+                    var otherMaskInsidePlayer = Set<GridPoint>()
+                    bitmapDifferencesMismatchFrames += bitmapDifferences.count
+                    playerOffSourceOn += bitmapDifferences.filter {
+                        !$0.playerOn && $0.sourceOn
+                    }.count
+                    playerOnSourceOff += bitmapDifferences.filter {
+                        $0.playerOn && !$0.sourceOn
+                    }.count
                     for slot in 1..<25 {
                         let base = UInt16(0x9702 + slot * 12)
                         let actorKind = Int(memory.read(base))
@@ -182,9 +262,14 @@ private struct VerifyActorScreen {
                             for row in 0..<actorMask.height {
                                 for column in 0..<actorMask.width
                                 where otherPixels[row * actorMask.width + column] {
-                                    actorAttributeCells.insert(
-                                        GridPoint((otherX + column) / 8, (otherTop + row) / 8)
-                                    )
+                                    let point = GridPoint(otherX + column, otherTop + row)
+                                    actorAttributeCells.insert(GridPoint(
+                                        point.x / 8, point.y / 8
+                                    ))
+                                    if (x..<(x + mask.width)).contains(point.x),
+                                       (sprite.topLeft.y...y).contains(point.y) {
+                                        otherMaskInsidePlayer.insert(point)
+                                    }
                                 }
                             }
                             for point in mismatches {
@@ -202,8 +287,29 @@ private struct VerifyActorScreen {
                                     coveredMasks.insert(point)
                                 }
                             }
+                            for difference in bitmapDifferences {
+                                let column = difference.point.x - otherX
+                                let row = difference.point.y - otherTop
+                                if (0..<actorMask.width).contains(column),
+                                   (0..<actorMask.height).contains(row),
+                                   otherPixels[row * actorMask.width + column] {
+                                    coveredBitmapDifferences.insert(difference.point)
+                                }
+                            }
                         }
                     }
+                    bitmapDifferencesOnOtherActorMasks += coveredBitmapDifferences.count
+                    otherActorMaskPixelsInsidePlayer += otherMaskInsidePlayer.count
+                    bitmapXorMismatchPixels += Set(bitmapDifferences.map(\.point))
+                        .symmetricDifference(otherMaskInsidePlayer).count
+                    playerOffSourceOnOnOtherActorMask += bitmapDifferences.filter {
+                        !$0.playerOn && $0.sourceOn
+                            && coveredBitmapDifferences.contains($0.point)
+                    }.count
+                    playerOnSourceOffOnOtherActorMask += bitmapDifferences.filter {
+                        $0.playerOn && !$0.sourceOn
+                            && coveredBitmapDifferences.contains($0.point)
+                    }.count
                     guard let minX = mismatches.map(\.x).min(),
                           let maxX = mismatches.map(\.x).max(),
                           let minY = mismatches.map(\.y).min(),
@@ -234,6 +340,12 @@ private struct VerifyActorScreen {
                   nonmatching == (args[4] == "w" ? Array(43...53) : []) else {
                 throw ActorScreenError.mismatch
             }
+            if diagnoseBits && args[4] == "w" {
+                guard bitmapXorSourceFrames == 11,
+                      matchingBitmapXorPixels == checkedBitmapXorPixels else {
+                    throw ActorScreenError.mismatch
+                }
+            }
             let report = Report(
                 key: args[4], frames: 100, exactColorFrames: exact,
                 matchingColorPixels: matching, totalPlayerPixels: total,
@@ -241,9 +353,30 @@ private struct VerifyActorScreen {
             )
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let output = try diagnose
-                ? encoder.encode(DiagnosticReport(report: report, mismatchDetails: details))
-                : encoder.encode(report)
+            let output: Data
+            if diagnose {
+                output = try encoder.encode(DiagnosticReport(
+                    report: report, mismatchDetails: details
+                ))
+            } else if diagnoseBits {
+                output = try encoder.encode(BitReport(
+                    report: report,
+                    bitmapDifferencesAllFrames: bitmapDifferencesAllFrames,
+                    bitmapDifferencesMismatchFrames: bitmapDifferencesMismatchFrames,
+                    bitmapDifferencesOnOtherActorMasks: bitmapDifferencesOnOtherActorMasks,
+                    otherActorMaskPixelsInsidePlayer: otherActorMaskPixelsInsidePlayer,
+                    bitmapXorMismatchPixels: bitmapXorMismatchPixels,
+                    playerOffSourceOn: playerOffSourceOn,
+                    playerOnSourceOff: playerOnSourceOff,
+                    playerOffSourceOnOnOtherActorMask: playerOffSourceOnOnOtherActorMask,
+                    playerOnSourceOffOnOtherActorMask: playerOnSourceOffOnOtherActorMask,
+                    bitmapXorSourceFrames: bitmapXorSourceFrames,
+                    matchingBitmapXorPixels: matchingBitmapXorPixels,
+                    checkedBitmapXorPixels: checkedBitmapXorPixels
+                ))
+            } else {
+                output = try encoder.encode(report)
+            }
             FileHandle.standardOutput.write(output)
             FileHandle.standardOutput.write(Data([0x0A]))
         } catch {
