@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "sourceFramesPerPath": 190,
+  "matchingCompleteRAMFrames": 570,
+  "paths": [
+    {
+      "schedule": "fire-before-contact-schedule.json",
+      "totalEvenPortWrites": 184,
+      "distinctWriterSites": 2,
+      "perSiteWrites": [92, 92],
+      "writesInFrames163Through174": 0
+    },
+    {
+      "schedule": "no-fire-encounter-schedule.json",
+      "totalEvenPortWrites": 408,
+      "distinctWriterSites": 2,
+      "perSiteWrites": [204, 204],
+      "contactAdjacentFramesInclusive": [163, 168],
+      "contactAdjacentWrites": 224,
+      "contactAdjacentPerSiteWrites": [112, 112]
+    },
+    {
+      "schedule": "unrelated-a-control-schedule.json",
+      "totalEvenPortWrites": 408,
+      "distinctWriterSites": 2,
+      "perSiteWrites": [204, 204],
+      "contactAdjacentFramesInclusive": [169, 174],
+      "contactAdjacentWrites": 224,
+      "contactAdjacentPerSiteWrites": [112, 112]
+    }
+  ],
+  "contactAdjacentPulseComparison": {
+    "pairsCompared": 224,
+    "matchingAdjacentCycleGaps": 95,
+    "totalAdjacentCycleGaps": 223,
+    "bothSpeakerBitsAlternate": true
+  },
+  "limits": "The same two numeric port-writer instruction starts are reached by both ordinary and contact-adjacent sound; they do not identify a separate source sound event or its caller. Equal 224-toggle totals do not imply identical waveforms: only 95 of 223 adjacent cycle gaps matched in the two control paths. Detailed writer addresses, cycles, port values and audio stay in ignored private files. This remains insufficient for autonomous native beeper synthesis."
+}

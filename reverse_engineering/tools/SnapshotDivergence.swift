@@ -28,7 +28,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--trace-overlap-actor (100-frame W source path)] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-beeper (<=250 frames)] [--watch-menu-routines] [--watch-score-entries] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--trace-overlap-actor (100-frame W source path)] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-beeper (<=250 frames)] [--watch-beeper-writers (requires --watch-beeper)] [--watch-menu-routines] [--watch-score-entries] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .unsupportedOverlapSchedule:
@@ -151,6 +151,13 @@ private struct BeeperFrame: Encodable {
     let evenPortWrites: Int
     let manualToggles: Int
     let fullEmulatorToggles: Int
+}
+
+private struct BeeperWrite: Encodable {
+    let frame: Int
+    let cycle: Int
+    let instructionAddress: Int
+    let speakerHigh: Bool
 }
 
 private struct CPURegisterTriplet {
@@ -324,6 +331,7 @@ private struct Report: Encodable {
     let overlapAttributeWrites: [EntityStateWrite]?
     let overlapRegisterContext: [OverlapRegisterContext]?
     let beeperFrames: [BeeperFrame]?
+    let beeperWrites: [BeeperWrite]?
     let scoreEntries: [ScoreEntry]?
     let scoreComparison: ScoreComparison?
     let rngFrames: [Int]?
@@ -422,13 +430,14 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...26).contains(arguments.count),
+            guard (5...27).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--trace-overlap-actor",
                        "--watch-actor-state", "--watch-entity-state",
                        "--watch-player-state", "--watch-menu-routines",
                        "--watch-score-entries", "--watch-overlap-attributes",
                        "--watch-overlap-registers", "--watch-beeper",
+                       "--watch-beeper-writers",
                        "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
@@ -478,7 +487,9 @@ private struct SnapshotDivergence {
                         && options.contains("--require-ram-parity")),
                   !options.contains("--watch-beeper")
                     || (count <= 250 && options.contains("--reference-timing")
-                        && options.contains("--require-ram-parity")) else {
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--watch-beeper-writers")
+                    || options.contains("--watch-beeper") else {
                 throw DivergenceError.usage
             }
             let includeTrace = options.contains("--trace")
@@ -491,6 +502,7 @@ private struct SnapshotDivergence {
             let watchOverlapAttributes =
                 options.contains("--watch-overlap-attributes") || watchOverlapRegisters
             let watchBeeper = options.contains("--watch-beeper")
+            let watchBeeperWriters = options.contains("--watch-beeper-writers")
             let requireContactParity = options.contains("--require-contact-parity")
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
@@ -566,6 +578,7 @@ private struct SnapshotDivergence {
             var overlapRegisterContext: [OverlapRegisterContext] = []
             var overlapAttributeWriteBudgetExceeded = false
             var beeperFrames: [BeeperFrame] = []
+            var beeperWrites: [BeeperWrite] = []
             var lastSpeakerBit = false
             var totalBeeperWrites = 0
             var beeperWriteBudgetExceeded = false
@@ -953,6 +966,13 @@ private struct SnapshotDivergence {
                                     beeperWriteBudgetExceeded = true
                                 }
                                 let bit = value & 0x10 != 0
+                                if watchBeeperWriters && !beeperWriteBudgetExceeded {
+                                    beeperWrites.append(BeeperWrite(
+                                        frame: frame + 1, cycle: cycles,
+                                        instructionAddress: instructionAddress,
+                                        speakerHigh: bit
+                                    ))
+                                }
                                 if bit != lastSpeakerBit {
                                     beeperTogglesInFrame += 1
                                 }
@@ -1202,6 +1222,7 @@ private struct SnapshotDivergence {
                 overlapRegisterContext: watchOverlapRegisters
                     ? overlapRegisterContext : nil,
                 beeperFrames: watchBeeper ? beeperFrames : nil,
+                beeperWrites: watchBeeperWriters ? beeperWrites : nil,
                 scoreEntries: watchScoreEntries ? scoreEntries : nil,
                 scoreComparison: requireScoreParity
                     ? ScoreComparison(

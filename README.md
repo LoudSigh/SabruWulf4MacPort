@@ -15,6 +15,7 @@
 The Vision Pro simulator now visibly renders the native placeholder window and controls in a private smoke capture; controller/gaze/tap interaction remains a release test, not a verified result.
 
 For local-only source recovery, use the [private snapshot analysis workflow](docs/local-reverse-engineering.md). It records bounded executable-address/write metadata and can generate RAM/disassembly **only in ignored private paths**; its exploratory trace is not a complete game implementation.
+To inspect one small section of the checked RAM without risking a commit of source bytes, [Disassemble Local Range.command](./Disassemble%20Local%20Range.command) accepts an address and length and saves a **provisional** listing under the ignored private folder. This is not a complete disassembly or automatic code/data classification.
 
 The user-supplied [SkoolKit reference cross-check](docs/external-reference.md) now confirms a 16×16 room layout, 48 reusable room templates and their bounded RAM range against **both** local snapshots. Its optional private world-map viewer is structural, not original game artwork; the native prototype remains a separate 2×2 placeholder.
 

@@ -653,8 +653,19 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. Repeat playback and lifecycle checks with VoiceOver on iOS and visionOS using an authorized private device file-provider transfer. Verify no soundtrack is bundled or uploaded.
   4. Try a corrupt audio file and a file over 20 MB; require visible import errors. The `.ay` is not directly playable in the app, and no original gameplay sound cue is claimed.
   5. Separately run five reference-relative `--watch-beeper` probes, requiring 760/760 complete RAM frames and 1,408/1,408 manual/full edge-count matches with zero frame-level disagreements. Check that no-T and unrelated-A each have 224 toggles in their six-frame contact-adjacent windows while T has zero in no-T's window; do not infer sound-cue causality or interpret the imported tracks as this source schedule.
+  6. Use private writer-site traces on three 190-frame paths to require two distinct reached writer sites, 112 writes per site in each 224-toggle contact-adjacent window, and only 95/223 matching consecutive cycle gaps across those two windows. Do not declare identical WAVs or schedule native damage audio from these counts.
 - **Expected Result**: Local opt-in audio works without altering `GameCore` state, presenting the four beeper tracks as newer AY-chip music, or assuming they match the supplied snapshot's event timing.
 - **Edge Cases / Variants**: Provider permission denial, audio-session interruption, silent mode, game over/reset, app backgrounding and multiple imports.
+
+### TC-057: Source-safe bounded local disassembly
+- **Priority**: P1
+- **Preconditions**: Verified gameplay snapshot, ignored 49,152-byte RAM export with the documented SHA-256, and a local `z80dasm` installation.
+- **Steps**:
+  1. Run `./Disassemble\ Local\ Range.command 0xA56A 160`; require output only under `reverse_engineering/private/`, mode `0600`, with a conspicuous provisional-data warning and no source bytes printed to the command output.
+  2. Require a second call with the same range to refuse overwrite; reject an address below RAM, a range extending beyond `0xFFFF`, an over-4096-byte request, a malformed address, a changed RAM hash and missing disassembler.
+  3. Verify Git ignores the listing and code slice and the source-leak guard reports no tracked snapshots, assembly or raw RAM; do not stage or publish the generated output.
+- **Expected Result**: The tool supports local analysis without converting a blind linear decode into a claimed full or immutable code classification.
+- **Edge Cases / Variants**: File names containing spaces, restrictive folder permissions, local notes in an existing listing, future snapshot editions and source bytes modified between capture and execution.
 
 ## Regression cadence and coverage
 

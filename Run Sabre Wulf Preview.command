@@ -508,6 +508,58 @@ if ! jq -s -e '
     printf 'Bounded contact-adjacent beeper observations changed.\n' >&2
     exit 1
 fi
+for entry in \
+    'fire190|fire-before-contact-schedule.json|184|92|163|174|0' \
+    'no-fire190|no-fire-encounter-schedule.json|408|204|163|168|112' \
+    'unrelated190|unrelated-a-control-schedule.json|408|204|169|174|112'; do
+    IFS='|' read -r name schedule writes half start end burstHalf <<< "$entry"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+        "reverse_engineering/analysis/$schedule" 190 \
+        --reference-timing --require-ram-parity \
+        --watch-beeper --watch-beeper-writers > "$TEMP_BEEPER"
+    if ! jq -e --argjson writes "$writes" --argjson half "$half" \
+        --argjson start "$start" --argjson end "$end" \
+        --argjson burstHalf "$burstHalf" '
+        .framesCompared == 190 and .matchingRAMFrames == 190
+        and (.beeperWrites | length) == $writes
+        and ([.beeperWrites[].instructionAddress] | unique | length) == 2
+        and ([.beeperWrites[].instructionAddress] | unique) as $sites |
+            ([$sites[] as $site |
+                [.beeperWrites[] | select(.instructionAddress == $site)] | length])
+                == [$half, $half]
+            and ([$sites[] as $site |
+                [.beeperWrites[] | select(.instructionAddress == $site
+                    and .frame >= $start and .frame <= $end)] | length])
+                == [$burstHalf, $burstHalf]
+    ' "$TEMP_BEEPER" >/dev/null; then
+        printf 'Beeper writer provenance changed for %s.\n' "$name" >&2
+        exit 1
+    fi
+    REPORT="$ROOT/$PRIVATE/beeper-writers-$name.json"
+    if [[ -e "$REPORT" ]]; then
+        if ! cmp -s "$REPORT" "$TEMP_BEEPER"; then
+            printf 'Existing private beeper writer report differs: %s\n' "$REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_BEEPER" "$REPORT"
+    fi
+done
+if ! jq -s -e '
+    .[0] as $noFire | .[1] as $other |
+    ([$noFire.beeperWrites[] |
+        select(.frame >= 163 and .frame <= 168) | .cycle]) as $noCycles |
+    ([$other.beeperWrites[] |
+        select(.frame >= 169 and .frame <= 174) | .cycle]) as $otherCycles |
+    ($noCycles | length) == 224 and ($otherCycles | length) == 224
+    and ([range(1; 224) as $i |
+        select(($noCycles[$i] - $noCycles[$i - 1])
+            == ($otherCycles[$i] - $otherCycles[$i - 1]))] | length) == 95
+' "$ROOT/$PRIVATE/beeper-writers-no-fire190.json" \
+    "$ROOT/$PRIVATE/beeper-writers-unrelated190.json" >/dev/null; then
+    printf 'Contact-adjacent beeper pulse-gap comparison changed.\n' >&2
+    exit 1
+fi
 ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace-v2.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
     reverse_engineering/analysis/west-exit-schedule.json 256 --trace > "$TEMP_ENTITY"
