@@ -371,7 +371,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   1. For each schedule, run `SnapshotDivergence --reference-timing --require-ram-parity --coverage`, writing private reports only.
   2. Run `CoverageUnion` against [byte-coverage.json](../reverse_engineering/analysis/byte-coverage.json), the private atlas and eight reports. Compare [executed-pc-coverage.json](../reverse_engineering/analysis/executed-pc-coverage.json) numeric totals and union hash.
   3. Supply a corrupted sorted-PC hash, unsorted list or known-data PC to the union checker and require explicit rejection; confirm the public Git index has no RAM, opcode listing or private PC list.
-- **Expected Result**: All 6,900 reference RAM frames agree; 2,589 distinct executed RAM PC starts have zero overlap with known immutable data and validated sprite records. Original instruction lengths and the other 19,974 RAM bytes remain **unclassified**, not inferred from a PC-start count.
+- **Expected Result**: All 6,900 reference RAM frames agree; 2,589 distinct executed RAM PC starts have zero overlap with known immutable data, actor-handler pointers and validated sprite records. Original instruction lengths and the other 19,582 RAM bytes remain **unclassified**, not inferred from a PC-start count.
 - **Edge Cases / Variants**: Source self-modification, alternate menu path, ROM code versus RAM, omitted schedule and PC at a data interval boundary.
 
 ### TC-033: Source-driven active-enemy phase and countdown
@@ -439,7 +439,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   2. Union fetched RAM byte extents and require 4,915 unique addresses with no overlap with validated immutable game data.
   3. Confirm the two addresses whose fetched values changed stay marked as possible mutable code; do not publish bytes, address lists or disassembly.
   4. Ensure [byte-coverage.json](../reverse_engineering/analysis/byte-coverage.json) retains its static unknown classification instead of treating three paths as complete program coverage.
-- **Expected Result**: 7,720/7,720 RAM frames pass, 15,059 originally unknown bytes remain outside the observed candidate-code union, and no immutable code/data partition is claimed.
+- **Expected Result**: 7,720/7,720 RAM frames pass, 14,667 currently unknown bytes remain outside the observed candidate-code union after separately classifying the handler pointer table, and no immutable code/data partition is claimed.
 - **Edge Cases / Variants**: Self-modifying instructions, prefixed operands, unexecuted branches, ROM-only fetches and shared bytes used differently at another time.
 
 ### TC-039: Source-driven four-life injury knockback
@@ -689,6 +689,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   4. Inspect the pink/recorded markers after local world/sprite/replay import on macOS and the iOS/visionOS simulators; retain separate placement, combat and general-exit disclaimers.
 - **Expected Result**: One bounded route through two original room transitions is observable and reproducible; a long static maze proposal is not advertised as a natural route to the guarded room.
 - **Edge Cases / Variants**: Other exit entry poses, actor collision at frame 921, mixed simultaneous keys, inaccessible private file provider and unverified sprite color layering.
+
+### TC-060: Actor-kind dispatch table is data, not copied code
+- **Priority**: P1
+- **Preconditions**: Both SHA-verified 48K snapshots, local emulator parser, synthetic `SnapshotHandlerIndex --self-test` and twelve RAM-verified exact-fetch reports.
+- **Steps**:
+  1. Require **196** bounded little-endian pointers from `0x9B3E–0x9CC5`, **392** equal bytes between menu and gameplay, **25** distinct RAM code-candidate targets and the recorded aggregate SHA-256. Reject truncated or out-of-bounds synthetic pointers.
+  2. Check that player-kind bands 16–31/32–47 each share distinct targets, observed kinds 108–111 share one, placed kinds 144–147 share another and guarded kinds 148–149 share a third. Verify a numeric source dispatcher PC was executed in eight independent paths and 18/25 handler entries were reached there; do not publish pointer values or call the other seven unreachable.
+  3. Require zero instruction-byte fetches inside the table over **7,720/7,720** RAM-matched frames in twelve runs, then account for **29,570 data**, **19,582 unknown** and **4,915 observed candidate code bytes** without double counting.
+  4. Confirm the Git source-leak guard excludes private pointer dumps and disassembly. Do not call any of the 25 targets a fully classified function without separate reachability and write/return evidence.
+- **Expected Result**: One structurally proven data table advances RAM classification without promoting unknown or mutable bytes to code.
+- **Edge Cases / Variants**: Altered menu capture, handler target in image data, table byte also fetched as an instruction, later self-modifying overlays and non-48K edition.
 
 ## Regression cadence and coverage
 

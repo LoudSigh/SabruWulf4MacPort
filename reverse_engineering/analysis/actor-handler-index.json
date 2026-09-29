@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "menuSnapshotSHA256": "34d98ec3dc55d60755a7d9ceebe45c3a7e345ce5961692d25d2d6718bcdc20ea",
+  "gameplaySnapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "start": "0x9B3E",
+  "endExclusive": "0x9CC6",
+  "pointerCount": 196,
+  "dataByteCount": 392,
+  "distinctTargets": 25,
+  "pointerBytesSHA256": "fbd27b08d673c9d780d377e650f990726d401738885f8cd4117d92b32f79a224",
+  "identicalBetweenCaptures": true,
+  "targetsWithinRAMCodeCandidateBounds": true,
+  "lowPlayerKindGroupSharedTarget": true,
+  "highPlayerKindGroupSharedTarget": true,
+  "playerKindGroupsDistinct": true,
+  "enemyKindGroupSharedTarget": true,
+  "fourRecordKindGroupSharedTarget": true,
+  "twoGuardianKindGroupSharedTarget": true,
+  "reference": {
+    "executedDispatcherInstructionStart": 39390,
+    "goldenRunsWithExecutedDispatcher": 8,
+    "distinctHandlersWithReachedEntryInEightRuns": 18,
+    "distinctHandlersWithoutReachedEntryInEightRuns": 7,
+    "matchingFullRAMFramesInExactFetchUnion": 7720,
+    "exactFetchedTableByteOverlapsAcrossTwelveRuns": 0
+  },
+  "limits": "The source routine indexes this 196-entry pointer table by an actor kind, and the table is identical in both hashed captures. Its 392 bytes are static data, not Z80 instructions; the targets are numeric code candidates, not proof that any handler is completely decoded. Eighteen entry addresses occurred as instruction starts in eight checked paths; seven had no reached entry there, which is not proof they cannot run through other inputs. Private exact-fetch and RAM-parity checks across twelve paths found no executed table bytes. Full pointer values, instruction bytes, graphics and disassembly remain private."
+}

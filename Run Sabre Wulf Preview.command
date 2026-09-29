@@ -75,6 +75,40 @@ fi
 "$ROOT/$PRIVATE/SnapshotSpriteIndex" "$MENU" "$GAME" --private-atlas \
     > "$ROOT/$PRIVATE/sprite-index-report.json"
 
+printf 'Checking the source actor-kind handler pointer table without exporting pointers...\n'
+if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
+    "$CORE"/*.swift Sources/GameCore/*.swift \
+    reverse_engineering/tools/SnapshotHandlerIndex.swift \
+    -o "$ROOT/$PRIVATE/SnapshotHandlerIndex" \
+    > "$ROOT/$PRIVATE/handler-index-build.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/handler-index-build.log" >&2
+    exit 1
+fi
+"$ROOT/$PRIVATE/SnapshotHandlerIndex" --self-test \
+    > "$ROOT/$PRIVATE/handler-index-self-test.log"
+"$ROOT/$PRIVATE/SnapshotHandlerIndex" "$MENU" "$GAME" \
+    > "$ROOT/$PRIVATE/handler-index-report.json"
+if ! jq -e --slurpfile published reverse_engineering/analysis/actor-handler-index.json '
+    .schemaVersion == $published[0].schemaVersion
+    and .menuSnapshotSHA256 == $published[0].menuSnapshotSHA256
+    and .gameplaySnapshotSHA256 == $published[0].gameplaySnapshotSHA256
+    and .start == $published[0].start
+    and .endExclusive == $published[0].endExclusive
+    and .pointerCount == $published[0].pointerCount
+    and .dataByteCount == $published[0].dataByteCount
+    and .distinctTargets == $published[0].distinctTargets
+    and .pointerBytesSHA256 == $published[0].pointerBytesSHA256
+    and .lowPlayerKindGroupSharedTarget
+    and .highPlayerKindGroupSharedTarget
+    and .playerKindGroupsDistinct
+    and .enemyKindGroupSharedTarget
+    and .fourRecordKindGroupSharedTarget
+    and .twoGuardianKindGroupSharedTarget
+' "$ROOT/$PRIVATE/handler-index-report.json" >/dev/null; then
+    printf 'Source actor-handler index does not match published numeric evidence.\n' >&2
+    exit 1
+fi
+
 printf 'Checking bottom-anchored player sprite pixels in five private 100-frame runs...\n'
 if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache" \
     "$CORE"/*.swift Sources/GameCore/*.swift \

@@ -8,9 +8,9 @@
   "totalBytes": 49152,
   "classificationCounts": {
     "code": 0,
-    "data": 29178,
+    "data": 29570,
     "padding": 0,
-    "unknown": 19974
+    "unknown": 19582
   },
   "knownDataIntervals": [
     {"start": "0x4000", "endExclusive": "0x5800", "kind": "ULA bitmap"},
@@ -20,6 +20,7 @@
     {"start": "0x61C6", "endExclusive": "0x6200", "kind": "special menu room; 58 bytes"},
     {"start": "0x6200", "endExclusive": "0x70BC", "kind": "48 contiguous zero-terminated room templates; 3772 bytes"},
     {"start": "0x70BC", "endExclusive": "0x9692", "kind": "41 contiguous bounded background bitmap-plus-attribute records; 9686 bytes"},
+    {"start": "0x9B3E", "endExclusive": "0x9CC6", "kind": "196 little-endian actor-kind handler pointers; 392 bytes"},
     {"start": "0xBF84", "endExclusive": "0xC10C", "kind": "196 little-endian sprite-frame pointers; 392 bytes"}
   ],
   "knownSparseData": [
@@ -40,10 +41,10 @@
   "observedExecutedByteExtents": {
     "scope": "Twelve measured runs, including the eight published executed-PC inventory schedules; candidate code within the static unknown category",
     "distinctFetchedRAMBytes": 4915,
-    "unknownBytesNotObservedAsFetchedCode": 15059,
+    "unknownBytesNotObservedAsFetchedCode": 14667,
     "fetchedAddressesWithMultipleValues": 2,
     "immutableDataOverlaps": 0,
     "evidence": "reference-fetched-code-extents.json"
   },
-  "note": "Display, world layout/rooms, all 41 contiguous background bitmap-plus-attribute records, the sprite pointer table and its 153 sprite targets are classified. Five gaps between sprite records and remaining RAM stay unknown. PC starts are not complete instruction boundaries. No source bytes, images or disassembly are included."
+  "note": "Display, world layout/rooms, 41 background bitmap-plus-attribute records, the 196-entry actor-handler pointer table, the sprite pointer table and its 153 sprite targets are classified. Five gaps between sprite records and remaining RAM stay unknown. Pointer targets and PC starts are not complete instruction boundaries. No source bytes, images or disassembly are included."
 }

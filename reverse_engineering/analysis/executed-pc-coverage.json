@@ -21,5 +21,5 @@
     "executedPCStartsWithinKnownDataIntervals": 0,
     "executedPCStartsWithinValidatedSpriteRecords": 0
   },
-  "limits": "The ignored private coverage reports contain sorted numeric PC addresses only, not original opcodes or disassembly. The union hash covers ascending 16-bit addresses encoded little-endian. A PC observed during execution does not establish the static instruction length or prove that the originally captured byte at that address was already code before any RAM writes. The 19,974 unknown snapshot bytes remain unclassified; unvisited game paths and tape-boot equivalence remain unresolved."
+  "limits": "The ignored private coverage reports contain sorted numeric PC addresses only, not original opcodes or disassembly. The union hash covers ascending 16-bit addresses encoded little-endian. A PC observed during execution does not establish the static instruction length or prove that the originally captured byte at that address was already code before any RAM writes. A separately validated 392-byte actor handler table reduces unknown snapshot RAM to 19,582 bytes without changing the PC union; unvisited paths and tape-boot equivalence remain unresolved."
 }

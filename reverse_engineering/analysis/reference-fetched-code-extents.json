@@ -13,7 +13,7 @@
     "overlapWithValidatedImmutableData": 0,
     "addressesWithMultipleFetchedValuesPerPath": 2,
     "addressesWithDifferentFetchedValueSetsByPath": 0,
-    "originallyUnknownBytesOutsideThisObservedUnion": 16381,
+    "originallyUnknownBytesOutsideThisObservedUnion": 15989,
     "matchingFullRAMFrames": 570
   },
   "additionalPaths": [
@@ -24,7 +24,7 @@
     "distinctFetchedRAMBytes": 4441,
     "overlapWithValidatedImmutableData": 0,
     "addressesWithMultipleFetchedValues": 2,
-    "originallyUnknownBytesOutsideThisObservedUnion": 15533,
+    "originallyUnknownBytesOutsideThisObservedUnion": 15141,
     "matchingFullRAMFrames": 1620
   },
   "furtherPaths": [
@@ -36,7 +36,7 @@
     "distinctFetchedRAMBytes": 4909,
     "overlapWithValidatedImmutableData": 0,
     "addressesWithMultipleFetchedValues": 2,
-    "originallyUnknownBytesOutsideThisObservedUnion": 15065,
+    "originallyUnknownBytesOutsideThisObservedUnion": 14673,
     "matchingFullRAMFrames": 4120
   },
   "restartVariants": [
@@ -49,8 +49,8 @@
     "distinctFetchedRAMBytes": 4915,
     "overlapWithValidatedImmutableData": 0,
     "addressesWithMultipleFetchedValues": 2,
-    "originallyUnknownBytesOutsideThisObservedUnion": 15059,
+    "originallyUnknownBytesOutsideThisObservedUnion": 14667,
     "matchingFullRAMFrames": 7720
   },
-  "limits": "These are executed candidate code extents in twelve measured runs, including the eight published PC inventory schedules, not complete or immutable code coverage. Two fetched byte positions vary during the replays. The instruction bytes, fetched addresses and any disassembly remain private; unexecuted paths, overlays and the 15,059 other unknown bytes are unclassified."
+  "limits": "These are executed candidate code extents in twelve measured runs, including the eight published PC inventory schedules, not complete or immutable code coverage. Two fetched byte positions vary during the replays. After classifying a separate 392-byte actor-kind handler-pointer table with zero fetched-byte overlap on all twelve paths, the other 14,667 unknown bytes remain outside this observed union. Instruction bytes, fetched addresses and any disassembly remain private; unexecuted paths and overlays are unclassified."
 }
