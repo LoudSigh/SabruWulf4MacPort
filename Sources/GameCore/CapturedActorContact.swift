@@ -10,6 +10,19 @@ public enum CapturedActorContact {
               playerRoom == otherRoom, (16..<48).contains(Int(playerKind)) else {
             return false
         }
+        return geometryOverlaps(
+            playerKind: playerKind, playerX: playerX, playerY: playerY,
+            otherX: otherX, otherY: otherY,
+            playerRightReach: playerRightReach,
+            playerAboveReach: playerAboveReach
+        )
+    }
+
+    static func geometryOverlaps(
+        playerKind: UInt8, playerX: UInt8, playerY: UInt8,
+        otherX: UInt8, otherY: UInt8,
+        playerRightReach: UInt8, playerAboveReach: UInt8
+    ) -> Bool {
         let dx = Int(playerX) - Int(otherX)
         let horizontalReach = dx < 0
             ? (playerKind < 32 ? 12 : 28) : Int(playerRightReach)

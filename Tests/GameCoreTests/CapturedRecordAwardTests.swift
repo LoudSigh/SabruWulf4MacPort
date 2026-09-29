@@ -10,23 +10,48 @@ final class CapturedRecordAwardTests: XCTestCase {
         )
     }
 
-    func testSourceSelectedHandlerRemovesRecordAndAdds7500() throws {
-        let result = try CapturedRecordAward.applyOnObservedHandler(
-            recordKind: 16, activePlayer: 0, scores: emptyScores()
-        )
-        XCTAssertEqual(result.kind, 0)
-        XCTAssertEqual(result.scores.first.decimalValue, 7500)
-        XCTAssertEqual(result.scores.second.decimalValue, 0)
+    func testFourSourceSelectedResultsRemoveRecordSetDistinctBitAndAdd7500() throws {
+        for (kind, bit) in [
+            (UInt8(144), UInt8(1)), (145, 2), (146, 4), (147, 8),
+        ] {
+            let result = try CapturedRecordAward.applyOnObservedHandler(
+                recordKind: kind, activePlayer: 0,
+                progressBits: 0, scores: emptyScores()
+            )
+            XCTAssertEqual(result.kind, 0)
+            XCTAssertEqual(result.progressBits, bit)
+            XCTAssertEqual(result.scores.first.decimalValue, 7500)
+            XCTAssertEqual(result.scores.second.decimalValue, 0)
+        }
+    }
+
+    func testBitwiseAccumulationRemainsAnExplicitInference() throws {
+        var scores = try emptyScores()
+        var bits: UInt8 = 0
+        for kind: UInt8 in 144...147 {
+            let result = try CapturedRecordAward.applyOnObservedHandler(
+                recordKind: kind, activePlayer: 0,
+                progressBits: bits, scores: scores
+            )
+            bits = result.progressBits
+            scores = result.scores
+        }
+        XCTAssertEqual(bits, 0x0F)
+        XCTAssertEqual(scores.first.decimalValue, 30_000)
     }
 
     func testRejectsUnknownHandlerInputs() throws {
-        for (kind, player) in [
-            (UInt8(0), UInt8(0)),
-            (UInt8(16), UInt8(1)),
-            (UInt8(196), UInt8(0)),
+        for (kind, player, bits) in [
+            (UInt8(0), UInt8(0), UInt8(0)),
+            (16, 0, 0),
+            (196, 0, 0),
+            (144, 1, 0),
+            (144, 0, 0x80),
+            (144, 0, 1),
         ] {
             XCTAssertThrowsError(try CapturedRecordAward.applyOnObservedHandler(
-                recordKind: kind, activePlayer: player, scores: emptyScores()
+                recordKind: kind, activePlayer: player,
+                progressBits: bits, scores: emptyScores()
             ))
         }
     }
@@ -37,11 +62,13 @@ final class CapturedRecordAwardTests: XCTestCase {
             second: try CapturedPackedScore(bytes: [0, 0, 0])
         )
         let result = try CapturedRecordAward.applyOnObservedHandler(
-            recordKind: 16, activePlayer: 0, scores: scores
+            recordKind: 144, activePlayer: 0,
+            progressBits: 0, scores: scores
         )
         XCTAssertEqual(result.scores.first.bytes, [0, 0x25, 0])
         XCTAssertThrowsError(try CapturedRecordAward.applyOnObservedHandler(
-            recordKind: result.kind, activePlayer: 0, scores: result.scores
+            recordKind: 144, activePlayer: 0,
+            progressBits: result.progressBits, scores: result.scores
         ))
     }
 
@@ -82,10 +109,97 @@ final class CapturedRecordAwardTests: XCTestCase {
         )
         let result = try CapturedRecordAward.applyOnObservedHandler(
             recordKind: sample.recordKindBefore,
-            activePlayer: sample.activePlayer, scores: before
+            activePlayer: sample.activePlayer,
+            progressBits: 0, scores: before
         )
         XCTAssertEqual(result.kind, sample.recordKindAfter)
+        XCTAssertEqual(result.progressBits, 8)
         XCTAssertEqual(result.scores.first.bytes, sample.firstScoreAfter)
         XCTAssertEqual(result.scores.second.bytes, sample.secondScoreAfter)
+    }
+
+    func testPrivateFourCounterfactualBitAndScoreResultsWhenProvided() throws {
+        guard let directory = ProcessInfo.processInfo.environment[
+            "SABRE_PRIVATE_RECORD_AWARD_DIR"
+        ] else { throw XCTSkip("Set the ignored four-record branch report directory") }
+        struct Branch: Decodable {
+            let validatedManualFullRAMFrames: Int
+            let scoreRoutineEntries: Int
+            let pureScoreStepMatches: Int
+            let inventoryChangedWrites: Int
+            let lifeChangedWrites: Int
+            let positiveOtherContacts: Int
+        }
+        struct Probe: Decodable {
+            let recordRemovalFrame: Int
+            let selectedRecordKind: UInt8
+            let inventoryBefore: UInt8
+            let controlInventoryAfter: UInt8
+            let relocatedInventoryAfter: UInt8
+            let addedInventoryBits: UInt8
+            let control: Branch
+            let relocated: Branch
+        }
+        struct Score: Decodable {
+            let pointsUpper: UInt8
+            let pointsLower: UInt8
+            let activePlayer: UInt8
+            let firstBefore: [UInt8]
+            let secondBefore: [UInt8]
+            let firstAfter: [UInt8]
+            let secondAfter: [UInt8]
+            let resultMatchesPureHelper: Bool
+        }
+        struct Captured: Decodable {
+            let relocated: [Score]
+        }
+        let base = URL(fileURLWithPath: directory)
+        for id in 0..<4 {
+            let sample = try JSONDecoder().decode(Probe.self, from: Data(
+                contentsOf: base.appendingPathComponent(
+                    "quest-inventory-id-\(id).json"
+                )
+            ))
+            let capture = try JSONDecoder().decode(Captured.self, from: Data(
+                contentsOf: base.appendingPathComponent(
+                    "quest-relocation-score-operands-id-\(id)-private.json"
+                )
+            ))
+            let expectedBit = UInt8(1 << (3 - id))
+            XCTAssertEqual(sample.selectedRecordKind, UInt8(147 - id))
+            XCTAssertEqual(sample.recordRemovalFrame, 792)
+            XCTAssertEqual(sample.inventoryBefore, 0)
+            XCTAssertEqual(sample.controlInventoryAfter, 0)
+            XCTAssertEqual(sample.relocatedInventoryAfter, expectedBit)
+            XCTAssertEqual(sample.addedInventoryBits, expectedBit)
+            XCTAssertEqual(sample.control.validatedManualFullRAMFrames, 30)
+            XCTAssertEqual(sample.relocated.validatedManualFullRAMFrames, 30)
+            XCTAssertEqual(sample.control.scoreRoutineEntries, 0)
+            XCTAssertEqual(sample.control.inventoryChangedWrites, 0)
+            XCTAssertEqual(sample.relocated.scoreRoutineEntries, 1)
+            XCTAssertEqual(sample.relocated.pureScoreStepMatches, 1)
+            XCTAssertEqual(sample.relocated.inventoryChangedWrites, 2)
+            XCTAssertEqual(sample.relocated.lifeChangedWrites, 0)
+            XCTAssertEqual(sample.relocated.positiveOtherContacts, 0)
+            XCTAssertEqual(capture.relocated.count, 1)
+            let score = try XCTUnwrap(capture.relocated.first)
+            XCTAssertEqual(score.pointsUpper, 0x75)
+            XCTAssertEqual(score.pointsLower, 0)
+            XCTAssertEqual(score.activePlayer, 0)
+            XCTAssertTrue(score.resultMatchesPureHelper)
+            let before = CapturedScoreState(
+                first: try CapturedPackedScore(bytes: score.firstBefore),
+                second: try CapturedPackedScore(bytes: score.secondBefore)
+            )
+            let result = try CapturedRecordAward.applyOnObservedHandler(
+                recordKind: sample.selectedRecordKind,
+                activePlayer: score.activePlayer,
+                progressBits: sample.inventoryBefore, scores: before
+            )
+            XCTAssertEqual(result.kind, 0)
+            XCTAssertEqual(result.progressBits, sample.relocatedInventoryAfter)
+            XCTAssertEqual(result.scores.first.bytes, score.firstAfter)
+            XCTAssertEqual(result.scores.second.bytes, score.secondAfter)
+        }
     }
 }

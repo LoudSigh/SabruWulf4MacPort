@@ -297,7 +297,7 @@ struct WorldReferenceView: View {
                     }
                     .buttonStyle(.bordered)
                     if let placementState {
-                        Text("Four unidentified actor records captured at source frame \(placementState.sourceFrame). Purple markers show that recorded placement only; these are not proven amulet pieces or live inventory.")
+                        Text("Four source records captured at frame \(placementState.sourceFrame). Separate edited-RAM tests found distinct progress bits and 7,500 points for each, but these purple markers are read-only placements, not natural pickups or a proven amulet/ending rule.")
                             .font(.caption)
                         ForEach(placementState.records, id: \.id) { record in
                             Button("Inspect private record \(record.id + 1) · room \(record.roomID)") {
@@ -346,7 +346,7 @@ struct WorldReferenceView: View {
                             "Column \(position.x + 1), row \(position.y + 1), "
                                 + "template \(roomType)"
                                 + (hasPrivateRecord(in: position)
-                                    ? ", unidentified private record at imported frame" : "")
+                                    ? ", source record at imported frame" : "")
                         )
                     }
                 }
@@ -405,7 +405,7 @@ struct WorldReferenceView: View {
                                     y: screenY(record.y) * area.size.height / 192
                                 )
                                 .accessibilityLabel(
-                                    "Unidentified record \(record.id + 1) at source X \(record.x), Y \(record.y), from imported frame"
+                                    "Source record \(record.id + 1) at X \(record.x), Y \(record.y), from imported frame; natural collection unverified"
                                 )
                         }
                         if let position = markerPosition {

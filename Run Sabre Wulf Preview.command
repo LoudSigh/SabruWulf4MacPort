@@ -1316,7 +1316,20 @@ if [[ -f "$AWARD_ORACLE" ]]; then
     export SABRE_PRIVATE_RECORD_AWARD="$AWARD_ORACLE"
 else
     unset SABRE_PRIVATE_RECORD_AWARD
-    printf 'Optional edited-RAM record award oracle absent; testing synthetic award result only.\n'
+    printf 'Optional original edited-RAM record award oracle absent.\n'
+fi
+AWARD_REPORTS_PRESENT=1
+for id in 0 1 2 3; do
+    if [[ ! -f "$ROOT/$PRIVATE/quest-inventory-id-$id.json"
+        || ! -f "$ROOT/$PRIVATE/quest-relocation-score-operands-id-$id-private.json" ]]; then
+        AWARD_REPORTS_PRESENT=0
+    fi
+done
+if [[ "$AWARD_REPORTS_PRESENT" == 1 ]]; then
+    export SABRE_PRIVATE_RECORD_AWARD_DIR="$ROOT/$PRIVATE"
+else
+    unset SABRE_PRIVATE_RECORD_AWARD_DIR
+    printf 'Optional four edited-RAM record/progress oracles absent; testing synthetic results only.\n'
 fi
 if ! swift test --filter CapturedRecordAwardTests \
     > "$ROOT/$PRIVATE/record-award-test.log" 2>&1; then
@@ -1324,6 +1337,26 @@ if ! swift test --filter CapturedRecordAwardTests \
     exit 1
 fi
 unset SABRE_PRIVATE_RECORD_AWARD
+unset SABRE_PRIVATE_RECORD_AWARD_DIR
+ITEM_REPORTS_PRESENT=1
+for id in 0 1 2 3; do
+    if [[ ! -f "$ROOT/$PRIVATE/quest-item-contact-id-$id.json"
+        || ! -f "$ROOT/$PRIVATE/quest-item-contact-negative-id-$id.json" ]]; then
+        ITEM_REPORTS_PRESENT=0
+    fi
+done
+if [[ "$ITEM_REPORTS_PRESENT" == 1 ]]; then
+    export SABRE_PRIVATE_ITEM_CONTACT_DIR="$ROOT/$PRIVATE"
+else
+    unset SABRE_PRIVATE_ITEM_CONTACT_DIR
+    printf 'Optional edited-RAM item contact oracles absent; testing synthetic predicate only.\n'
+fi
+if ! swift test --filter CapturedItemContactTests \
+    > "$ROOT/$PRIVATE/item-contact-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/item-contact-test.log" >&2
+    exit 1
+fi
+unset SABRE_PRIVATE_ITEM_CONTACT_DIR
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"

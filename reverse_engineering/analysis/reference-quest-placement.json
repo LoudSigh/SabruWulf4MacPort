@@ -269,5 +269,36 @@
     "framesWithDifferentVisiblePixels": 29,
     "originalSourceParityAfterIntervention": false
   },
-  "limits": "Four validated dynamic records are not identified as quest pieces; room lookup does not explain placement-index generation and two restarts do not support fixed locations. A sampled static graph found no candidate route, but cannot prove gameplay inaccessibility. The idle frame-790 fork was contact-suppressed; a separate W/Q fork had a clear contact window and permitted one controlled record-room/X/Y relocation. That intervention cleared one record kind at frame 792, persisted through frame 820, and added 7500 packed-BCD first-player points in a 1/1 measured score call; the generic Remove Entity site and verified enemy-contact return were absent. This one edited-RAM event does NOT establish original-input parity after the edit, amulet identity, a natural collection trigger, or point values for other records. No player teleport, original record values, instruction bytes, images or disassembly are published."
+  "fourRecordInventoryCounterfactual": {
+    "forkFrame": 790,
+    "recordsTested": 4,
+    "sourceRecordKindsAscending": [144, 145, 146, 147],
+    "distinctFinalPlayerProgressBitsByKind": [1, 2, 4, 8],
+    "progressBeforeEachBranch": 0,
+    "recordRemovalFrameEachBranch": 792,
+    "firstPlayerScoreAwardPerBranch": 7500,
+    "scoreCallAndPureResultMatches": [4, 4],
+    "recordAndScoreResultMatches": [4, 4],
+    "validatedControlAndEditedManualFullRAMFrames": [120, 120],
+    "editedInventoryChangedWritesPerBranch": [2, 2, 2, 2],
+    "controlInventoryChangedWrites": 0,
+    "changedLifeBytes": 0,
+    "positiveOtherActorContacts": 0,
+    "originalSourceParityAfterIntervention": false,
+    "multiPieceOriginalInputReplay": false
+  },
+  "fourRecordItemPredicateCounterfactual": {
+    "positiveInterventions": 4,
+    "sameRoomNonoverlappingControls": 4,
+    "matchingSourcePositiveItemReturns": 4,
+    "matchingSourceNegativeItemReturns": 72,
+    "negativeReturnsPerRecord": [18, 18, 18, 18],
+    "negativeBranchesRemovedRecords": 0,
+    "negativeBranchesChangedProgressOrScore": 0,
+    "manualFullRAMFramesForEditedBranches": [120, 120],
+    "manualFullRAMFramesForUntouchedControls": [120, 120],
+    "playerTeleports": 0,
+    "firstNaturalPickupMeasured": false
+  },
+  "limits": "Each of four dynamic records passed both an edited-RAM same-room positive intervention and a separate same-room out-of-reach negative control. The distinct item-specific contact predicate matched 4 positive and 72 negative source returns; positives cleared kinds 144-147, set final progress bits 1/2/4/8 and each awarded 7500 packed-BCD 1UP points. All eight edited branches matched their own manual/full emulator, NOT the original-input source after intervention. This supports a four-record collectible progress mechanism and a bounded geometric contact condition, but not a naturally reached item room, the handler's scheduling/other preconditions, a definitive amulet label, multi-piece source progression or win condition. Room lookup does not explain placement-index generation; a sampled static graph's negative result is not gameplay inaccessibility. The generic Remove Entity site and verified enemy-contact predicate did not explain the handler. No player teleport, original record values, instruction bytes, images or disassembly are published."
 }

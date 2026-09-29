@@ -537,7 +537,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   3. Compare otherwise equivalent exit approaches with three versus four pieces, including the Keeper response and ensuing screen.
   4. Measure each distinct pickup's actual 1UP score effect; repeat a bounded interaction in 2-player mode and check score ownership.
   5. Compare successful completion screen/state with the separately verified zero-life menu return.
-- **Expected Result**: Only rules reproducible on the user's hashed source edition enter `GameCore`; unobserved locations, item values, bonuses and win timing remain explicitly unknown.
+- **Expected Result**: Only rules reproducible on the user's hashed source edition enter `GameCore`; natural item collection, bonuses and win timing remain explicitly unknown even if edited-RAM handler outputs are later measured.
 - **Edge Cases / Variants**: Attack held during pickup, duplicate pickup, player switch, random placement, other Spectrum revision and restored save with three pieces.
 
 ### TC-048: Four-record placement is not fixed-location proof
@@ -548,7 +548,7 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
   2. Confirm 22 write addresses per call and four bounded 12-byte records with valid room/coordinate/sprite fields.
   3. Check per-record offsets +0/+1/+3/+4 for sprite/room/X/Y; require all 16 room writes to match the read world-layout indexes and 12 held-out sprite IDs to match per-record predictions.
   4. Compare first- and second-call outputs across the two paths; keep record values private.
-  5. Reject an assumption of fixed four-room placement if four room fields differ after the second call; do not label the records as quest pieces until pickup is demonstrated.
+  5. Reject an assumption of fixed four-room placement if four room fields differ after the second call; placement alone does not establish collection or an amulet/ending rule, regardless of later edited-RAM handler experiments.
   6. Treat a static east-edge route as a proposal only: compare two source input variants through first injury (855/855 and 846/846 RAM frames) and ensure other-actor contact occurs before any claimed room transition or item pickup.
   7. Repeat two bounded routes with simultaneous T/movement keyboard states and full reference RAM parity; distinguish delayed actor contact from crossing a room edge or collecting an item.
   8. Reproduce the 42/42 two-pixel east collisions at one-pixel clearance, then remove the initial east offset and verify a T-assisted north transition with 827/827 RAM frames and no injury.
@@ -623,15 +623,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 
 ### TC-054: Bounded counterfactual record-award result
 - **Priority**: P1
-- **Preconditions**: Private frame-790 W/Q fork with one controlled record room/X/Y relocation, intact player/global state and a matching untouched control.
+- **Preconditions**: Private frame-790 W/Q fork with each of four original records relocated separately through only its room/X/Y fields, intact player/global state and a matching untouched control per record.
 - **Steps**:
-  1. Require 30/30 internal manual/full RAM frames in each edited and untouched branch, explicitly not original-input parity for the edited branch.
-  2. Verify the handler clears that single record kind, and its sourced BCD operands increase 1UP by 7,500 while 2UP stays unchanged; control has neither handler nor score call.
-  3. Feed an externally supplied event into `CapturedRecordAward` and compare kind/score output; reject nonexistent record and unsupported active player.
-  4. If the independently measured ignored frame-792 oracle is available locally, require 1/1 exact kind and both packed-BCD score buffers; report its absence explicitly rather than presenting a synthetic-only pass as source parity.
-  5. Never apply this result to all four objects, infer a pickup predicate or claim an amulet/win condition without a natural source replay.
-- **Expected Result**: One counterfactual handler output matches; original quest behavior remains to be established.
-- **Edge Cases / Variants**: Duplicate removal, wrap at six-digit score, 2UP selector, other sprite record and item overlap during damage suppression.
+  1. Require 30/30 internal manual/full RAM frames for **each** edited and untouched branch (120 + 120), explicitly not original-input parity for any edited branch.
+  2. Require each kind 144–147 to clear at frame 792, set a unique final player progress bit 1/2/4/8 and supply valid BCD operands for a 7,500-point 1UP score call; require all four controls to have no inventory/score call, other-actor positive contact or life loss.
+  3. Feed four externally selected events into `CapturedRecordAward` and require 4/4 exact final kind/progress/first and second score buffers; reject other kinds, invalid progress bits, duplicate bit and unsupported active player. Label synthetic nonzero-bit accumulation **inferred**, not source-replayed.
+  4. If the ignored frame-792 oracle and all eight independently measured four-record JSON reports are available locally, require 1/1 old and 4/4 new comparisons; report either absence explicitly rather than presenting synthetic-only passes as source parity.
+  5. Repeat each isolated fork with the record in the same room but outside the measured item-contact reach. Require four further 30/30 edited/control RAM-parity pairs, 72/72 negative item-specific source returns, zero removals/score/progress, and the four close cases' 4/4 positive returns. Reject any assumption that the enemy-contact byte-5 gate or a fixed polling cadence applies here.
+  6. Do not infer a natural pickup schedule, label the records definitively as amulet pieces or claim a four-piece win gate without original-input progression and exit checks.
+- **Expected Result**: Four bounded counterfactual handler outputs and 76 item-contact returns match; the original pickup timing, multi-piece path and ending remain to be established.
+- **Edge Cases / Variants**: Duplicate removal, six-digit score wrap, 2UP selector, progress already containing another bit, source transient writes, strict contact bounds and item overlap during damage suppression.
 
 ### TC-055: Read-only source overlap in native explorer
 - **Priority**: P1
