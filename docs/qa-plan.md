@@ -763,6 +763,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: The bounded kind-only progression is reproducible without extending the movement helper or fabricating combat.
 - **Edge Cases / Variants**: Delayed display-frame boundaries, other actor slots, different timer, and alternative source edition.
 
+### TC-067: Player-kind selection of the slot-12 alternate branch
+- **Priority**: P1
+- **Preconditions**: Three 190-frame source controls and the extended 250-frame source replay, hashed snapshot/ROM and ignored gate/score reports.
+- **Steps**:
+  1. Require 820/820 complete RAM frames and 42/42 matching gate decisions. Check 41 normal-player visits take one path and the single injured kind-65 visit at frame 234 takes the alternate.
+  2. At that visit require slot-12 kind 109 in room 152, followed by kind 8 in frame 235. Separately require three matching packed-BCD score calls in frames 229/230/235 without assigning a general award rule to this gate.
+  3. Check `CapturedSlot12TransformGate` for the measured branch and explicit rejection of unsupported actor kind or room. Do not map T directly to this branch or automate actor/score timing from these four traces.
+- **Expected Result**: The bounded handler branch is reproducible; injury cause, trigger timing, generalized combat and native scoring remain unverified.
+- **Edge Cases / Variants**: Player-kind boundaries 15/16/47/48, other actor kinds/rooms, another source edition.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

@@ -3,6 +3,7 @@
   "sourceEdition": "hashed 48K gameplay snapshot",
   "actorSlot": 12,
   "handlerPointerDerivedFromPrivateSnapshot": true,
+  "totalMatchingFullRAMFrames": 820,
   "paths": [
     {
       "name": "fire-before-contact",

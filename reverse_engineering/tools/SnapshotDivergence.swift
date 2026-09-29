@@ -13,6 +13,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case unfinishedEnemyExpiry
     case stepBudget
     case dispatchBudget
+    case transformTraceBudget
     case attributeWriteBudget
     case beeperWriteBudget
     case fireEntryMismatch(frame: Int)
@@ -27,11 +28,13 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case rngStepMismatch(frame: Int)
     case scoreMismatch(frame: Int)
     case noEnemyDispatches
+    case transformGateMismatch(frame: Int)
+    case noTransformGateVisits
 
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--trace-overlap-actor (100-frame W source path)] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-enemy-dispatch (requires RAM parity)] [--watch-beeper (<=250 frames)] [--watch-beeper-writers (requires --watch-beeper)] [--watch-beeper-counters (requires --watch-beeper-writers)] [--watch-menu-routines] [--watch-score-entries] [--require-fire-entry-parity (<=250 frames)] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--trace-overlap-actor (100-frame W source path)] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-enemy-dispatch (requires RAM parity)] [--watch-slot12-transform (<=250 frames, private control flow)] [--require-slot12-transform-parity (<=250 frames)] [--watch-beeper (<=250 frames)] [--watch-beeper-writers (requires --watch-beeper)] [--watch-beeper-counters (requires --watch-beeper-writers)] [--watch-menu-routines] [--watch-score-entries] [--require-fire-entry-parity (<=250 frames)] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .unsupportedOverlapSchedule:
@@ -50,6 +53,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "Manual CPU run exceeded 100000 instructions in one frame"
         case .dispatchBudget:
             "Slot-12 handler entry probe exceeded its bounded 1800-event window"
+        case .transformTraceBudget:
+            "Slot-12 transform entry probe exceeded its bounded 8-event window"
         case .attributeWriteBudget:
             "Attribute-write probe exceeded its bounded 4096-event window"
         case .beeperWriteBudget:
@@ -78,6 +83,10 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "The measured packed-BCD score write differs at source frame \(frame)"
         case .noEnemyDispatches:
             "No slot-12 handler entries were observed in the selected source path"
+        case .transformGateMismatch(let frame):
+            "The slot-12 player-kind gate chose a different branch at source frame \(frame)"
+        case .noTransformGateVisits:
+            "No eligible slot-12 player-kind gate visits were observed"
         }
     }
 }
@@ -269,6 +278,27 @@ private struct EnemyDispatch: Encodable {
     let refresh: Int
 }
 
+private struct Slot12TransformEntry: Encodable {
+    let frame: Int
+    let cycle: Int
+    let playerKind: Int
+    let actorKind: Int
+    let actorTimer: Int
+    let actorRoom: Int
+    let actorX: Int
+    let actorY: Int
+    let recentInstructionStarts: [Int]
+}
+
+private struct Slot12TransformComparison: Encodable {
+    let sourceVisits: Int
+    let matchingBranches: Int
+    let selectedFrames: [Int]
+    let unselectedFrames: [Int]
+    let selectedPlayerKinds: [Int]
+    let unselectedPlayerKinds: [Int]
+}
+
 private func handlerTarget(
     for kind: UInt8, read: (UInt16) -> UInt8
 ) -> UInt16? {
@@ -384,6 +414,8 @@ private struct Report: Encodable {
     let enemyDirectionComparison: EnemyDirectionComparison?
     let activeEnemyComparison: ActiveEnemyComparison?
     let enemyDispatches: [EnemyDispatch]?
+    let slot12TransformEntries: [Slot12TransformEntry]?
+    let slot12TransformComparison: Slot12TransformComparison?
     let enemyExpiryComparison: EnemyExpiryComparison?
     let rngStepComparison: RNGStepComparison?
     let codeCoverage: CodeCoverage?
@@ -483,6 +515,8 @@ private struct SnapshotDivergence {
                       ["--trace", "--trace-overlap-actor",
                        "--watch-actor-state", "--watch-entity-state",
                        "--watch-enemy-dispatch",
+                       "--watch-slot12-transform",
+                       "--require-slot12-transform-parity",
                        "--watch-player-state", "--watch-menu-routines",
                        "--watch-score-entries", "--watch-overlap-attributes",
                        "--watch-overlap-registers", "--watch-beeper",
@@ -517,6 +551,12 @@ private struct SnapshotDivergence {
                         && options.contains("--require-ram-parity")),
                   !options.contains("--watch-enemy-dispatch")
                     || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--watch-slot12-transform")
+                    || (count <= 250 && options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--require-slot12-transform-parity")
+                    || (count <= 250 && options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")),
                   !options.contains("--require-entity-phase-parity")
                     || (options.contains("--reference-timing")
@@ -555,6 +595,9 @@ private struct SnapshotDivergence {
             let watchActorState = options.contains("--watch-actor-state")
             let watchEntityState = options.contains("--watch-entity-state")
             let watchEnemyDispatch = options.contains("--watch-enemy-dispatch")
+            let watchSlot12Transform = options.contains("--watch-slot12-transform")
+            let requireSlot12TransformParity =
+                options.contains("--require-slot12-transform-parity")
             let watchPlayerState = options.contains("--watch-player-state")
             let watchScoreEntries = options.contains("--watch-score-entries")
             let watchOverlapRegisters = options.contains("--watch-overlap-registers")
@@ -684,6 +727,14 @@ private struct SnapshotDivergence {
             var refreshCalls = 0
             var clockCalls = 0
             var enemyDispatches: [EnemyDispatch] = []
+            var slot12TransformEntries: [Slot12TransformEntry] = []
+            var recentTransformPCs: [Int] = []
+            var transformVisits = 0
+            var matchingTransformBranches = 0
+            var selectedTransformFrames: [Int] = []
+            var unselectedTransformFrames: [Int] = []
+            var selectedTransformPlayerKinds: [Int] = []
+            var unselectedTransformPlayerKinds: [Int] = []
 
             for frame in 0..<count {
                 var beeperWritesInFrame = 0
@@ -707,6 +758,27 @@ private struct SnapshotDivergence {
                 )
                 var steps = 0
                 while cycles < boundary {
+                    if watchSlot12Transform {
+                        if cpu.pc == 0xA4A6, cpu.ix == 0x9792 {
+                            guard slot12TransformEntries.count < 8 else {
+                                throw DivergenceError.transformTraceBudget
+                            }
+                            slot12TransformEntries.append(Slot12TransformEntry(
+                                frame: frame + 1, cycle: cycles,
+                                playerKind: Int(memory.read(0x9702)),
+                                actorKind: Int(memory.read(0x9792)),
+                                actorTimer: Int(memory.read(0x9794)),
+                                actorRoom: Int(memory.read(0x9793)),
+                                actorX: Int(memory.read(0x9795)),
+                                actorY: Int(memory.read(0x9796)),
+                                recentInstructionStarts: recentTransformPCs
+                            ))
+                        }
+                        recentTransformPCs.append(Int(cpu.pc))
+                        if recentTransformPCs.count > 48 {
+                            recentTransformPCs.removeFirst()
+                        }
+                    }
                     if watchEnemyDispatch, cpu.ix == 0x9792 {
                         let kind = memory.read(0x9792)
                         if (108...111).contains(Int(kind)),
@@ -964,6 +1036,17 @@ private struct SnapshotDivergence {
                             romInstructionStarts.insert(cpu.pc)
                         }
                     }
+                    let expectedTransform: Bool? =
+                        requireSlot12TransformParity
+                            && cpu.pc == 0xA567 && cpu.ix == 0x9792
+                        ? try CapturedSlot12TransformGate.selectsKindSequence(
+                            actorKind: memory.read(0x9792),
+                            actorRoom: memory.read(0x9793),
+                            playerKind: memory.read(0x9702),
+                            playerRoom: memory.read(0x9703)
+                        ) : nil
+                    let transformPlayerKind = expectedTransform != nil
+                        ? Int(memory.read(0x9702)) : nil
                     let result = cpu.step(
                         read: { memory.read($0) },
                         write: { address, value in
@@ -1092,6 +1175,24 @@ private struct SnapshotDivergence {
                     switch result {
                     case .ok(let cost): cycles += cost
                     case .unimplemented: throw DivergenceError.unimplemented
+                    }
+                    if let expectedTransform {
+                        transformVisits += 1
+                        guard cpu.pc == (expectedTransform ? 0xA4A6 : 0xA56A) else {
+                            throw DivergenceError.transformGateMismatch(frame: frame + 1)
+                        }
+                        matchingTransformBranches += 1
+                        if expectedTransform {
+                            selectedTransformFrames.append(frame + 1)
+                            if let transformPlayerKind {
+                                selectedTransformPlayerKinds.append(transformPlayerKind)
+                            }
+                        } else {
+                            unselectedTransformFrames.append(frame + 1)
+                            if let transformPlayerKind {
+                                unselectedTransformPlayerKinds.append(transformPlayerKind)
+                            }
+                        }
                     }
                     if overlapAttributeWriteBudgetExceeded {
                         throw DivergenceError.attributeWriteBudget
@@ -1287,6 +1388,9 @@ private struct SnapshotDivergence {
             if watchEnemyDispatch && enemyDispatches.isEmpty {
                 throw DivergenceError.noEnemyDispatches
             }
+            if requireSlot12TransformParity && transformVisits == 0 {
+                throw DivergenceError.noTransformGateVisits
+            }
             if requireMenuSequence {
                 guard positiveContactFrames.count == 2,
                       menuSetupFrames == [positiveContactFrames[1] + 68],
@@ -1385,6 +1489,17 @@ private struct SnapshotDivergence {
                         updateFrames: activeEnemyFrames
                     ) : nil,
                 enemyDispatches: watchEnemyDispatch ? enemyDispatches : nil,
+                slot12TransformEntries: watchSlot12Transform
+                    ? slot12TransformEntries : nil,
+                slot12TransformComparison: requireSlot12TransformParity
+                    ? Slot12TransformComparison(
+                        sourceVisits: transformVisits,
+                        matchingBranches: matchingTransformBranches,
+                        selectedFrames: selectedTransformFrames,
+                        unselectedFrames: unselectedTransformFrames,
+                        selectedPlayerKinds: selectedTransformPlayerKinds,
+                        unselectedPlayerKinds: unselectedTransformPlayerKinds
+                    ) : nil,
                 enemyExpiryComparison: requireEnemyExpiryParity
                     ? EnemyExpiryComparison(
                         calls: enemyExpiryCalls, matchingCalls: enemyExpiryCalls,

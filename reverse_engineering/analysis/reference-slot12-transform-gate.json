@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "sourceEdition": "hashed 48K gameplay snapshot",
+  "trackedActorSlot": 12,
+  "pathFrames": [190, 190, 190, 250],
+  "matchingCompleteRAMFrames": 820,
+  "gateVisitsPerPath": [11, 2, 4, 25],
+  "matchingPureBranches": 42,
+  "normalPlayerBranchVisits": 41,
+  "selectedSequenceBranchVisits": 1,
+  "selectedFrame": 234,
+  "selectedPlayerKind": 65,
+  "selectedActorKind": 109,
+  "selectedActorRoom": 152,
+  "selectedActorPosition": [53, 135],
+  "nextKindWriteFrame": 235,
+  "scoreRoutineCallFramesInExtendedPath": [229, 230, 235],
+  "matchingPureScoreCallsInExtendedPath": 3,
+  "limits": "The numeric player-kind branch matched 42 source decisions on four RAM-verified input paths. The only selected transition was at frame 234 with injured player kind 65, followed by an actor-kind change and a score call in frame 235. This is not evidence that fire hit the actor, that all injured-player interactions behave identically, or that the native app schedules the actor, damage, score or kind progression autonomously. Detailed source control flow, RAM and disassembly remain private."
+}

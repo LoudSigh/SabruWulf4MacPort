@@ -892,6 +892,39 @@ for entry in \
         mv "$TEMP_COMBAT_ENTITY" "$DISPATCH_REPORT"
     fi
 done
+for entry in \
+    'fire-before-contact|190|fire-190' \
+    'no-fire-encounter|190|no-fire-190' \
+    'unrelated-a-control|190|unrelated-190' \
+    'fire-before-contact|250|fire-250'; do
+    IFS='|' read -r scenario frames label <<< "$entry"
+    GATE_REPORT="$ROOT/$PRIVATE/slot12-gate-verified-$label.json"
+    "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+        "reverse_engineering/analysis/$scenario-schedule.json" "$frames" \
+        --reference-timing --require-ram-parity \
+        --require-slot12-transform-parity > "$TEMP_COMBAT_ENTITY"
+    if [[ -e "$GATE_REPORT" ]]; then
+        if ! cmp -s "$GATE_REPORT" "$TEMP_COMBAT_ENTITY"; then
+            printf 'Existing private slot-12 gate trace differs: %s\n' "$GATE_REPORT" >&2
+            exit 1
+        fi
+    else
+        mv "$TEMP_COMBAT_ENTITY" "$GATE_REPORT"
+    fi
+done
+TRANSFORM_ENTRY="$ROOT/$PRIVATE/slot12-gate-entry-score-250.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
+    --reference-timing --require-ram-parity --require-slot12-transform-parity \
+    --watch-slot12-transform --require-score-parity > "$TEMP_COMBAT_ENTITY"
+if [[ -e "$TRANSFORM_ENTRY" ]]; then
+    if ! cmp -s "$TRANSFORM_ENTRY" "$TEMP_COMBAT_ENTITY"; then
+        printf 'Existing private slot-12 gate/score trace differs: %s\n' "$TRANSFORM_ENTRY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_COMBAT_ENTITY" "$TRANSFORM_ENTRY"
+fi
 FIRE_ONSET_REPORT="$ROOT/$PRIVATE/player-onset-fire-before-contact-250.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
     reverse_engineering/analysis/fire-before-contact-schedule.json 250 \
@@ -974,6 +1007,12 @@ if ! SABRE_PRIVATE_ENTITY_TRACE_DIR="$ROOT/$PRIVATE" \
     swift test --filter CapturedSlot12KindSequenceTests \
     > "$ROOT/$PRIVATE/slot12-kind-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/slot12-kind-test.log" >&2
+    exit 1
+fi
+if ! SABRE_PRIVATE_SLOT12_TRANSFORM_DIR="$ROOT/$PRIVATE" \
+    swift test --filter CapturedSlot12TransformGateTests \
+    > "$ROOT/$PRIVATE/slot12-transform-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/slot12-transform-test.log" >&2
     exit 1
 fi
 if ! SABRE_PRIVATE_ENEMY_EXPIRY_REPORT="$EXPIRY_REPORT" \
