@@ -583,6 +583,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Only source-verified collision/entry semantics are used for route finding; a local static dead end is not misreported as an inaccessible quest object.
 - **Edge Cases / Variants**: Inertia-two-pixel overshoot, reused room templates, alternate south rebase, dynamic actor obstruction and final-life movement.
 
+### TC-051: Keep tape CPU corrections separate from gameplay baselines
+- **Priority**: P1
+- **Preconditions**: Verified 48K ROM/gameplay snapshot, isolated private RRA-only CPU copy and unmodified backup emulator.
+- **Steps**:
+  1. Replay 100 no-key frames, the 190-frame W/E/T encounter and 1,800-frame W/Q restart-to-menu with identical reference-relative inputs in both CPU builds.
+  2. Compare every complete RAM and screen hash; require 2,090/2,090 matches and no first difference. On the long path require the same first exact 2,560-pixel center-menu match at frame 1733.
+  3. Separately confirm manual versus full reference emulator parity for the short paths, and do not compare an old absolute-boundary replay to a reference-relative one.
+- **Expected Result**: These three gameplay-snapshot paths need no re-baselining after the private RRA fix; no claim is made about other states, hardware accuracy or successful tape boot.
+- **Edge Cases / Variants**: Alternate keyboard paths, zero-life menu, tape ROM loader and other Z80 flag instructions.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

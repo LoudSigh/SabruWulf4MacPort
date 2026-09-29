@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "frameBoundaryMode": "reference-relative",
+  "comparison": "Unmodified backup Z80 CPU versus isolated private CPU with only documented RRA flag preservation corrected; same verified ROM, snapshot, inputs and emulator frame stepping.",
+  "paths": [
+    {"input": "none", "frames": 100, "matchingFullRAMFrames": 100, "matchingScreenFrames": 100, "firstDifference": null},
+    {"schedule": "fire-before-contact-schedule.json", "frames": 190, "matchingFullRAMFrames": 190, "matchingScreenFrames": 190, "firstDifference": null},
+    {"schedule": "restart-ready-w-q-schedule.json", "frames": 1800, "matchingFullRAMFrames": 1800, "matchingScreenFrames": 1800, "firstDifference": null, "firstExactCenterMenuTextFrameAfter1500": 1733, "matchingCenterMenuRGBPixels": 2560}
+  ],
+  "totals": {"matchingFullRAMFrames": 2090, "matchingScreenFrames": 2090, "manualVersusFullEmulatorMatchingFramesOnShortPaths": 290},
+  "limits": "The RRA-only correction fixes a synthetic ROM header in a different tape-boot experiment, but these three restored-gameplay paths showed no frame-level difference. Other input schedules, full hardware fidelity and TZX/snapshot edition equivalence remain untested by this differential. No ROM/game bytes, source listings or media are published."
+}
