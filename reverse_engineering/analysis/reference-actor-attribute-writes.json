@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "sourceFrames": 100,
+  "matchingCompleteRAMFrames": 100,
+  "inputSchedule": "W held in zero-based frames 20 through 39",
+  "sampleWindow": {
+    "framesInclusive": [40, 55],
+    "attributeTileColumnsInclusive": [14, 17],
+    "attributeTileRowsInclusive": [10, 12],
+    "writes": 94,
+    "changedWrites": 31,
+    "distinctInstructionStarts": 1
+  },
+  "playerOverlap": {
+    "framesInclusive": [43, 53],
+    "changedWritesInAffectedPlayerRowAndColumns": 22,
+    "framesWithChangedWrites": 11
+  },
+  "limits": "This RAM-parity-verified manual CPU write observation is a bounded region/time-window diagnostic. It records screen attribute writes, including idempotent writes, but does not identify which actor caused any particular final attribute, prove draw order or derive a native color rule. Instruction bytes, per-write addresses and attribute values remain in ignored private output."
+}

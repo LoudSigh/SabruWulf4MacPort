@@ -11,6 +11,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     case noEnemyExpiryEvents
     case unfinishedEnemyExpiry
     case stepBudget
+    case attributeWriteBudget
     case unimplemented
     case ramMismatch(matching: Int, total: Int)
     case contactMismatch(frame: Int, predicted: Bool, actual: Bool)
@@ -25,7 +26,7 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--watch-score-entries] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--watch-score-entries] [--watch-overlap-attributes (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
         case .invalidInput:
@@ -40,6 +41,8 @@ private enum DivergenceError: Error, CustomStringConvertible {
             "A slot-12 timer-expiry branch did not return within the observed frames"
         case .stepBudget:
             "Manual CPU run exceeded 100000 instructions in one frame"
+        case .attributeWriteBudget:
+            "Attribute-write probe exceeded its bounded 4096-event window"
         case .unimplemented:
             "The reference CPU did not implement an instruction in this replay"
         case .ramMismatch(let matching, let total):
@@ -291,6 +294,7 @@ private struct Report: Encodable {
     let actorStateWrites: [ActorStateWrite]?
     let entityStateWrites: [EntityStateWrite]?
     let playerStateWrites: [EntityStateWrite]?
+    let overlapAttributeWrites: [EntityStateWrite]?
     let scoreEntries: [ScoreEntry]?
     let scoreComparison: ScoreComparison?
     let rngFrames: [Int]?
@@ -389,11 +393,11 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...22).contains(arguments.count),
+            guard (5...23).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--watch-entity-state",
                        "--watch-player-state", "--watch-menu-routines",
-                       "--watch-score-entries",
+                       "--watch-score-entries", "--watch-overlap-attributes",
                        "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
@@ -432,6 +436,9 @@ private struct SnapshotDivergence {
                         && options.contains("--require-ram-parity")),
                   !options.contains("--require-score-parity")
                     || (options.contains("--reference-timing")
+                        && options.contains("--require-ram-parity")),
+                  !options.contains("--watch-overlap-attributes")
+                    || (count == 100 && options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
             }
@@ -440,6 +447,7 @@ private struct SnapshotDivergence {
             let watchEntityState = options.contains("--watch-entity-state")
             let watchPlayerState = options.contains("--watch-player-state")
             let watchScoreEntries = options.contains("--watch-score-entries")
+            let watchOverlapAttributes = options.contains("--watch-overlap-attributes")
             let requireContactParity = options.contains("--require-contact-parity")
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
@@ -456,6 +464,13 @@ private struct SnapshotDivergence {
             let segments = try schedule(
                 Data(contentsOf: URL(fileURLWithPath: arguments[3])), frames: count
             )
+            if watchOverlapAttributes {
+                guard segments.count == 1, segments[0].key == "w",
+                      segments[0].startFrame == 20,
+                      segments[0].endFrame == 40 else {
+                    throw DivergenceError.invalidSchedule
+                }
+            }
             let entityWorld: WorldReference?
             if requireEntityPhaseParity {
                 guard let path = ProcessInfo.processInfo.environment["SABRE_PRIVATE_WORLD"]
@@ -504,6 +519,8 @@ private struct SnapshotDivergence {
             var actorStateWrites: [ActorStateWrite] = []
             var entityStateWrites: [EntityStateWrite] = []
             var playerStateWrites: [EntityStateWrite] = []
+            var overlapAttributeWrites: [EntityStateWrite] = []
+            var overlapAttributeWriteBudgetExceeded = false
             var scoreEntries: [ScoreEntry] = []
             var pendingScore: PendingScore?
             var matchingScoreCalls = 0
@@ -827,6 +844,25 @@ private struct SnapshotDivergence {
                                     ))
                                 }
                             }
+                            if watchOverlapAttributes && (40...55).contains(frame + 1),
+                               (0x5800...0x5AFF).contains(address) {
+                                let offset = Int(address) - 0x5800
+                                if (10...12).contains(offset / 32),
+                                   (14...17).contains(offset % 32) {
+                                    if overlapAttributeWrites.count == 4096 {
+                                        overlapAttributeWriteBudgetExceeded = true
+                                    } else {
+                                        overlapAttributeWrites.append(EntityStateWrite(
+                                            frame: frame + 1,
+                                            instructionAddress: instructionAddress,
+                                            cycle: cycles,
+                                            address: Int(address),
+                                            previous: Int(memory.read(address)),
+                                            value: Int(value)
+                                        ))
+                                    }
+                                }
+                            }
                             if requireScoreParity, pendingScore != nil,
                                (0x9698...0x969D).contains(address) {
                                 pendingScore?.writes += 1
@@ -845,6 +881,9 @@ private struct SnapshotDivergence {
                     switch result {
                     case .ok(let cost): cycles += cost
                     case .unimplemented: throw DivergenceError.unimplemented
+                    }
+                    if overlapAttributeWriteBudgetExceeded {
+                        throw DivergenceError.attributeWriteBudget
                     }
                     if requireScoreParity, let pending = pendingScore,
                        pending.writes == 3 {
@@ -1058,6 +1097,8 @@ private struct SnapshotDivergence {
                 actorStateWrites: watchActorState ? actorStateWrites : nil,
                 entityStateWrites: watchEntityState ? entityStateWrites : nil,
                 playerStateWrites: watchPlayerState ? playerStateWrites : nil,
+                overlapAttributeWrites: watchOverlapAttributes
+                    ? overlapAttributeWrites : nil,
                 scoreEntries: watchScoreEntries ? scoreEntries : nil,
                 scoreComparison: requireScoreParity
                     ? ScoreComparison(

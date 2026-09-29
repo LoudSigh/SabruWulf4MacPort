@@ -212,7 +212,8 @@ TEMP_RESTART_SCREEN="$(mktemp "$ROOT/$PRIVATE/.restart-screen-XXXXXXXX.json")"
 TEMP_KEYBOARD_SCREEN="$(mktemp "$ROOT/$PRIVATE/.keyboard-screen-XXXXXXXX.json")"
 TEMP_READY_SCREEN="$(mktemp "$ROOT/$PRIVATE/.ready-screen-XXXXXXXX.json")"
 TEMP_PLACEMENT="$(mktemp "$ROOT/$PRIVATE/.placement-XXXXXXXX.json")"
-trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT"' EXIT
+TEMP_ATTR="$(mktemp "$ROOT/$PRIVATE/.attribute-write-XXXXXXXX.json")"
+trap 'rm -f "$TEMP_REPLAY" "$TEMP_TRANSITION" "$TEMP_HELD" "$TEMP_ROUND" "$TEMP_WEST" "$TEMP_ENTITY" "$TEMP_EAST" "$TEMP_WEST_REFERENCE" "$TEMP_ENTITY_REFERENCE" "$TEMP_FIRE" "$TEMP_COMBAT" "$TEMP_COMBAT_ENTITY" "$TEMP_CONTACT" "$TEMP_LONG" "$TEMP_LONG_CONTACT" "$TEMP_LONG_INJURY" "$TEMP_MENU" "$TEMP_MENU_CONTACT" "$TEMP_RESTART_SCREEN" "$TEMP_KEYBOARD_SCREEN" "$TEMP_READY_SCREEN" "$TEMP_PLACEMENT" "$TEMP_ATTR"' EXIT
 "$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" q 100 > "$TEMP_REPLAY"
 if [[ -e "$REPLAY" ]]; then
     if ! cmp -s "$REPLAY" "$TEMP_REPLAY"; then
@@ -318,6 +319,35 @@ if ! swiftc -O -parse-as-library -module-cache-path "$ROOT/$PRIVATE/module-cache
     -o "$ROOT/$PRIVATE/SnapshotDivergence" > "$ROOT/$PRIVATE/divergence-build.log" 2>&1; then
     cat "$ROOT/$PRIVATE/divergence-build.log" >&2
     exit 1
+fi
+ATTR_REPORT="$ROOT/$PRIVATE/actor-screen-w-attribute-writes-v1.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/actor-screen-w-schedule.json 100 \
+    --reference-timing --require-ram-parity --watch-overlap-attributes \
+    > "$TEMP_ATTR"
+if ! jq -e '
+    .framesCompared == 100 and .matchingRAMFrames == 100
+    and (.overlapAttributeWrites | length) == 94
+    and ([.overlapAttributeWrites[] | select(.previous != .value)] | length) == 31
+    and ([.overlapAttributeWrites[].instructionAddress] | unique | length) == 1
+    and ([.overlapAttributeWrites[] |
+        select(.frame >= 43 and .frame <= 53 and .previous != .value
+            and .address >= 22895 and .address <= 22896)] | length) == 22
+    and ([.overlapAttributeWrites[] |
+        select(.frame >= 43 and .frame <= 53 and .previous != .value
+            and .address >= 22895 and .address <= 22896) |
+        .frame] | unique | length) == 11
+' "$TEMP_ATTR" >/dev/null; then
+    printf 'Private W-overlap attribute-write observation changed.\n' >&2
+    exit 1
+fi
+if [[ -e "$ATTR_REPORT" ]]; then
+    if ! cmp -s "$ATTR_REPORT" "$TEMP_ATTR"; then
+        printf 'Existing private attribute-write report differs: %s\n' "$ATTR_REPORT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_ATTR" "$ATTR_REPORT"
 fi
 ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace-v2.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
