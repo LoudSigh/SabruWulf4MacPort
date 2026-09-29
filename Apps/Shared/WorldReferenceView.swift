@@ -33,6 +33,7 @@ struct WorldReferenceView: View {
     @State private var world: WorldReference?
     @State private var selected = WorldReference.capturedGameplayRoom
     @State private var importing = false
+    @State private var importingBundle = false
     @State private var importingArtwork = false
     @State private var importError: String?
     @State private var art: [Int: WorldRaster] = [:]
@@ -76,8 +77,17 @@ struct WorldReferenceView: View {
             .font(.caption)
             Text("Original keyboard reference: Q left · W right · E up · R down · T fire (not bound to this viewer)")
                 .font(.caption)
+            Button("Import local reference folder (world, art and replay)") {
+                importingBundle = true
+            }
+            .buttonStyle(.borderedProminent)
             Button("Import your private world data") { importing = true }
                 .buttonStyle(.bordered)
+            if let importError {
+                Text(importError)
+                    .foregroundStyle(.red)
+                    .accessibilityLabel("Import failed: \(importError)")
+            }
             if world != nil {
                 if world?.schemaVersion == 2 {
                     if let movement {
@@ -310,11 +320,6 @@ struct WorldReferenceView: View {
                     }
                 }
             }
-            if let importError {
-                Text(importError)
-                    .foregroundStyle(.red)
-                    .accessibilityLabel("Import failed: \(importError)")
-            }
             if let world {
                 Text(
                     "Position \(selected.x + 1), \(selected.y + 1) of 16 × 16 "
@@ -455,6 +460,44 @@ struct WorldReferenceView: View {
             }
         }
         .fileImporter(
+            isPresented: $importingBundle,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            do {
+                guard let url = try result.get().first else {
+                    throw CocoaError(.fileNoSuchFile)
+                }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                let bundle = try PrivateReferenceBundle.load(from: url)
+                let images = try makeSourceRoomImages(
+                    world: bundle.world, atlas: bundle.backgrounds
+                )
+                world = bundle.world
+                selected = WorldReference.capturedGameplayRoom
+                art = [:]
+                artStatus = nil
+                backgroundAtlas = bundle.backgrounds
+                sourceRoomImages = images
+                sourceAttributeColors = false
+                spriteSamples = [:]
+                spriteAtlas = bundle.sprites
+                placementState = bundle.placements
+                spriteID = 16
+                replay = bundle.replay
+                replayFrameValue = 0
+                entityTrace = nil
+                movement = nil
+                movementOrigin = .gameplayCapture
+                playingMovement = false
+                heldKey = "none"
+                importError = nil
+            } catch {
+                importError = error.localizedDescription
+            }
+        }
+        .fileImporter(
             isPresented: $importing,
             allowedContentTypes: [.json],
             allowsMultipleSelection: false
@@ -548,27 +591,7 @@ struct WorldReferenceView: View {
                 }
                 let imported = try BackgroundAtlas.load(from: Data(contentsOf: url))
                 try imported.validate(world: world)
-                var images: [Int: CGImage] = [:]
-                for template in world.rooms.indices {
-                    let scene = try BackgroundScene(
-                        world: world, atlas: imported, template: template
-                    )
-                    guard let provider = CGDataProvider(data: Data(scene.rgba) as CFData),
-                          let image = CGImage(
-                              width: BackgroundScene.width, height: BackgroundScene.height,
-                              bitsPerComponent: 8, bitsPerPixel: 32,
-                              bytesPerRow: BackgroundScene.width * 4,
-                              space: CGColorSpaceCreateDeviceRGB(),
-                              bitmapInfo: CGBitmapInfo(
-                                  rawValue: CGImageAlphaInfo.premultipliedLast.rawValue
-                              ),
-                              provider: provider, decode: nil,
-                              shouldInterpolate: false, intent: .defaultIntent
-                          ) else {
-                        throw BackgroundPreviewError.imageCreation
-                    }
-                    images[template] = image
-                }
+                let images = try makeSourceRoomImages(world: world, atlas: imported)
                 backgroundAtlas = imported
                 sourceRoomImages = images
                 sourceAttributeColors = false
@@ -724,6 +747,31 @@ struct WorldReferenceView: View {
             }
         }
         .onDisappear { playingMovement = false }
+    }
+
+    private func makeSourceRoomImages(
+        world: WorldReference, atlas: BackgroundAtlas
+    ) throws -> [Int: CGImage] {
+        var images: [Int: CGImage] = [:]
+        for template in world.rooms.indices {
+            let scene = try BackgroundScene(world: world, atlas: atlas, template: template)
+            guard let provider = CGDataProvider(data: Data(scene.rgba) as CFData),
+                  let image = CGImage(
+                      width: BackgroundScene.width, height: BackgroundScene.height,
+                      bitsPerComponent: 8, bitsPerPixel: 32,
+                      bytesPerRow: BackgroundScene.width * 4,
+                      space: CGColorSpaceCreateDeviceRGB(),
+                      bitmapInfo: CGBitmapInfo(
+                          rawValue: CGImageAlphaInfo.premultipliedLast.rawValue
+                      ),
+                      provider: provider, decode: nil,
+                      shouldInterpolate: false, intent: .defaultIntent
+                  ) else {
+                throw BackgroundPreviewError.imageCreation
+            }
+            images[template] = image
+        }
+        return images
     }
 
     private var movementMarkerPosition: GridPoint? {

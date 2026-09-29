@@ -1469,6 +1469,12 @@ if [[ -e "$E_Q_CONTACT" ]]; then
 else
     mv "$TEMP_MENU_CONTACT" "$E_Q_CONTACT"
 fi
+if ! SABRE_PRIVATE_REFERENCE_DIR="$ROOT/$PRIVATE" \
+    swift test --filter PrivateReferenceBundleTests \
+    > "$ROOT/$PRIVATE/reference-bundle-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/reference-bundle-test.log" >&2
+    exit 1
+fi
 printf 'Checking bounded native post-setup positions and sprite IDs on five paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
@@ -1644,6 +1650,7 @@ open "$APP"
 open -a Preview "$MENU_PNG" "$GAME_PNG"
 open "$WORLD_MAP"
 printf '\nOpened the native placeholder app, two original static captures, and a private world-type map.\n'
+printf 'In the native source explorer, choose Import local reference folder and select %s to load the checked world, art, placements and replay together.\n' "$ROOT/$PRIVATE"
 printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REPLAY"
 printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TRANSITION"
 printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"

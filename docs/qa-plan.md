@@ -733,6 +733,16 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: The bounded spatial transition is represented separately from the four-bit guardian gate; original route, audiovisual ending, timing and rights remain release blockers.
 - **Edge Cases / Variants**: High player/action kinds, multiple life phases, exactly Y=128, FLASH attributes, real guardian movement and edition/tape differences.
 
+### TC-064: Local-only reference folder import
+- **Priority**: P1
+- **Preconditions**: Run the hashed-input preview launcher; retain its ignored `reverse_engineering/private/` folder on the device. Do not upload its contents.
+- **Steps**:
+  1. On macOS, iOS and visionOS, open the source explorer and import the local folder in one action. Confirm the validated 256-position world, source backgrounds, sprite silhouettes, four unidentified markers and 1,050-frame E→Q replay appear together.
+  2. Select an empty folder; require a specific missing-file error and no partially replaced world/replay. Select a folder with an oversized world or tampered atlas; require a size/integrity error and preserve the previously loaded state.
+  3. Reimport the valid folder, then step measured movement and scrub the recorded replay independently. Do not label the recorded source frames as autonomous gameplay.
+- **Expected Result**: Local data loads atomically for viewing, while the playable four-room prototype remains explicitly separate. No source bytes or imported assets are bundled or tracked.
+- **Edge Cases / Variants**: Security-scoped folder access, deleted files, unreadable files, reimport after replay selection, and simulator permission prompts.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |
@@ -744,5 +754,6 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 | RS-005 | Touch, controller, focus, accessibility | Manual | Medium | Partial | Every release |
 | RS-006 | Asset provenance and leak review | Manual | High | Ignore checks + review | Every push/release |
 | RS-007 | Private world JSON import and boundaries | Unit + manual | Medium | Core parsing automated; file picker manual | Each world-format change |
+| RS-008 | Private reference folder import, integrity and atomic UI state | Unit + manual | High | Core errors/private fixture automated; picker manual | Each import change |
 
 Track the number of passing tests and reference checkpoints explicitly. Add a regression test for each verified bug. The release sign-off requires functional tests for happy paths and errors, app-to-core integration, simulator smoke tests, manual accessibility checks, and a reviewed rights boundary. A generic playable prototype does not pass original-game fidelity.

@@ -30,6 +30,7 @@ struct GameView: View {
   @State private var soundtrackError: String?
   @State private var soundtrackVolume = 0.45
   @State private var playingSoundtrack = false
+  @State private var referenceExpanded = true
   #if os(macOS)
     @FocusState private var keyboardFocused: Bool
   #endif
@@ -48,6 +49,15 @@ struct GameView: View {
           Text("Original placeholder maze • mechanics not verified against any historical game")
             .font(.footnote)
             .multilineTextAlignment(.center)
+          DisclosureGroup(
+            "Explore source-backed 16 × 16 world", isExpanded: $referenceExpanded
+          ) {
+            WorldReferenceView()
+              .padding(.top, 12)
+          }
+          .frame(maxWidth: 470)
+          Text("Playable placeholder prototype (not the original game)")
+            .font(.headline)
           HStack {
             Label("Health \(game.health)", systemImage: "heart.fill")
             Spacer()
@@ -126,11 +136,6 @@ struct GameView: View {
             Text("Audio is opt-in and stays on your device. The supplied AY file has four beeper-only tracks; render one to WAV locally. Playback loops, without original in-game cue timing.")
               .font(.caption)
               .multilineTextAlignment(.center)
-          }
-          .frame(maxWidth: 470)
-          DisclosureGroup("Explore source-backed 16 × 16 world") {
-            WorldReferenceView()
-              .padding(.top, 12)
           }
           .frame(maxWidth: 470)
         }
