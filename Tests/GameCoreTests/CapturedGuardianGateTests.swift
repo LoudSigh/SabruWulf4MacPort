@@ -14,8 +14,16 @@ final class CapturedGuardianGateTests: XCTestCase {
             guardianKind: 148, playerRoom: 168,
             guardianRoom: 168, progressBits: 15
         ), .fourBitsPresent)
-        XCTAssertThrowsError(try CapturedGuardianGate.choose(
+        XCTAssertEqual(try CapturedGuardianGate.choose(
             guardianKind: 149, playerRoom: 168,
+            guardianRoom: 168, progressBits: 15
+        ), .fourBitsPresent)
+        XCTAssertEqual(try CapturedGuardianGate.choose(
+            guardianKind: 149, playerRoom: 168,
+            guardianRoom: 168, progressBits: 0
+        ), .insufficientProgress)
+        XCTAssertThrowsError(try CapturedGuardianGate.choose(
+            guardianKind: 150, playerRoom: 168,
             guardianRoom: 168, progressBits: 15
         ))
         XCTAssertThrowsError(try CapturedGuardianGate.choose(
@@ -90,6 +98,51 @@ final class CapturedGuardianGateTests: XCTestCase {
                 XCTAssertEqual(report.firstInjuryFrame, 2)
                 XCTAssertEqual(report.finalPlayerKind, 65)
                 XCTAssertEqual(report.finalGuardianX, 58)
+            }
+        }
+    }
+
+    func testPrivateKind149BranchesWhenProvided() throws {
+        guard let path = ProcessInfo.processInfo.environment[
+            "SABRE_PRIVATE_GUARD_GATE_KIND149"
+        ] else { throw XCTSkip("Set the ignored second guardian-kind branch report") }
+        struct Branch: Decodable {
+            let actorKindAtFork: UInt8
+            let progressBefore: UInt8
+            let matchingManualFullRAMFrames: Int
+            let matchingManualFullCPUFrames: Int
+            let sourceGateVisits: Int
+            let noPiecesPathVisits: Int
+            let allPiecesPathVisits: Int
+            let firstInjuryFrame: Int?
+            let finalGuardianX: Int
+        }
+        let results = try JSONDecoder().decode(
+            [Branch].self, from: Data(contentsOf: URL(fileURLWithPath: path))
+        )
+        XCTAssertEqual(results.map(\.progressBefore), [0, 15])
+        for result in results {
+            XCTAssertEqual(result.actorKindAtFork, 149)
+            XCTAssertEqual(result.matchingManualFullRAMFrames, 30)
+            XCTAssertEqual(result.matchingManualFullCPUFrames, 30)
+            XCTAssertEqual(result.sourceGateVisits, 13)
+            let predicted = try CapturedGuardianGate.choose(
+                guardianKind: result.actorKindAtFork,
+                playerRoom: 168, guardianRoom: 168,
+                progressBits: result.progressBefore
+            )
+            if result.progressBefore == 15 {
+                XCTAssertEqual(predicted, .fourBitsPresent)
+                XCTAssertEqual(result.noPiecesPathVisits, 0)
+                XCTAssertEqual(result.allPiecesPathVisits, 13)
+                XCTAssertNil(result.firstInjuryFrame)
+                XCTAssertEqual(result.finalGuardianX, 84)
+            } else {
+                XCTAssertEqual(predicted, .insufficientProgress)
+                XCTAssertEqual(result.noPiecesPathVisits, 13)
+                XCTAssertEqual(result.allPiecesPathVisits, 0)
+                XCTAssertEqual(result.firstInjuryFrame, 2)
+                XCTAssertEqual(result.finalGuardianX, 58)
             }
         }
     }

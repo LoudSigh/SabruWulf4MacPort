@@ -1555,12 +1555,20 @@ else
     unset SABRE_PRIVATE_GUARD_GATE
     printf 'Optional edited guardian branch oracle absent; testing synthetic branch choice only.\n'
 fi
+GUARD_KIND149_ORACLE="$ROOT/$PRIVATE/guard-gate-kind149-branch30.json"
+if [[ -f "$GUARD_KIND149_ORACLE" ]]; then
+    export SABRE_PRIVATE_GUARD_GATE_KIND149="$GUARD_KIND149_ORACLE"
+else
+    unset SABRE_PRIVATE_GUARD_GATE_KIND149
+    printf 'Optional adjacent guardian-kind oracle absent; testing synthetic kind selection only.\n'
+fi
 if ! swift test --filter CapturedGuardianGateTests \
     > "$ROOT/$PRIVATE/guardian-gate-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/guardian-gate-test.log" >&2
     exit 1
 fi
 unset SABRE_PRIVATE_GUARD_GATE
+unset SABRE_PRIVATE_GUARD_GATE_KIND149
 COMPLETION_ORACLE="$ROOT/$PRIVATE/completion-region-100.json"
 if [[ -f "$COMPLETION_ORACLE" ]]; then
     export SABRE_PRIVATE_COMPLETION_REGION="$COMPLETION_ORACLE"

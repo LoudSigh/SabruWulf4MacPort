@@ -674,10 +674,10 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Steps**:
   1. Independently compare manual CPU and unmodified full emulator for 30/30 complete RAM and CPU frames in each edited progress-0/1/3/7/15 branch; never compare an edited branch to the unmodified original-input state as if it were parity.
   2. Require 13 source gate decisions in each branch, 52 insufficient-progress routes for the four lower states and 13 all-bits routes only for 15. Assert injury at frame 2 in the former four, no injury through frame 30 in the latter and only its observed 26-pixel actor-X displacement.
-  3. Compare `CapturedGuardianGate` against each source-selected decision; reject unsupported kind 149, wrong room or unmeasured high progress bits without silently selecting the successful route.
+  3. Separately edit the actor kind to 149 and require two further 30/30 RAM+CPU branch pairs (0 versus 15 progress) with 26/26 matching decisions. Compare `CapturedGuardianGate` against both measured kinds; reject kind 150, wrong room or unmeasured high progress bits without silently selecting the successful route.
   4. Keep the actor/ROM/RAM/instruction trace private. Do not show a victory screen or play a completion sound solely because the branch changed.
 - **Expected Result**: An externally selected four-bit conditional is modeled; real room traversal, natural collection, actor cadence and original win/game-over distinction remain release blockers.
-- **Edge Cases / Variants**: Partial pieces in another order, player immunity, actor movement after frame 30, alternative actor kind and source snapshot revision.
+- **Edge Cases / Variants**: Partial pieces in another order, player immunity, actor movement after frame 30, additional unmeasured kinds and source snapshot revision.
 
 ### TC-059: Healthy E→Q movement through two source exits
 - **Priority**: P1

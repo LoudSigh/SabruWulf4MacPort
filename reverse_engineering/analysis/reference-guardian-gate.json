@@ -22,5 +22,17 @@
     "firstNaturalOriginalInputGateObserved": false,
     "sourceParityAgainstUneditedInputAfterMutation": false
   },
-  "limits": "The 150 RAM and 150 CPU frame matches are each branch-internal comparisons between an isolated edited snapshot and the unmodified reference emulator with the same edit. Actor relocation plus synthetic progress bits are not natural original-input gameplay. All four lower-bit states take one branch and enter injury in this 30-frame window; all four bits take another branch, moving the actor and avoiding that injury in this window. This is not evidence of a completed exit, victory screen, general guardian update cadence or a naturally collected four-piece run. No original RAM, actor bytes, machine instructions or disassembly are published."
+  "adjacentGuardianKindCounterfactual": {
+    "selectedActorKind": 149,
+    "sourceKindChangedFromCapturedActor": true,
+    "recordedProgressValues": [0, 15],
+    "matchingManualFullRAMFramesPerBranch": [30, 30],
+    "matchingManualFullCPUFramesPerBranch": [30, 30],
+    "insufficientProgressBranchVisits": [13, 0],
+    "fourBitBranchVisits": [0, 13],
+    "firstInjuryFrameForZeroProgress": 2,
+    "injuriesForFourBitsThroughFrame30": 0,
+    "guardianXDisplacementForFourBitsAfter30Frames": 26
+  },
+  "limits": "The 210 RAM and 210 CPU frame matches are each branch-internal comparisons between an isolated edited snapshot and the unmodified reference emulator with the same edit. The captured guardian is kind 148; kind 149 is an additional edited actor-kind variation sharing its handler. Actor relocation plus synthetic progress bits are not natural original-input gameplay. All four lower-bit states measured for kind 148, and zero progress for kind 149, take one branch and enter injury in this window; all four bits take another branch, moving the actor without injury through 30 frames. This is not evidence of a completed exit, general guardian update cadence or a naturally collected four-piece run. A separate edited player-room experiment reached the candidate completion display, not this guardian-only test. No original RAM, actor bytes, machine instructions or disassembly are published."
 }

@@ -19,7 +19,8 @@ public enum CapturedGuardianGate {
         guardianKind: UInt8, playerRoom: UInt8,
         guardianRoom: UInt8, progressBits: UInt8
     ) throws -> CapturedGuardianOutcome {
-        guard guardianKind == 148, playerRoom == guardianRoom,
+        guard (148...149).contains(Int(guardianKind)),
+              playerRoom == guardianRoom,
               progressBits & 0xF0 == 0 else {
             throw CapturedGuardianGateError.unsupportedState
         }
