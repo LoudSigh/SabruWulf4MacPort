@@ -18,7 +18,9 @@ jobs:
             exit 1
           fi
       - name: Check local preview launcher syntax
-        run: bash -n 'Run Sabre Wulf Preview.command'
+        run: |
+          head -n 1 'Run Sabre Wulf Preview.command' | grep -Fx '#!/bin/bash'
+          bash -n 'Run Sabre Wulf Preview.command'
       - name: Test shared Swift package
         run: swift test
       - name: Test TZX inventory with synthetic data

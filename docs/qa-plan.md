@@ -604,6 +604,31 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: Four private observations are browseable on macOS/iOS/visionOS builds without bundling copyrighted values or claiming verified amulet/pickup behavior.
 - **Edge Cases / Variants**: Files provider permissions, empty sentinel sprite, malformed JSON, dynamic relocation after frame 656 and source edition mismatch.
 
+### TC-053: Do not infer pickup from suppressed actor contact
+- **Priority**: P1
+- **Preconditions**: Verified private post-restart frame 790 and source actor-contact gate.
+- **Steps**:
+  1. Check the player kind, footprint, byte-5 and global suppression **for the exact input path** before any isolated record relocation.
+  2. On the idle frame-790 restart suppression is nonzero: stop before changing RAM. On the W/Q path require 79/79 clear samples and a healthy, contact-free 790–867 window.
+  3. On the W/Q fork, change only one active record's room/X/Y in a private clone; compare 30 frames with an unmodified control, requiring manual/full emulator agreement *within* each branch but never claiming original-input parity for the intervention.
+  4. Record the record-kind removal and known score-byte write in the intervention, and check whether the enemy-contact predicate or generic Remove Entity routine actually ran.
+  5. In a repeat with private writer PCs, verify record removal at frame 792 (remaining removed through 820) and a score-routine entry/write 128 CPU cycles later, while the unedited control has neither. Do not call a changed score byte packed-BCD parity without operands/full buffers.
+  6. Capture those operands/buffers in one bounded repeat and require 1/1 valid packed-BCD `CapturedScoreStep` match; keep it labeled edited-RAM arithmetic, not natural item points.
+- **Expected Result**: Input-specific preconditions and a bounded causal interaction are measured without calling the object an amulet or assigning natural pickup/scoring rules.
+- **Edge Cases / Variants**: Collision during invulnerability, separate item predicate, source actor kind after injury and suppression crossing a display-frame boundary.
+
+### TC-054: Bounded counterfactual record-award result
+- **Priority**: P1
+- **Preconditions**: Private frame-790 W/Q fork with one controlled record room/X/Y relocation, intact player/global state and a matching untouched control.
+- **Steps**:
+  1. Require 30/30 internal manual/full RAM frames in each edited and untouched branch, explicitly not original-input parity for the edited branch.
+  2. Verify the handler clears that single record kind, and its sourced BCD operands increase 1UP by 7,500 while 2UP stays unchanged; control has neither handler nor score call.
+  3. Feed an externally supplied event into `CapturedRecordAward` and compare kind/score output; reject nonexistent record and unsupported active player.
+  4. If the independently measured ignored frame-792 oracle is available locally, require 1/1 exact kind and both packed-BCD score buffers; report its absence explicitly rather than presenting a synthetic-only pass as source parity.
+  5. Never apply this result to all four objects, infer a pickup predicate or claim an amulet/win condition without a natural source replay.
+- **Expected Result**: One counterfactual handler output matches; original quest behavior remains to be established.
+- **Edge Cases / Variants**: Duplicate removal, wrap at six-digit score, 2UP selector, other sprite record and item overlap during damage suppression.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

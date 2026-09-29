@@ -52,6 +52,15 @@
     "playerSharesRecordRoomAtFrame790": false,
     "nearestRecordWorldGridStepsByPath": [5, 4],
     "selectedRecordActiveAtFrames790And900": true,
+    "idleRestartFrame790ContactSuppressionCleared": false,
+    "wqRestartContactPreconditions": {
+      "suppressionClearedFrames790Through868": 79,
+      "contactFreeFrames790Through867": 78,
+      "selectedRecordStillActive": true,
+      "playerHealthyInOriginalRoom": true,
+      "matchingFullRAMFrames": 868
+    },
+    "idleRestartRecordRelocationPerformed": false,
     "directRouteAttempts": [
       {"direction": "right", "inRoomAdvancePixels": 73, "lastMovementFrame": 819, "roomsCrossed": 0, "bestWorldGridDistanceToRecord": 5},
       {"direction": "down", "inRoomAdvancePixels": 22, "lastMovementFrame": 802, "roomsCrossed": 0, "bestWorldGridDistanceToRecord": 5}
@@ -218,7 +227,47 @@
     },
     "fullRAMParityFramesPerAttempt": 900,
     "lifeByteStayedFour": true,
-    "interventionPerformed": false
+    "interventionPerformedInOriginalRoutes": false
   },
-  "limits": "The four records have valid world-room indexes, screen coordinates and validated sprite masks, but their quest identity, collection behavior and placement algorithm are not yet proved. Each output room matches a source-read world-layout index; this does not explain how the lookup index is chosen. Equal entry RNG paired with equal output and unequal RNG paired with differing rooms are insufficient for a causal RNG formula because registers and phase also differ. The two paths do not support fixed four-room placement. A source-safe north/east/east sequence through frame 983 reduced target distance to four rooms; the local static component had no east/south/north exit, and west returns at frames 1008 and 1075 worsened distance to six. An offline graph from the settled frame-1148 pose still found no candidate route after adding one source-observed south directed edge from another life phase. Static connectivity is not source gameplay, so this is not proof the record room is unreachable. No item room/contact or sword hit is established. No actor teleport, record values, instruction bytes, images or disassembly are published."
+  "wqRelocationCounterfactual": {
+    "forkFrame": 790,
+    "relocatedRecordFields": ["room", "x", "y"],
+    "playerAndGlobalFieldsEdited": false,
+    "matchingManualFullRAMFramesByBranch": [30, 30],
+    "recordRemovedInControl": false,
+    "recordRemovedInIntervention": true,
+    "recordRemovalFrame": 792,
+    "recordStillRemovedAtFrame820": true,
+    "observedRemovedDisplayedFramesInclusive": 29,
+    "recordRemovalWriterPC": 41449,
+    "recordKindAfterRemoval": 0,
+    "recordKindReadPC": 47412,
+    "recordXYReadPCs": [47468, 47471],
+    "precedingNonsequentialTransferPC": 47612,
+    "recordKindWritesInIntervention": 1,
+    "knownScoreByteWritesByBranch": [0, 1],
+    "scoreByteWriterPC": 46527,
+    "scoreRoutineEntryPC": 46505,
+    "scoreRoutineEntriesByBranch": [0, 1],
+    "counterfactualPackedBCDAwardPoints": 7500,
+    "counterfactualActivePlayer": 0,
+    "scoreArithmeticOperandsCapturedInInitialTrace": false,
+    "packedBCDHelperParityFromInitialTrace": false,
+    "instrumentedScoreRepeat": {
+      "validPackedBCDInputs": true,
+      "matchingCapturedScoreStepCalls": 1,
+      "matchingCapturedRecordAwardResults": 1,
+      "untouchedControlScoreCalls": 0,
+      "matchingManualFullRAMFramesByBranch": [30, 30],
+      "fullRecordStateUnchangedAfterRemovalFrames": 29
+    },
+    "cyclesBetweenRemovalAndScoreByteWrite": 128,
+    "lifeChanges": 0,
+    "verifiedEnemyContactReturnsForRecord": 0,
+    "removeEntityRoutineExecutions": 0,
+    "positiveOtherActorContacts": 0,
+    "framesWithDifferentVisiblePixels": 29,
+    "originalSourceParityAfterIntervention": false
+  },
+  "limits": "Four validated dynamic records are not identified as quest pieces; room lookup does not explain placement-index generation and two restarts do not support fixed locations. A sampled static graph found no candidate route, but cannot prove gameplay inaccessibility. The idle frame-790 fork was contact-suppressed; a separate W/Q fork had a clear contact window and permitted one controlled record-room/X/Y relocation. That intervention cleared one record kind at frame 792, persisted through frame 820, and added 7500 packed-BCD first-player points in a 1/1 measured score call; the generic Remove Entity site and verified enemy-contact return were absent. This one edited-RAM event does NOT establish original-input parity after the edit, amulet identity, a natural collection trigger, or point values for other records. No player teleport, original record values, instruction bytes, images or disassembly are published."
 }

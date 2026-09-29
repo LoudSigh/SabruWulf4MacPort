@@ -1,4 +1,4 @@
-Isola#!/bin/bash
+#!/bin/bash
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd -P)"
@@ -1014,6 +1014,19 @@ if ! SABRE_PRIVATE_SCORE_REPORT_DIR="$ROOT/$PRIVATE" \
     cat "$ROOT/$PRIVATE/score-step-test.log" >&2
     exit 1
 fi
+AWARD_ORACLE="$ROOT/$PRIVATE/record-award-oracle-frame-792.json"
+if [[ -f "$AWARD_ORACLE" ]]; then
+    export SABRE_PRIVATE_RECORD_AWARD="$AWARD_ORACLE"
+else
+    unset SABRE_PRIVATE_RECORD_AWARD
+    printf 'Optional edited-RAM record award oracle absent; testing synthetic award result only.\n'
+fi
+if ! swift test --filter CapturedRecordAwardTests \
+    > "$ROOT/$PRIVATE/record-award-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/record-award-test.log" >&2
+    exit 1
+fi
+unset SABRE_PRIVATE_RECORD_AWARD
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"
