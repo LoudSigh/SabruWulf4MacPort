@@ -1258,14 +1258,72 @@ if [[ -e "$REVERSE_SCORE_REPORT" ]]; then
 else
     mv "$TEMP_MENU_CONTACT" "$REVERSE_SCORE_REPORT"
 fi
-printf 'Checking the native post-setup room, position and sprite ID against all four paths...\n'
+printf 'Preparing a healthy E-then-Q source route into the western room...\n'
+E_Q_SCHEDULE=reverse_engineering/analysis/restart-ready-e-q-west-schedule.json
+E_Q_REPLAY="$ROOT/$PRIVATE/replay-restart-e-q-west-1050.json"
+"$ROOT/$PRIVATE/SnapshotReplay" "$ROM" "$GAME" \
+    --schedule "$E_Q_SCHEDULE" 1050 --reference-timing --actor-kind \
+    > "$TEMP_MENU"
+if [[ -e "$E_Q_REPLAY" ]]; then
+    if ! cmp -s "$E_Q_REPLAY" "$TEMP_MENU"; then
+        printf 'Existing private E/Q west-arrival replay differs: %s\n' "$E_Q_REPLAY" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU" "$E_Q_REPLAY"
+fi
+if ! "$ROOT/$PRIVATE/VerifyReferenceReplay" "$ROM" "$GAME" "$E_Q_REPLAY" \
+    > "$ROOT/$PRIVATE/e-q-west-replay-verification.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/e-q-west-replay-verification.log" >&2
+    exit 1
+fi
+if ! grep -Fx 'Verified 1050/1050 RAM and screen hashes against the unmodified emulator' \
+    "$ROOT/$PRIVATE/e-q-west-replay-verification.log" >/dev/null; then
+    printf 'E/Q replay did not verify exactly 1,050 RAM and screen frames.\n' >&2
+    exit 1
+fi
+if ! jq -e '
+    (.frames | length) == 1050
+    and .frames[818].playerRoomID == 152
+    and .frames[894].playerRoomID == 151
+    and .frames[901].playerX == 239
+    and .frames[920].playerKind == 18
+    and .frames[921].playerKind == 64
+    and .frames[1003].reportedLives == 3
+' "$E_Q_REPLAY" >/dev/null; then
+    printf 'E/Q source room transition or injury checkpoint changed.\n' >&2
+    exit 1
+fi
+E_Q_CONTACT="$ROOT/$PRIVATE/e-q-west-contact-check-1050.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" "$E_Q_SCHEDULE" 1050 \
+    --reference-timing --require-ram-parity --require-contact-parity \
+    > "$TEMP_MENU_CONTACT"
+if ! jq -e '
+    .framesCompared == 1050 and .matchingRAMFrames == 1050
+    and .contactComparison.calls == 3188
+    and .contactComparison.matchingCalls == 3188
+    and .contactComparison.positiveFrames == [162, 298, 921, 1038]
+' "$TEMP_MENU_CONTACT" >/dev/null; then
+    printf 'E/Q source contact boundary changed.\n' >&2
+    exit 1
+fi
+if [[ -e "$E_Q_CONTACT" ]]; then
+    if ! cmp -s "$E_Q_CONTACT" "$TEMP_MENU_CONTACT"; then
+        printf 'Existing private E/Q contact report differs: %s\n' "$E_Q_CONTACT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_MENU_CONTACT" "$E_Q_CONTACT"
+fi
+printf 'Checking bounded native post-setup positions and sprite IDs on five paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY_DIR="$ROOT/$PRIVATE" \
     SABRE_PRIVATE_NEW_GAME_MIXED_REPLAY="$MIXED_REPLAY" \
     SABRE_PRIVATE_NEW_GAME_REVERSE_REPLAY="$REVERSE_REPLAY" \
     SABRE_PRIVATE_NEW_GAME_REVERSE_CONTACT="$REVERSE_PARITY" \
-    swift test --filter 'CapturedMovementTests/testPrivate(ObservedNewGameMovementWhenProvided|MixedNewGamePathWhenProvided|ReversedNewGamePathWhenProvided|ReverseContactBoundaryWhenProvided)' \
+    SABRE_PRIVATE_E_Q_WEST_REPLAY="$E_Q_REPLAY" \
+    swift test --filter 'CapturedMovementTests/testPrivate(ObservedNewGameMovementWhenProvided|MixedNewGamePathWhenProvided|ReversedNewGamePathWhenProvided|ReverseContactBoundaryWhenProvided|EThenQWestArrivalWhenProvided)' \
     > "$ROOT/$PRIVATE/new-game-movement-test.log" 2>&1; then
     cat "$ROOT/$PRIVATE/new-game-movement-test.log" >&2
     exit 1
@@ -1357,6 +1415,19 @@ if ! swift test --filter CapturedItemContactTests \
     exit 1
 fi
 unset SABRE_PRIVATE_ITEM_CONTACT_DIR
+GUARD_ORACLE="$ROOT/$PRIVATE/guard-gate-branch30.json"
+if [[ -f "$GUARD_ORACLE" ]]; then
+    export SABRE_PRIVATE_GUARD_GATE="$GUARD_ORACLE"
+else
+    unset SABRE_PRIVATE_GUARD_GATE
+    printf 'Optional edited guardian branch oracle absent; testing synthetic branch choice only.\n'
+fi
+if ! swift test --filter CapturedGuardianGateTests \
+    > "$ROOT/$PRIVATE/guardian-gate-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/guardian-gate-test.log" >&2
+    exit 1
+fi
+unset SABRE_PRIVATE_GUARD_GATE
 printf 'Preparing four private 150-frame held-direction references...\n'
 for key in q w e r; do
     HELD="$ROOT/$PRIVATE/hold-$key-150.json"

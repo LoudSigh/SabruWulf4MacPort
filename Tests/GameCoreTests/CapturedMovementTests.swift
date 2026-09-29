@@ -76,6 +76,19 @@ final class CapturedMovementTests: XCTestCase {
         XCTAssertEqual(state.frame, 19)
     }
 
+    func testNorthThenLeftOnlySwitchesAtMeasuredFrame40() throws {
+        var state = try CapturedMovementState(
+            world: world(), origin: .observedNewGameReady
+        )
+        for _ in 0..<39 { try state.advance(holding: [.up]) }
+        XCTAssertThrowsError(try state.advance(holding: [.left]))
+        XCTAssertEqual(state.frame, 39)
+        try state.advance(holding: [.up])
+        try state.advance(holding: [.left])
+        XCTAssertThrowsError(try state.advance(holding: [.up]))
+        XCTAssertEqual(state.frame, 41)
+    }
+
     func testPrivateMixedNewGamePathWhenProvided() throws {
         let environment = ProcessInfo.processInfo.environment
         guard let worldPath = environment["SABRE_PRIVATE_WORLD"],
@@ -107,6 +120,47 @@ final class CapturedMovementTests: XCTestCase {
                 XCTAssertEqual(state.playerSpriteID, expected.playerKind)
             } else {
                 XCTAssertNil(state.playerSpriteID)
+            }
+        }
+    }
+
+    func testPrivateEThenQWestArrivalWhenProvided() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let worldPath = environment["SABRE_PRIVATE_WORLD"],
+              let replayPath = environment["SABRE_PRIVATE_E_Q_WEST_REPLAY"] else {
+            throw XCTSkip("Set ignored world and source E/Q west-arrival replay")
+        }
+        let source = try WorldReference.load(
+            from: Data(contentsOf: URL(fileURLWithPath: worldPath))
+        )
+        let replay = try ReferenceReplay.load(
+            from: Data(contentsOf: URL(fileURLWithPath: replayPath))
+        )
+        XCTAssertEqual(replay.frames.count, 1050)
+        XCTAssertEqual(replay.frameBoundaryMode, "reference-relative")
+        var state = try CapturedMovementState(
+            world: source, origin: .observedNewGameReady
+        )
+        for sourceIndex in 790..<921 {
+            try state.advance(holding: sourceIndex < 830 ? [.up] : [.left])
+            let expected = replay.frames[sourceIndex]
+            guard state.room.y * 16 + state.room.x == expected.playerRoomID,
+                  state.player == GridPoint(expected.playerX, expected.playerY) else {
+                return XCTFail("E/Q movement first differs at source frame \(expected.index)")
+            }
+            guard state.playerSpriteID == expected.playerKind else {
+                return XCTFail(
+                    "E/Q sprite first differs at source frame \(expected.index): "
+                        + "native \(String(describing: state.playerSpriteID)), "
+                        + "source \(String(describing: expected.playerKind))"
+                )
+            }
+        }
+        XCTAssertEqual(state.frame, 131)
+        XCTAssertEqual(state.room, RoomID(7, 9))
+        XCTAssertThrowsError(try state.advance(holding: [.left])) { error in
+            guard case CapturedMovementError.unsupportedRuntimeDivergence = error else {
+                return XCTFail("Expected pre-injury bound, got \(error)")
             }
         }
     }

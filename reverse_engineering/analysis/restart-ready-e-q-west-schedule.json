@@ -1,0 +1,7 @@
+[
+  {"key":"w","startFrame":20,"endFrame":30},
+  {"key":"e","startFrame":30,"endFrame":100},
+  {"key":"0","startFrame":530,"endFrame":535},
+  {"key":"e","startFrame":788,"endFrame":830},
+  {"key":"q","startFrame":830,"endFrame":1050}
+]

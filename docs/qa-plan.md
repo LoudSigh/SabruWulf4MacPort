@@ -668,6 +668,28 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: The tool supports local analysis without converting a blind linear decode into a claimed full or immutable code classification.
 - **Edge Cases / Variants**: File names containing spaces, restrictive folder permissions, local notes in an existing listing, future snapshot editions and source bytes modified between capture and execution.
 
+### TC-058: Guarded actor branch with four progress bits
+- **Priority**: P1
+- **Preconditions**: Hashed private gameplay snapshot and 48K ROM, isolated actor-room/X/Y intervention for its original slot-11 kind-148 actor, unchanged player fields except progress bits in the selected branches.
+- **Steps**:
+  1. Independently compare manual CPU and unmodified full emulator for 30/30 complete RAM and CPU frames in each edited progress-0/1/3/7/15 branch; never compare an edited branch to the unmodified original-input state as if it were parity.
+  2. Require 13 source gate decisions in each branch, 52 insufficient-progress routes for the four lower states and 13 all-bits routes only for 15. Assert injury at frame 2 in the former four, no injury through frame 30 in the latter and only its observed 26-pixel actor-X displacement.
+  3. Compare `CapturedGuardianGate` against each source-selected decision; reject unsupported kind 149, wrong room or unmeasured high progress bits without silently selecting the successful route.
+  4. Keep the actor/ROM/RAM/instruction trace private. Do not show a victory screen or play a completion sound solely because the branch changed.
+- **Expected Result**: An externally selected four-bit conditional is modeled; real room traversal, natural collection, actor cadence and original win/game-over distinction remain release blockers.
+- **Edge Cases / Variants**: Partial pieces in another order, player immunity, actor movement after frame 30, alternative actor kind and source snapshot revision.
+
+### TC-059: Healthy E→Q movement through two source exits
+- **Priority**: P1
+- **Preconditions**: Hashed private 48K gameplay snapshot/ROM and version-2 world import; private E/Q replay from [restart-ready-e-q-west-schedule.json](../reverse_engineering/analysis/restart-ready-e-q-west-schedule.json).
+- **Steps**:
+  1. Replay for 1,050 reference-relative frames with actor IDs; require 1,050/1,050 complete RAM/screen hashes and 3,188/3,188 contact returns against the unmodified emulator.
+  2. From the measured frame-790 native origin, hold E for 40 steps then Q for 91. Require 131/131 exact room/X/Y **and** bitmap-ID matches, north arrival at frame 819, west arrival at 895, west rebase at 902 and a source positive contact at 921.
+  3. Reject a premature/late E→Q switch and stop before source frame 922 with an explicit unsupported injury message. The separately imported replay may still scrub frame 922, but native simulation must not invent its damage.
+  4. Inspect the pink/recorded markers after local world/sprite/replay import on macOS and the iOS/visionOS simulators; retain separate placement, combat and general-exit disclaimers.
+- **Expected Result**: One bounded route through two original room transitions is observable and reproducible; a long static maze proposal is not advertised as a natural route to the guarded room.
+- **Edge Cases / Variants**: Other exit entry poses, actor collision at frame 921, mixed simultaneous keys, inaccessible private file provider and unverified sprite color layering.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

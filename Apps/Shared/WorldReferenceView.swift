@@ -110,6 +110,8 @@ struct WorldReferenceView: View {
                                 .font(.caption)
                             Text("A bounded reversal is supported: W for 18 frames, Q for 42, then None for 20. Position matches through frame 870; the sprite ID is hidden after frame 850. Playback stops before unmodeled injury-state motion after source contact.")
                                 .font(.caption)
+                            Text("A separate source-safe route is E for 40 frames, then Q for 91: room transitions at frames 819 and 895, and room/position/sprite ID match through frame 921. Playback stops before injury after the source contact at frame 921. Import the matching 1,050-frame E/Q private replay to compare.")
+                                .font(.caption)
                             if let replay, replay.frames.count < 900 {
                                 Text("This shorter replay cannot compare the full post-setup slice; import the private 900-frame late-W replay.")
                                     .font(.caption)

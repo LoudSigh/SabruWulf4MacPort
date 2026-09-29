@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "snapshotSHA256": "803e4197989c73408cfc5113f8f30c81ac0269958aa9e105b474b6f52437203c",
+  "schedule": "restart-ready-e-q-west-schedule.json",
+  "frameBoundaryMode": "reference-relative",
+  "sourceReplay": {
+    "frames": 1050,
+    "matchingFullRAMAndScreenFrames": 1050,
+    "matchingContactReturns": 3188,
+    "observedContactReturns": 3188,
+    "newGameReadyFrame": 790,
+    "heldUpSourceFramesInclusive": [789, 830],
+    "heldLeftSourceFramesInclusive": [831, 1050],
+    "northRoomArrival": {"frame": 819, "roomID": 152},
+    "westRoomArrival": {"frame": 895, "roomID": 151},
+    "westRebaseFrame": 902,
+    "positiveContactFrameAfterWestArrival": 921,
+    "firstInjuryActorFrame": 922,
+    "nextLifeByteDecreaseFrame": 1004
+  },
+  "nativeMovementSlice": {
+    "firstFrame": 791,
+    "lastCheckedFrame": 921,
+    "matchingRoomAndPositionFrames": 131,
+    "matchingPlayerBitmapIDFrames": 131,
+    "unsupportedNextFrame": 922
+  },
+  "limits": "The native slice starts only after an independently replayed keyboard new-game ready state; it does not simulate the menu, player/enemy contact scheduling, the injury at source frame 922 or the later life decrement. The first two room crossings are source-verified under this one E40/Q91 input path. A much longer static-only hypothesis to a candidate guardian room does not establish a playable route, other room entries or a win condition. The complete source replay, source artwork, RAM and disassembly remain private."
+}

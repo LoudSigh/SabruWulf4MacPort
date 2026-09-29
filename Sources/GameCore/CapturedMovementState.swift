@@ -17,11 +17,11 @@ public enum CapturedMovementError: Error, LocalizedError {
         case .invalidInitialState:
             "The imported world does not support the captured player start."
         case .unsupportedSchedule:
-            "The observed new-game slice verifies 60 Q/W/E/R frames then idle, W for 18 then E for 42 and idle, or W for 18 then Q for 42 and 20 idle frames."
+            "The observed new-game slice verifies 60 Q/W/E/R frames then idle, W for 18 then E or Q, or E for 40 then Q through the healthy west arrival."
         case .unsupportedTimeRange:
-            "The observed new-game movement slice ends after 110 source-checked frames."
+            "The observed new-game movement slices end after 110 or 131 source-checked frames, depending on the input path."
         case .unsupportedRuntimeDivergence:
-            "The measured path stops after source frame 866 on R (unclassified), or frame 870 on W/Q (source contact and injury-state motion are not modeled)."
+            "The measured path stops before an unresolved R step or before unmodeled contact/injury motion (W/Q frame 871, E/Q frame 922)."
         }
     }
 }
@@ -53,6 +53,7 @@ public struct CapturedMovementState: Sendable {
         case single(OriginalAction)
         case westThenNorth
         case rightThenLeft
+        case northThenLeft
     }
 
     private var readyInputPath: ReadyInputPath?
@@ -90,8 +91,13 @@ public struct CapturedMovementState: Sendable {
             if readyInputPath == .rightThenLeft && frame >= 80 {
                 throw CapturedMovementError.unsupportedRuntimeDivergence
             }
-            guard frame < 110 else { throw CapturedMovementError.unsupportedTimeRange }
-            if frame < 60 {
+            if readyInputPath == .northThenLeft && frame >= 131 {
+                throw CapturedMovementError.unsupportedRuntimeDivergence
+            }
+            guard frame < (readyInputPath == .northThenLeft ? 131 : 110) else {
+                throw CapturedMovementError.unsupportedTimeRange
+            }
+            if frame < 60 || readyInputPath == .northThenLeft {
                 guard actions.count == 1, let direction = actions.first,
                       direction != .fire else {
                     throw CapturedMovementError.unsupportedSchedule
@@ -103,6 +109,9 @@ public struct CapturedMovementState: Sendable {
                 } else if frame == 18, readyInputPath == .single(.right),
                           direction == .left {
                     readyInputPath = .rightThenLeft
+                } else if frame == 40, readyInputPath == .single(.up),
+                          direction == .left {
+                    readyInputPath = .northThenLeft
                 }
                 guard let readyInputPath else {
                     throw CapturedMovementError.unsupportedSchedule
@@ -111,6 +120,7 @@ public struct CapturedMovementState: Sendable {
                 case .single(let held): held
                 case .westThenNorth: frame < 18 ? .right : .up
                 case .rightThenLeft: frame < 18 ? .right : .left
+                case .northThenLeft: frame < 40 ? .up : .left
                 }
                 guard direction == expected else {
                     throw CapturedMovementError.unsupportedSchedule
@@ -159,6 +169,10 @@ public struct CapturedMovementState: Sendable {
                 velocityX = decay(velocityX)
                 velocityY = decay(velocityY)
                 transitioning = false
+                if readyInputPath == .northThenLeft {
+                    playerSpriteID = 20
+                    observedSpritePhaseEpoch = referenceFrameOffset + frame
+                }
             }
             frame += 1
             return
