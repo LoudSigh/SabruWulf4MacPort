@@ -5,6 +5,7 @@ import Foundation
 private enum DivergenceError: Error, CustomStringConvertible {
     case usage
     case invalidSchedule
+    case unsupportedOverlapSchedule
     case invalidInput
     case missingWorld
     case noActiveEnemyUpdates
@@ -26,9 +27,11 @@ private enum DivergenceError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .usage:
-            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--watch-score-entries] [--watch-overlap-attributes (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
+            "Usage: SnapshotDivergence <48k.rom> <gameplay.z80> <schedule.json> <frames: 1...1800> [--trace] [--watch-actor-state] [--watch-player-state] [--watch-entity-state] [--watch-menu-routines] [--watch-score-entries] [--watch-overlap-attributes|--watch-overlap-registers (100-frame W source path)] [--reference-timing] [--require-ram-parity] [--require-contact-parity] [--require-first-injury-parity] [--require-menu-sequence] [--require-enemy-direction-parity] [--require-entity-phase-parity (SABRE_PRIVATE_WORLD required)] [--require-enemy-expiry-parity] [--require-rng-step-parity] [--require-score-parity] [--coverage] | --self-test"
         case .invalidSchedule:
             "Schedule intervals must be sorted, nonoverlapping and within the frame count"
+        case .unsupportedOverlapSchedule:
+            "The overlap attribute probe requires only W held in frames 20 through 39 of the 100-frame replay"
         case .invalidInput:
             "Expected a verified 48K ROM and gameplay snapshot"
         case .missingWorld:
@@ -131,6 +134,19 @@ private struct EntityStateWrite: Encodable {
     let address: Int
     let previous: Int
     let value: Int
+}
+
+private struct OverlapRegisterContext: Encodable {
+    let ix: Int
+    let iy: Int
+    let hl: Int
+    let matchingActorRecordOffsets: [Int]
+}
+
+private struct CPURegisterTriplet {
+    let ix: UInt16
+    let iy: UInt16
+    let hl: UInt16
 }
 
 private struct ScoreEntry: Encodable {
@@ -295,6 +311,7 @@ private struct Report: Encodable {
     let entityStateWrites: [EntityStateWrite]?
     let playerStateWrites: [EntityStateWrite]?
     let overlapAttributeWrites: [EntityStateWrite]?
+    let overlapRegisterContext: [OverlapRegisterContext]?
     let scoreEntries: [ScoreEntry]?
     let scoreComparison: ScoreComparison?
     let rngFrames: [Int]?
@@ -393,11 +410,12 @@ private struct SnapshotDivergence {
                 return
             }
             let options = Array(arguments.dropFirst(5))
-            guard (5...23).contains(arguments.count),
+            guard (5...24).contains(arguments.count),
                   options.allSatisfy({
                       ["--trace", "--watch-actor-state", "--watch-entity-state",
                        "--watch-player-state", "--watch-menu-routines",
                        "--watch-score-entries", "--watch-overlap-attributes",
+                       "--watch-overlap-registers",
                        "--reference-timing",
                        "--require-ram-parity", "--require-contact-parity",
                        "--require-first-injury-parity", "--require-menu-sequence",
@@ -437,7 +455,8 @@ private struct SnapshotDivergence {
                   !options.contains("--require-score-parity")
                     || (options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")),
-                  !options.contains("--watch-overlap-attributes")
+                  (!options.contains("--watch-overlap-attributes")
+                    && !options.contains("--watch-overlap-registers"))
                     || (count == 100 && options.contains("--reference-timing")
                         && options.contains("--require-ram-parity")) else {
                 throw DivergenceError.usage
@@ -447,7 +466,9 @@ private struct SnapshotDivergence {
             let watchEntityState = options.contains("--watch-entity-state")
             let watchPlayerState = options.contains("--watch-player-state")
             let watchScoreEntries = options.contains("--watch-score-entries")
-            let watchOverlapAttributes = options.contains("--watch-overlap-attributes")
+            let watchOverlapRegisters = options.contains("--watch-overlap-registers")
+            let watchOverlapAttributes =
+                options.contains("--watch-overlap-attributes") || watchOverlapRegisters
             let requireContactParity = options.contains("--require-contact-parity")
             let requireInjuryParity = options.contains("--require-first-injury-parity")
             let requireMenuSequence = options.contains("--require-menu-sequence")
@@ -468,7 +489,7 @@ private struct SnapshotDivergence {
                 guard segments.count == 1, segments[0].key == "w",
                       segments[0].startFrame == 20,
                       segments[0].endFrame == 40 else {
-                    throw DivergenceError.invalidSchedule
+                    throw DivergenceError.unsupportedOverlapSchedule
                 }
             }
             let entityWorld: WorldReference?
@@ -520,6 +541,7 @@ private struct SnapshotDivergence {
             var entityStateWrites: [EntityStateWrite] = []
             var playerStateWrites: [EntityStateWrite] = []
             var overlapAttributeWrites: [EntityStateWrite] = []
+            var overlapRegisterContext: [OverlapRegisterContext] = []
             var overlapAttributeWriteBudgetExceeded = false
             var scoreEntries: [ScoreEntry] = []
             var pendingScore: PendingScore?
@@ -782,6 +804,12 @@ private struct SnapshotDivergence {
                         }
                     }
                     let instructionAddress = Int(cpu.pc)
+                    let writeRegisters: CPURegisterTriplet? =
+                        watchOverlapRegisters
+                            ? CPURegisterTriplet(
+                                ix: cpu.ix, iy: cpu.iy,
+                                hl: UInt16(cpu.h) << 8 | UInt16(cpu.l)
+                            ) : nil
                     if includeCoverage {
                         if cpu.pc >= 0x4000 {
                             ramInstructionStarts.insert(cpu.pc)
@@ -860,6 +888,21 @@ private struct SnapshotDivergence {
                                             previous: Int(memory.read(address)),
                                             value: Int(value)
                                         ))
+                                        if let writeRegisters {
+                                            let base = writeRegisters.ix
+                                            overlapRegisterContext.append(
+                                                OverlapRegisterContext(
+                                                    ix: Int(base),
+                                                    iy: Int(writeRegisters.iy),
+                                                    hl: Int(writeRegisters.hl),
+                                                    matchingActorRecordOffsets: (0..<12)
+                                                        .filter { offset in
+                                                            memory.read(base &+ UInt16(offset))
+                                                                == value
+                                                        }
+                                                )
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1099,6 +1142,8 @@ private struct SnapshotDivergence {
                 playerStateWrites: watchPlayerState ? playerStateWrites : nil,
                 overlapAttributeWrites: watchOverlapAttributes
                     ? overlapAttributeWrites : nil,
+                overlapRegisterContext: watchOverlapRegisters
+                    ? overlapRegisterContext : nil,
                 scoreEntries: watchScoreEntries ? scoreEntries : nil,
                 scoreComparison: requireScoreParity
                     ? ScoreComparison(

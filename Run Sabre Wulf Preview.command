@@ -349,6 +349,55 @@ if [[ -e "$ATTR_REPORT" ]]; then
 else
     mv "$TEMP_ATTR" "$ATTR_REPORT"
 fi
+ATTR_CONTEXT="$ROOT/$PRIVATE/actor-screen-w-attribute-context-v1.json"
+"$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
+    reverse_engineering/analysis/actor-screen-w-schedule.json 100 \
+    --reference-timing --require-ram-parity --watch-overlap-registers \
+    > "$TEMP_ATTR"
+if ! jq -e '
+    .framesCompared == 100 and .matchingRAMFrames == 100
+    and (.overlapAttributeWrites | length) == 94
+    and (.overlapRegisterContext | length) == 94
+    and ([.overlapRegisterContext[] | select(.ix == 38658)] | length) == 78
+    and ([.overlapRegisterContext[] | select(.ix == 38874)] | length) == 16
+    and ([.overlapRegisterContext[] |
+        select(.ix != 38658 and .ix != 38874)] | length) == 0
+    and ([.overlapRegisterContext[] |
+        select(.ix == 38658 and .matchingActorRecordOffsets == [5])] | length) == 78
+    and ([.overlapRegisterContext[] |
+        select(.ix == 38874 and .matchingActorRecordOffsets == [])] | length) == 16
+    and ([range(0; (.overlapAttributeWrites | length)) as $i |
+        select(.overlapRegisterContext[$i].ix == 38658
+            and (.overlapAttributeWrites[$i].value % 8) == 7)] | length) == 78
+    and ([range(0; (.overlapAttributeWrites | length)) as $i |
+        select(.overlapRegisterContext[$i].ix == 38874
+            and (.overlapAttributeWrites[$i].value % 8) != 7)] | length) == 16
+    and ([range(0; (.overlapAttributeWrites | length)) as $i |
+        select(.overlapAttributeWrites[$i].frame >= 43
+            and .overlapAttributeWrites[$i].frame <= 53
+            and .overlapAttributeWrites[$i].address >= 22895
+            and .overlapAttributeWrites[$i].address <= 22896
+            and .overlapAttributeWrites[$i].previous != .overlapAttributeWrites[$i].value
+            and .overlapRegisterContext[$i].ix == 38658)] | length) == 11
+    and ([range(0; (.overlapAttributeWrites | length)) as $i |
+        select(.overlapAttributeWrites[$i].frame >= 43
+            and .overlapAttributeWrites[$i].frame <= 53
+            and .overlapAttributeWrites[$i].address >= 22895
+            and .overlapAttributeWrites[$i].address <= 22896
+            and .overlapAttributeWrites[$i].previous != .overlapAttributeWrites[$i].value
+            and .overlapRegisterContext[$i].ix == 38874)] | length) == 11
+' "$TEMP_ATTR" >/dev/null; then
+    printf 'Private W-overlap actor-indexed attribute context changed.\n' >&2
+    exit 1
+fi
+if [[ -e "$ATTR_CONTEXT" ]]; then
+    if ! cmp -s "$ATTR_CONTEXT" "$TEMP_ATTR"; then
+        printf 'Existing private attribute context differs: %s\n' "$ATTR_CONTEXT" >&2
+        exit 1
+    fi
+else
+    mv "$TEMP_ATTR" "$ATTR_CONTEXT"
+fi
 ENTITY_TRACE="$ROOT/$PRIVATE/west-entity-trace-v2.json"
 "$ROOT/$PRIVATE/SnapshotDivergence" "$ROM" "$GAME" \
     reverse_engineering/analysis/west-exit-schedule.json 256 --trace > "$TEMP_ENTITY"

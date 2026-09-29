@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "sourceFrames": 100,
+  "matchingCompleteRAMFrames": 100,
+  "sampledAttributeWrites": 94,
+  "matchingRegisterContexts": 94,
+  "indexedActorPointerContext": {
+    "playerWrites": 78,
+    "otherActorSlot18Writes": 16,
+    "otherPointers": 0,
+    "otherActorFrames": [41, 43, 45, 47, 49, 51, 53, 55]
+  },
+  "attributeInkClassification": {
+    "playerContextWhiteInkWrites": 78,
+    "otherActorContextNonwhiteInkWrites": 16
+  },
+  "recordFieldEquality": {
+    "playerWritesMatchingOnlyRecordOffset5": 78,
+    "otherActorWritesMatchingAnyRecordByte": 0
+  },
+  "affectedPlayerRowChangedWritesAcrossOverlap": {
+    "playerIndexedWrites": 11,
+    "otherActorIndexedWrites": 11
+  },
+  "limits": "The 100-frame W path has full RAM parity. These are numeric pre-instruction IX contexts and write-value/record-byte equality observations, not proof that a particular field supplies color or a general actor draw-order algorithm. Slot-18 writes alternate with player-indexed writes in this window; there is no validated independent native color scheduler. Full register states, original record bytes, addresses and per-write attribute values remain private."
+}
