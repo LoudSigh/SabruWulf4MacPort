@@ -1,10 +1,35 @@
+import AVFoundation
 import Combine
 import GameCore
 import SwiftUI
+import UniformTypeIdentifiers
+
+private enum SoundtrackImportError: Error, LocalizedError {
+  case missingFile
+  case tooLarge
+  case invalidAudio
+
+  var errorDescription: String? {
+    switch self {
+    case .missingFile:
+      "Select a local WAV, M4A or other supported audio file."
+    case .tooLarge:
+      "The alternative soundtrack exceeds the 20 MB import limit."
+    case .invalidAudio:
+      "The selected file is not playable audio. Render the optional AY file to WAV first."
+    }
+  }
+}
 
 struct GameView: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var game = GameState()
+  @State private var importingSoundtrack = false
+  @State private var soundtrack: AVAudioPlayer?
+  @State private var soundtrackName: String?
+  @State private var soundtrackError: String?
+  @State private var soundtrackVolume = 0.45
+  @State private var playingSoundtrack = false
   #if os(macOS)
     @FocusState private var keyboardFocused: Bool
   #endif
@@ -62,6 +87,47 @@ struct GameView: View {
           Text("Move with arrow buttons. On Mac: arrow keys or WASD. P pauses; R resets.")
             .font(.caption)
             .multilineTextAlignment(.center)
+          VStack(spacing: 8) {
+            Text("Optional local audio · not verified against 48K gameplay")
+              .font(.headline)
+            Button("Import your local audio (WAV or M4A)") {
+              importingSoundtrack = true
+            }
+            .buttonStyle(.bordered)
+            if let soundtrackName {
+              Text("Local audio: \(soundtrackName)")
+                .font(.caption)
+              HStack {
+                Button(playingSoundtrack ? "Pause soundtrack" : "Play soundtrack") {
+                  toggleSoundtrack()
+                }
+                .disabled(game.isPaused || game.isGameOver)
+                Button("Remove soundtrack") {
+                  pauseSoundtrack()
+                  soundtrack = nil
+                  self.soundtrackName = nil
+                  soundtrackError = nil
+                }
+              }
+              .buttonStyle(.bordered)
+              Slider(value: $soundtrackVolume, in: 0...1) {
+                Text("Alternative soundtrack volume")
+              }
+              .onChange(of: soundtrackVolume) { _, volume in
+                soundtrack?.volume = Float(volume)
+              }
+            }
+            if let soundtrackError {
+              Text(soundtrackError)
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .accessibilityAddTraits(.updatesFrequently)
+            }
+            Text("Audio is opt-in and stays on your device. The supplied AY file has four beeper-only tracks; render one to WAV locally. Playback loops, without original in-game cue timing.")
+              .font(.caption)
+              .multilineTextAlignment(.center)
+          }
+          .frame(maxWidth: 470)
           DisclosureGroup("Explore source-backed 16 × 16 world") {
             WorldReferenceView()
               .padding(.top, 12)
@@ -78,8 +144,51 @@ struct GameView: View {
         if scenePhase == .active { game.tick() }
       }
       .onChange(of: scenePhase) { _, phase in
+        if phase != .active { pauseSoundtrack() }
         if phase != .active && !game.isPaused && !game.isGameOver {
           game.togglePause()
+        }
+      }
+      .onChange(of: game.isPaused) { _, paused in
+        if paused { pauseSoundtrack() }
+      }
+      .onChange(of: game.isGameOver) { _, over in
+        if over { pauseSoundtrack() }
+      }
+      .fileImporter(
+        isPresented: $importingSoundtrack,
+        allowedContentTypes: [.audio],
+        allowsMultipleSelection: false
+      ) { result in
+        do {
+          guard let url = try result.get().first else {
+            throw SoundtrackImportError.missingFile
+          }
+          let accessed = url.startAccessingSecurityScopedResource()
+          defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+          let handle = try FileHandle(forReadingFrom: url)
+          defer { handle.closeFile() }
+          let maximumBytes = 20_000_000
+          guard let audio = try handle.read(upToCount: maximumBytes + 1),
+                !audio.isEmpty else {
+            throw SoundtrackImportError.invalidAudio
+          }
+          guard audio.count <= maximumBytes else {
+            throw SoundtrackImportError.tooLarge
+          }
+          let player = try AVAudioPlayer(data: audio)
+          guard player.duration.isFinite, player.duration > 0,
+                player.prepareToPlay() else {
+            throw SoundtrackImportError.invalidAudio
+          }
+          player.numberOfLoops = -1
+          player.volume = Float(soundtrackVolume)
+          pauseSoundtrack()
+          soundtrack = player
+          soundtrackName = url.lastPathComponent
+          soundtrackError = nil
+        } catch {
+          soundtrackError = error.localizedDescription
         }
       }
       #if os(macOS)
@@ -108,6 +217,26 @@ struct GameView: View {
         }
       #endif
     }
+  }
+
+  private func toggleSoundtrack() {
+    guard let soundtrack else {
+      soundtrackError = SoundtrackImportError.missingFile.localizedDescription
+      return
+    }
+    if playingSoundtrack {
+      pauseSoundtrack()
+    } else if soundtrack.play() {
+      playingSoundtrack = true
+      soundtrackError = nil
+    } else {
+      soundtrackError = SoundtrackImportError.invalidAudio.localizedDescription
+    }
+  }
+
+  private func pauseSoundtrack() {
+    soundtrack?.pause()
+    playingSoundtrack = false
   }
 
   private var board: some View {

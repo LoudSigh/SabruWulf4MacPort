@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "sourceSHA256": "7643bfae575c172413fafe2877c04eab0f618af73483dc82fc6b4fe17eba2cfb",
+  "container": "ZXAY EMUL version 1",
+  "localRenderer": {
+    "project": "dpt/SlopAY",
+    "revision": "c17d33d",
+    "license": "MIT",
+    "wav": {"sampleRate": 44100, "channels": 2, "codec": "pcm_s16le"}
+  },
+  "songs": [
+    {"index": 0, "durationSeconds": 31.0, "ayChipWrites": 0, "beeperWrites": 20332},
+    {"index": 1, "durationSeconds": 3.5, "ayChipWrites": 0, "beeperWrites": 950},
+    {"index": 2, "durationSeconds": 5.5, "ayChipWrites": 0, "beeperWrites": 4266},
+    {"index": 3, "durationSeconds": 2.5, "ayChipWrites": 0, "beeperWrites": 794}
+  ],
+  "limits": "The supplied file contains four beeper-only tracks in an AY container, not verified newer AY-chip music. Rendering with a separate local MIT-licensed tool is optional; WAVs stay ignored under SNAPSHOTS and are never bundled. Neither event timing nor audio edition equivalence to the supplied 48K TZX/gameplay snapshot has been established. The native player loops user-selected imported audio but does not schedule source sound events."
+}

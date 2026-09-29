@@ -644,6 +644,17 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: One measured overlap is visible without bundling source pixels, inventing general sprite composition, affecting the placeholder game or converting a replay into enemy AI.
 - **Edge Cases / Variants**: Empty sprite mask, selected room differs from recorded room, unavailable private atlas, later input schedule, file-provider permission denial and app scene deactivation.
 
+### TC-056: Optional local beeper soundtrack
+- **Priority**: P1
+- **Preconditions**: The user's hash-verified AY file, an independently built MIT-licensed SlopAY player on Mac, and macOS/iOS/visionOS app builds. No original audio is bundled.
+- **Steps**:
+  1. Run the local rendering script separately for song indexes 0–3; require four parseable stereo 44.1 kHz PCM WAVs under ignored `SNAPSHOTS/` with durations 31, 3.5, 5.5 and 2.5 seconds. Reject an invalid index, missing player, changed AY hash and conflicting output without overwriting user files.
+  2. Import a local WAV using the native audio picker, play only on explicit action, check looping and volume adjustment, and verify Pause/Resume plus scene/background deactivation stop playback until the user starts it again.
+  3. Repeat playback and lifecycle checks with VoiceOver on iOS and visionOS using an authorized private device file-provider transfer. Verify no soundtrack is bundled or uploaded.
+  4. Try a corrupt audio file and a file over 20 MB; require visible import errors. The `.ay` is not directly playable in the app, and no original gameplay sound cue is claimed.
+- **Expected Result**: Local opt-in audio works without altering `GameCore` state, presenting the four beeper tracks as newer AY-chip music, or assuming they match the supplied snapshot's event timing.
+- **Edge Cases / Variants**: Provider permission denial, audio-session interruption, silent mode, game over/reset, app backgrounding and multiple imports.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |
