@@ -28,6 +28,14 @@ private enum BackgroundPreviewError: Error, LocalizedError {
     }
 }
 
+private enum LocalReferenceLaunchError: Error, LocalizedError {
+    case missingDirectory
+
+    var errorDescription: String? {
+        "Pass a directory after --local-reference-dir, or use the local folder import button."
+    }
+}
+
 struct WorldReferenceView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var world: WorldReference?
@@ -59,6 +67,15 @@ struct WorldReferenceView: View {
     @State private var movementOrigin: CapturedMovementOrigin = .gameplayCapture
     @State private var heldKey = "none"
     @State private var playingMovement = false
+    @State private var exploration: ExperimentalWorldGame?
+    @State private var explorationHeldKey = "none"
+    @State private var playingExploration = false
+    @State private var explorationError: String?
+    @State private var showExplorationMap = false
+    #if os(macOS)
+    @State private var checkedLaunchArguments = false
+    @FocusState private var explorationKeyboardFocused: Bool
+    #endif
 
     private let movementTimer = Timer.publish(every: 0.02, on: .main, in: .common).autoconnect()
 
@@ -71,8 +88,8 @@ struct WorldReferenceView: View {
             Text("1984 world structure")
                 .font(.headline)
             Text(
-                "Room structure and recorded replays are read-only. "
-                    + "The separate movement preview implements only a measured subset of original rules."
+                "Play an opt-in experimental world mode with local artwork and record pickups, "
+                    + "or inspect the read-only reference replays and strictly measured movement preview."
             )
             .font(.caption)
             Text("Original keyboard reference: Q left · W right · E up · R down · T fire (not bound to this viewer)")
@@ -87,6 +104,71 @@ struct WorldReferenceView: View {
                 Text(importError)
                     .foregroundStyle(.red)
                     .accessibilityLabel("Import failed: \(importError)")
+            }
+            if let world, let placementState, world.schemaVersion == 2 {
+                if let exploration {
+                    Text(
+                        "World play · room \(exploration.room.y * 16 + exploration.room.x)"
+                            + " · X \(exploration.player.x), Y \(exploration.player.y)"
+                            + " · 1UP \(exploration.scores.first.decimalValue)"
+                            + " · records \(exploration.collectedRecordIDs.count)/4"
+                    )
+                    .font(.subheadline.monospacedDigit())
+                    .accessibilityAddTraits(.updatesFrequently)
+                    Text(
+                        "Experimental gameplay: the world geometry and checked movement slice "
+                            + "are source-backed; other exits and automatic pickup timing are inferred. "
+                            + "Enemies, sword combat and the earned ending are not implemented."
+                    )
+                    .font(.caption)
+                    Picker("Travel direction", selection: $explorationHeldKey) {
+                        Text("None").tag("none")
+                        Text("Q · left").tag("q")
+                        Text("W · right").tag("w")
+                        Text("E · up").tag("e")
+                        Text("R · down").tag("r")
+                    }
+                    HStack {
+                        Button(playingExploration ? "Stop travel" : "Travel at 50 Hz") {
+                            playingExploration.toggle()
+                        }
+                        .disabled(exploration.paused)
+                        Button(exploration.paused ? "Resume" : "Pause") {
+                            self.exploration?.togglePause()
+                            playingExploration = false
+                        }
+                        Button("Restart world") {
+                            startExploration(world: world, placements: placementState)
+                        }
+                        Button("Exit world") {
+                            playingExploration = false
+                            self.exploration = nil
+                        }
+                    }
+                    .buttonStyle(.bordered)
+                    VStack(spacing: 4) {
+                        explorationButton("Up", symbol: "arrow.up", action: .up)
+                        HStack {
+                            explorationButton("Left", symbol: "arrow.left", action: .left)
+                            explorationButton("Down", symbol: "arrow.down", action: .down)
+                            explorationButton("Right", symbol: "arrow.right", action: .right)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(exploration.paused)
+                    Text("Tap a direction to move; choose a direction and Travel for continuous play. On Mac, focus the explorer and use arrows or Q/W/E/R.")
+                        .font(.caption)
+                } else {
+                    Button("Play the experimental 16 × 16 world") {
+                        startExploration(world: world, placements: placementState)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+            if let explorationError {
+                Text(explorationError)
+                    .foregroundStyle(.red)
+                    .accessibilityLabel("World play error: \(explorationError)")
             }
             if world != nil {
                 if world?.schemaVersion == 2 {
@@ -327,46 +409,55 @@ struct WorldReferenceView: View {
                 )
                 .font(.subheadline.monospacedDigit())
 
-                LazyVGrid(columns: columns, spacing: 2) {
-                    ForEach(0..<256, id: \.self) { index in
-                        let position = RoomID(index % 16, index / 16)
-                        let roomType = world.roomType(at: position) ?? 0
-                        Button {
-                            selected = position
-                        } label: {
-                            ZStack {
-                                Rectangle()
-                                    .fill(
-                                        position == selected
-                                            ? Color.yellow : Color.teal.opacity(0.3 + Double(roomType % 4) * 0.12)
-                                    )
-                                if hasPrivateRecord(in: position) {
-                                    Circle()
-                                        .fill(.purple)
-                                        .padding(4)
-                                }
-                            }
-                            .aspectRatio(1, contentMode: .fit)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(
-                            "Column \(position.x + 1), row \(position.y + 1), "
-                                + "template \(roomType)"
-                                + (hasPrivateRecord(in: position)
-                                    ? ", source record at imported frame" : "")
-                        )
+                if exploration != nil {
+                    Button(showExplorationMap ? "Hide world map" : "Show world map") {
+                        showExplorationMap.toggle()
                     }
+                    .buttonStyle(.bordered)
                 }
-                .frame(maxWidth: 470)
-                .accessibilityElement(children: .contain)
-
-                HStack {
-                    stepButton("North", .north)
-                    stepButton("West", .west)
-                    stepButton("East", .east)
-                    stepButton("South", .south)
+                if exploration == nil || showExplorationMap {
+                    LazyVGrid(columns: columns, spacing: 2) {
+                        ForEach(0..<256, id: \.self) { index in
+                            let position = RoomID(index % 16, index / 16)
+                            let roomType = world.roomType(at: position) ?? 0
+                            Button {
+                                selected = position
+                            } label: {
+                                ZStack {
+                                    Rectangle()
+                                        .fill(
+                                            position == selected
+                                                ? Color.yellow : Color.teal.opacity(0.3 + Double(roomType % 4) * 0.12)
+                                        )
+                                    if hasPrivateRecord(in: position) {
+                                        Circle()
+                                            .fill(.purple)
+                                            .padding(4)
+                                    }
+                                }
+                                .aspectRatio(1, contentMode: .fit)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(
+                                "Column \(position.x + 1), row \(position.y + 1), "
+                                    + "template \(roomType)"
+                                    + (hasPrivateRecord(in: position)
+                                        ? ", source record at imported frame" : "")
+                            )
+                        }
+                    }
+                    .frame(maxWidth: 470)
+                    .accessibilityElement(children: .contain)
                 }
-                .buttonStyle(.bordered)
+                if exploration == nil {
+                    HStack {
+                        stepButton("North", .north)
+                        stepButton("West", .west)
+                        stepButton("East", .east)
+                        stepButton("South", .south)
+                    }
+                    .buttonStyle(.bordered)
+                }
                 let placements = world.rooms[world.roomType(at: selected) ?? 0].placements
                 Text("\(placements.count) source background placements in this room template")
                     .font(.caption)
@@ -401,8 +492,12 @@ struct WorldReferenceView: View {
                                     )
                             }
                         }
-                        recordedPlayerSprite(in: area.size)
-                        measuredPlayerSprite(in: area.size)
+                        if exploration == nil {
+                            recordedPlayerSprite(in: area.size)
+                            measuredPlayerSprite(in: area.size)
+                        } else {
+                            exploratoryPlayerSprite(in: area.size)
+                        }
                         ForEach(selectedPrivateRecords, id: \.id) { record in
                             Circle()
                                 .stroke(.purple, lineWidth: 2)
@@ -415,7 +510,7 @@ struct WorldReferenceView: View {
                                     "Source record \(record.id + 1) at X \(record.x), Y \(record.y), from imported frame; natural collection unverified"
                                 )
                         }
-                        if let position = markerPosition {
+                        if exploration == nil, let position = markerPosition {
                             Circle()
                                 .stroke(.cyan, lineWidth: 2)
                                 .frame(width: 12, height: 12)
@@ -427,7 +522,7 @@ struct WorldReferenceView: View {
                                 )
                                 .accessibilityLabel("Recorded actor position bytes; may be stale after returning to the menu")
                         }
-                        if let position = movementMarkerPosition {
+                        if exploration == nil, let position = movementMarkerPosition {
                             Circle()
                                 .stroke(.pink, lineWidth: 2)
                                 .frame(width: 16, height: 16)
@@ -437,16 +532,18 @@ struct WorldReferenceView: View {
                                 )
                                 .accessibilityLabel("Measured movement position")
                         }
-                        referenceEntityMarker(
-                            currentEntityFrame?.manualEntity, in: selected,
-                            size: area.size, color: .orange,
-                            label: "Manual CPU recorded actor"
-                        )
-                        referenceEntityMarker(
-                            currentEntityFrame?.fullEmulatorEntity, in: selected,
-                            size: area.size, color: .purple,
-                            label: "Unmodified emulator recorded actor"
-                        )
+                        if exploration == nil {
+                            referenceEntityMarker(
+                                currentEntityFrame?.manualEntity, in: selected,
+                                size: area.size, color: .orange,
+                                label: "Manual CPU recorded actor"
+                            )
+                            referenceEntityMarker(
+                                currentEntityFrame?.fullEmulatorEntity, in: selected,
+                                size: area.size, color: .purple,
+                                label: "Unmodified emulator recorded actor"
+                            )
+                        }
                     }
                 }
                 .aspectRatio(256.0 / 192.0, contentMode: .fit)
@@ -470,29 +567,7 @@ struct WorldReferenceView: View {
                 }
                 let accessed = url.startAccessingSecurityScopedResource()
                 defer { if accessed { url.stopAccessingSecurityScopedResource() } }
-                let bundle = try PrivateReferenceBundle.load(from: url)
-                let images = try makeSourceRoomImages(
-                    world: bundle.world, atlas: bundle.backgrounds
-                )
-                world = bundle.world
-                selected = WorldReference.capturedGameplayRoom
-                art = [:]
-                artStatus = nil
-                backgroundAtlas = bundle.backgrounds
-                sourceRoomImages = images
-                sourceAttributeColors = false
-                spriteSamples = [:]
-                spriteAtlas = bundle.sprites
-                placementState = bundle.placements
-                spriteID = 16
-                replay = bundle.replay
-                replayFrameValue = 0
-                entityTrace = nil
-                movement = nil
-                movementOrigin = .gameplayCapture
-                playingMovement = false
-                heldKey = "none"
-                importError = nil
+                try loadReferenceBundle(from: url)
             } catch {
                 importError = error.localizedDescription
             }
@@ -530,6 +605,9 @@ struct WorldReferenceView: View {
                 movement = nil
                 movementOrigin = .gameplayCapture
                 playingMovement = false
+                exploration = nil
+                playingExploration = false
+                explorationError = nil
                 heldKey = "none"
                 importError = nil
             } catch {
@@ -652,6 +730,8 @@ struct WorldReferenceView: View {
                 }
                 spriteAtlas = try SpriteAtlas.load(from: Data(contentsOf: url))
                 placementState = nil
+                exploration = nil
+                playingExploration = false
                 spriteID = 16
                 importError = nil
             } catch {
@@ -681,6 +761,8 @@ struct WorldReferenceView: View {
                 )
                 try imported.validate(spriteAtlas: spriteAtlas)
                 placementState = imported
+                exploration = nil
+                playingExploration = false
                 importError = nil
             } catch {
                 importError = error.localizedDescription
@@ -742,11 +824,50 @@ struct WorldReferenceView: View {
         }
 
         .onReceive(movementTimer) { _ in
-            if scenePhase == .active && playingMovement {
-                advanceMovement()
+            if scenePhase == .active {
+                if playingExploration {
+                    advanceExploration(held: explorationHeldKey)
+                } else if playingMovement {
+                    advanceMovement()
+                }
             }
         }
-        .onDisappear { playingMovement = false }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                playingExploration = false
+                playingMovement = false
+            }
+        }
+        .onDisappear {
+            playingMovement = false
+            playingExploration = false
+        }
+        .onAppear {
+            #if os(macOS)
+            importLaunchReferenceIfNeeded()
+            #endif
+        }
+        #if os(macOS)
+        .focusable()
+        .focused($explorationKeyboardFocused)
+        .onKeyPress { press in
+            guard exploration != nil else { return .ignored }
+            let action: OriginalAction?
+            switch press.key {
+            case .leftArrow: action = .left
+            case .rightArrow: action = .right
+            case .upArrow: action = .up
+            case .downArrow: action = .down
+            default:
+                action = press.characters.first.flatMap {
+                    OriginalAction.fromSpectrumKey($0)
+                }
+            }
+            guard let action, action != .fire else { return .ignored }
+            stepExploration(action)
+            return .handled
+        }
+        #endif
     }
 
     private func makeSourceRoomImages(
@@ -773,6 +894,64 @@ struct WorldReferenceView: View {
         }
         return images
     }
+
+    private func loadReferenceBundle(from url: URL) throws {
+        let bundle = try PrivateReferenceBundle.load(from: url)
+        let images = try makeSourceRoomImages(
+            world: bundle.world, atlas: bundle.backgrounds
+        )
+        world = bundle.world
+        selected = WorldReference.capturedGameplayRoom
+        art = [:]
+        artStatus = nil
+        backgroundAtlas = bundle.backgrounds
+        sourceRoomImages = images
+        sourceAttributeColors = false
+        spriteSamples = [:]
+        spriteAtlas = bundle.sprites
+        placementState = bundle.placements
+        spriteID = 16
+        replay = bundle.replay
+        replayFrameValue = 0
+        entityTrace = nil
+        movement = nil
+        movementOrigin = .gameplayCapture
+        playingMovement = false
+        exploration = nil
+        playingExploration = false
+        explorationError = nil
+        heldKey = "none"
+        importError = nil
+    }
+
+    #if os(macOS)
+    private func importLaunchReferenceIfNeeded() {
+        guard !checkedLaunchArguments else { return }
+        checkedLaunchArguments = true
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "--local-reference-dir") else {
+            if arguments.contains("--play-experimental-world") {
+                importError = LocalReferenceLaunchError.missingDirectory.localizedDescription
+            }
+            return
+        }
+        do {
+            guard arguments.indices.contains(index + 1),
+                  !arguments[index + 1].hasPrefix("--") else {
+                throw LocalReferenceLaunchError.missingDirectory
+            }
+            try loadReferenceBundle(from: URL(
+                fileURLWithPath: arguments[index + 1], isDirectory: true
+            ))
+            if arguments.contains("--play-experimental-world"),
+               let world, let placementState {
+                startExploration(world: world, placements: placementState)
+            }
+        } catch {
+            importError = error.localizedDescription
+        }
+    }
+    #endif
 
     private var movementMarkerPosition: GridPoint? {
         guard let movement, selected == movement.room else { return nil }
@@ -836,13 +1015,56 @@ struct WorldReferenceView: View {
     private func hasPrivateRecord(in room: RoomID) -> Bool {
         placementState?.records.contains {
             $0.roomID == room.y * 16 + room.x
+                && exploration?.collectedRecordIDs.contains($0.id) != true
         } ?? false
     }
 
     private var selectedPrivateRecords: [CapturedPlacementRecord] {
         placementState?.records.filter {
             $0.roomID == selected.y * 16 + selected.x
+                && exploration?.collectedRecordIDs.contains($0.id) != true
         } ?? []
+    }
+
+    @ViewBuilder
+    private func exploratoryPlayerSprite(in size: CGSize) -> some View {
+        if let exploration, selected == exploration.room {
+            let spriteBase: Int = switch exploration.facing {
+            case .left: 16
+            case .right: 20
+            case .up: 24
+            case .down: 28
+            case .fire: 16
+            }
+            if let spriteAtlas {
+                switch Result(catching: {
+                    try spriteAtlas.mask(at: spriteBase + (exploration.frame / 2) % 4)
+                }) {
+                case .success(let mask?):
+                    placedPlayerSprite(
+                        mask: mask, at: exploration.player, in: size, color: .cyan,
+                        label: "Experimental player at X \(exploration.player.x), Y \(exploration.player.y); animation approximate"
+                    )
+                case .success(nil):
+                    explorationMarker(exploration.player, in: size)
+                case .failure(let error):
+                    Text(error.localizedDescription).foregroundStyle(.red)
+                }
+            } else {
+                explorationMarker(exploration.player, in: size)
+            }
+        }
+    }
+
+    private func explorationMarker(_ point: GridPoint, in size: CGSize) -> some View {
+        Circle()
+            .fill(.cyan)
+            .frame(width: 14, height: 14)
+            .position(
+                x: CGFloat(point.x) * size.width / 256,
+                y: screenY(point.y) * size.height / 192
+            )
+            .accessibilityLabel("Experimental player at X \(point.x), Y \(point.y)")
     }
 
     @ViewBuilder
@@ -1003,6 +1225,81 @@ struct WorldReferenceView: View {
         return "Measured movement · source frame \(frame) · room \(room) "
             + "· X \(state.player.x), Y \(state.player.y)"
             + (state.transitioning ? " · switching rooms" : "")
+    }
+
+    private func startExploration(
+        world: WorldReference, placements: CapturedPlacementState
+    ) {
+        do {
+            let next = try ExperimentalWorldGame(
+                world: world, placements: placements
+            )
+            exploration = next
+            selected = next.room
+            showExplorationMap = false
+            sourceAttributeColors = !sourceRoomImages.isEmpty
+            playingMovement = false
+            playingExploration = false
+            explorationHeldKey = "none"
+            explorationError = nil
+            #if os(macOS)
+            explorationKeyboardFocused = true
+            #endif
+        } catch {
+            explorationError = error.localizedDescription
+        }
+    }
+
+    private func explorationButton(
+        _ name: String, symbol: String, action: OriginalAction
+    ) -> some View {
+        Button {
+            stepExploration(action)
+        } label: {
+            Image(systemName: symbol)
+                .frame(width: 45, height: 36)
+        }
+        .accessibilityLabel("Travel \(name) in the experimental world")
+    }
+
+    private func stepExploration(_ action: OriginalAction) {
+        explorationHeldKey = switch action {
+        case .left: "q"
+        case .right: "w"
+        case .up: "e"
+        case .down: "r"
+        case .fire: "none"
+        }
+        advanceExploration(actions: [action], ticks: 6)
+    }
+
+    private func advanceExploration(held key: String) {
+        if key == "none" {
+            advanceExploration(actions: [], ticks: 1)
+        } else if key.count == 1, let letter = key.first,
+                  let action = OriginalAction.fromSpectrumKey(letter) {
+            advanceExploration(actions: [action], ticks: 1)
+        } else {
+            playingExploration = false
+            explorationError = "Choose Q, W, E, R or None for experimental travel."
+        }
+    }
+
+    private func advanceExploration(
+        actions: Set<OriginalAction>, ticks: Int
+    ) {
+        guard var next = exploration else { return }
+        do {
+            for _ in 0..<ticks {
+                try next.advance(holding: actions)
+            }
+            exploration = next
+            selected = next.room
+            explorationError = nil
+        } catch {
+            playingExploration = false
+            explorationError = error.localizedDescription
+        }
     }
 
     private func resetMovement(origin: CapturedMovementOrigin? = nil) {

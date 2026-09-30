@@ -773,6 +773,18 @@ Status: release gates. The placeholder core's XCTest tests and all three native 
 - **Expected Result**: The bounded handler branch is reproducible; injury cause, trigger timing, generalized combat and native scoring remain unverified.
 - **Edge Cases / Variants**: Player-kind boundaries 15/16/47/48, other actor kinds/rooms, another source edition.
 
+### TC-068: Experimental native world gameplay
+- **Priority**: P0
+- **Preconditions**: Run the private preview launcher once. The Mac launchers pass its ignored folder locally and open experimental play directly; import that folder manually on iOS or visionOS.
+- **Steps**:
+  1. Launch the Mac app via either `.command` script and verify it starts in **experimental world play** without a picker; alternatively import the folder and select **Play the experimental 16 × 16 world** on iOS/visionOS. Verify room 168 and X=120/Y=112, visible local source room art, four uncollected markers on the optional map and 1UP zero.
+  2. Tap on-screen arrows, then choose a direction and travel at 50 Hz; confirm responsive movement, static obstacles, room transitions, pause/resume and restart. On macOS, focus the explorer and check arrows and Q/W/E/R. Test touch/spatial taps separately on iOS and visionOS.
+  3. In a synthetic-world XCTest, place a distinct record near the start; confirm one contact removes it and awards one progress bit and 7,500 1UP points, while repeated overlap cannot re-award it. Refuse fire and simultaneous directions instead of inventing sword combat.
+  4. In the private reference test, compare every room/X/Y step of E40→Q91 from source frames 791–921 (**131/131**). Stop the parity assertion before the known source injury at frame 922.
+  5. Check experimental text explicitly distinguishes unverified general exits and automatic pickup polling from the strict read-only replay and bounded movement preview. Verify imported source media stays local and absent from Git.
+- **Expected Result**: A responsive native 16×16 exploration/collection mode exists on all three targets, without a claim of faithful enemy, combat or ending behavior.
+- **Edge Cases / Variants**: Outer map edges, window/background interruption, missing import, changing the imported world mid-session, score wrap and restart after collecting records.
+
 ## Regression cadence and coverage
 
 | ID | Scenario | Type | Risk | Automated? | Gate |

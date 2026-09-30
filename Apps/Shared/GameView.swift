@@ -46,7 +46,7 @@ struct GameView: View {
         VStack(spacing: 18) {
           Text("Sabre Wulf")
             .font(.largeTitle.bold())
-          Text("Original placeholder maze • mechanics not verified against any historical game")
+          Text("Import your private 48K reference folder below to play experimental world exploration. The separate maze further down is an independent placeholder.")
             .font(.footnote)
             .multilineTextAlignment(.center)
           DisclosureGroup(

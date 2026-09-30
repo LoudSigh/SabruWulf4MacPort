@@ -1,0 +1,31 @@
+{
+    "configurations": [
+        {
+            "type": "node-terminal",
+            "request": "launch",
+            "name": "Run Sabre Wulf Mac gameplay (local)",
+            "command": "bash './Run Sabre Wulf Mac.command'",
+            "cwd": "${workspaceFolder:SabreWulf4MacPort}"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SabreWulf4MacPort}",
+            "name": "Debug TapeInventory",
+            "target": "TapeInventory",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug TapeInventory"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:SabreWulf4MacPort}",
+            "name": "Release TapeInventory",
+            "target": "TapeInventory",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release TapeInventory"
+        }
+    ]
+}

@@ -21,6 +21,8 @@ jobs:
         run: |
           head -n 1 'Run Sabre Wulf Preview.command' | grep -Fx '#!/bin/bash'
           bash -n 'Run Sabre Wulf Preview.command'
+          head -n 1 'Run Sabre Wulf Mac.command' | grep -Fx '#!/bin/bash'
+          bash -n 'Run Sabre Wulf Mac.command'
           head -n 1 'Render Local AY Audio.command' | grep -Fx '#!/bin/bash'
           bash -n 'Render Local AY Audio.command'
           head -n 1 'Disassemble Local Range.command' | grep -Fx '#!/bin/bash'

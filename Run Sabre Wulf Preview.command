@@ -1520,6 +1520,12 @@ if ! SABRE_PRIVATE_REFERENCE_DIR="$ROOT/$PRIVATE" \
     cat "$ROOT/$PRIVATE/reference-bundle-test.log" >&2
     exit 1
 fi
+if ! SABRE_PRIVATE_REFERENCE_DIR="$ROOT/$PRIVATE" \
+    swift test --filter ExperimentalWorldGameTests \
+    > "$ROOT/$PRIVATE/experimental-world-test.log" 2>&1; then
+    cat "$ROOT/$PRIVATE/experimental-world-test.log" >&2
+    exit 1
+fi
 printf 'Checking bounded native post-setup positions and sprite IDs on five paths...\n'
 if ! SABRE_PRIVATE_WORLD="$ROOT/$PRIVATE/snapshot-${GAME_SHA:0:12}-world-v2.json" \
     SABRE_PRIVATE_NEW_GAME_REPLAY="$ROOT/$PRIVATE/replay-restart-ready-movement-900.json" \
@@ -1698,7 +1704,7 @@ if ! command -v xcodegen >/dev/null 2>&1; then
     printf 'Missing xcodegen. Reference images are ready in %s, but the native prototype cannot be built.\n' "$PRIVATE" >&2
     exit 1
 fi
-printf 'Building the native macOS app (placeholder gameplay plus separate measured movement preview)...\n'
+printf 'Building the native macOS app (experimental world gameplay plus separate strict reference preview)...\n'
 xcodegen generate
 xcodebuild -quiet -project SabreWulf.xcodeproj -scheme SabreWulfMac \
     -configuration Debug -destination 'platform=macOS' \
@@ -1706,11 +1712,12 @@ xcodebuild -quiet -project SabreWulf.xcodeproj -scheme SabreWulfMac \
 
 APP="$ROOT/$PRIVATE/DerivedData/Build/Products/Debug/SabreWulfMac.app"
 require_file "$APP/Contents/MacOS/SabreWulfMac"
-open "$APP"
+open -n "$APP" --args --local-reference-dir "$ROOT/$PRIVATE" --play-experimental-world
 open -a Preview "$MENU_PNG" "$GAME_PNG"
 open "$WORLD_MAP"
-printf '\nOpened the native placeholder app, two original static captures, and a private world-type map.\n'
-printf 'In the native source explorer, choose Import local reference folder and select %s to load the checked world, art, placements and replay together.\n' "$ROOT/$PRIVATE"
+printf '\nOpened the native app, two original static captures, and a private world-type map.\n'
+printf 'The native app opens directly in experimental world play using the local %s folder. You can still import another folder manually.\n' "$ROOT/$PRIVATE"
+printf 'Travel freely and practice record collection; enemies and original completion are not yet implemented.\n'
 printf 'Inside the app, import %s to scrub a recorded Q-key actor path.\n' "$REPLAY"
 printf 'Import %s to scrub a recorded transition into the adjacent room.\n' "$TRANSITION"
 printf 'Import %s to scrub a recorded return to the captured room.\n' "$ROUND_TRIP"
@@ -1724,4 +1731,4 @@ printf 'Use replay-unrelated-a-control-190.json and its matching trace as a keyb
 printf 'Import the private world JSON, then select Start measured movement (partial) to run the source-backed movement slice.\n'
 printf 'Import %s to preview decoded background geometry in all source rooms.\n' "$BACKGROUND_ATLAS"
 printf 'Import %s to browse decoded private bitmap silhouettes without bundled source art.\n' "$SPRITE_ATLAS"
-printf 'Use Command-Tab to switch. The captures/map are not playable and the prototype is not yet the 1984 game.\n'
+printf 'Use Command-Tab to switch. The source-backed experimental world is playable; the captures/map are static, and the port is not yet the complete 1984 game.\n'
