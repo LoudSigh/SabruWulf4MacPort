@@ -940,9 +940,10 @@ struct WorldReferenceView: View {
                   !arguments[index + 1].hasPrefix("--") else {
                 throw LocalReferenceLaunchError.missingDirectory
             }
-            try loadReferenceBundle(from: URL(
+            let directory = URL(
                 fileURLWithPath: arguments[index + 1], isDirectory: true
-            ))
+            )
+            try loadReferenceBundle(from: directory)
             if arguments.contains("--play-experimental-world"),
                let world, let placementState {
                 startExploration(world: world, placements: placementState)
